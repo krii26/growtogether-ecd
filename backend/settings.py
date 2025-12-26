@@ -27,6 +27,10 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 
+# Google OAuth client id (set via env). Fallback to dev client id.
+import os
+GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '274379126922-l5b3r8hg9t35fr0f20jjb2amreos3sc5.apps.googleusercontent.com')
+
 
 # Application definition
 

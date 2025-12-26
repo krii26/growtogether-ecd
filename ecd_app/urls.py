@@ -2,7 +2,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
     ChildViewSet, MilestoneViewSet, ELibraryViewSet,
-    ActivityViewSet, ProgressReportViewSet, UserProfileViewSet, register
+    ActivityViewSet, ProgressReportViewSet, UserProfileViewSet, register, login, google_login
 )
 
 router = DefaultRouter()
@@ -15,5 +15,7 @@ router.register(r'user_profiles', UserProfileViewSet)
 
 urlpatterns = [
     path('register/', register),
+    path('login/', login),
+    path('google-login/', google_login),
     path('', include(router.urls)),
 ]
