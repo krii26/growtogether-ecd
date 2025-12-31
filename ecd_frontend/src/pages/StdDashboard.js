@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import API from '../api/api';
 
 const StdDashboard = () => {
+  const navigate = useNavigate();
   const [counts, setCounts] = useState({
     children: 0,
     activities: 0,
@@ -10,10 +12,26 @@ const StdDashboard = () => {
   });
   const [recentActivities, setRecentActivities] = useState([]);
   const [upcomingMilestones, setUpcomingMilestones] = useState([]);
+  const [userInfo, setUserInfo] = useState({
+    first_name: '',
+    last_name: '',
+    role: ''
+  });
 
   useEffect(() => {
     const load = async () => {
       try {
+        // Load user info from localStorage or API
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          const user = JSON.parse(storedUser);
+          setUserInfo({
+            first_name: user.first_name || 'John',
+            last_name: user.last_name || 'Doe',
+            role: user.role || 'Parent'
+          });
+        }
+
         const [childrenRes, activitiesRes, milestonesRes, reportsRes] = await Promise.all([
           API.get('children/'),
           API.get('activities/'),
@@ -35,6 +53,12 @@ const StdDashboard = () => {
     load();
   }, []);
 
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    navigate('/login');
+  };
+
   const layout = {
     display: 'grid',
     gridTemplateColumns: '220px 1fr',
@@ -45,26 +69,96 @@ const StdDashboard = () => {
   };
 
   const sidebar = {
-    background: '#ffffff',
-    borderRadius: 12,
-    boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-    padding: 12,
+    background: '#f8f9fa',
+    borderRadius: 0,
+    boxShadow: 'none',
+    padding: '20px 16px',
     position: 'sticky',
-    top: 16,
-    height: 'fit-content'
+    top: 0,
+    height: '100vh',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'space-between'
   };
 
   const navItem = {
     display: 'flex',
     alignItems: 'center',
-    gap: 10,
-    padding: '10px 12px',
+    gap: 12,
+    padding: '12px 16px',
+    borderRadius: 8,
+    color: '#666',
+    cursor: 'pointer',
+    marginBottom: 8,
+    fontSize: '15px',
+    fontWeight: 500,
+    transition: 'all 0.2s'
+  };
+
+  const navActive = { 
+    ...navItem, 
+    background: '#e8d5f2', 
+    color: '#6a11cb',
+    fontWeight: 600
+  };
+
+  const iconStyle = {
+    fontSize: '18px',
+    width: '20px',
+    textAlign: 'center'
+  };
+
+  const userSection = {
+    borderTop: '1px solid #e0e0e0',
+    paddingTop: '16px',
+    marginTop: 'auto'
+  };
+
+  const userProfile = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+    padding: '12px 16px',
+    background: '#fff',
     borderRadius: 10,
-    color: '#333',
     cursor: 'pointer'
   };
 
-  const navActive = { ...navItem, background: '#f0ecff', color: '#6a11cb' };
+  const userAvatar = {
+    width: 40,
+    height: 40,
+    borderRadius: '50%',
+    background: 'linear-gradient(135deg, #a855f7 0%, #d946ef 100%)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    color: 'white',
+    fontWeight: 700,
+    fontSize: '16px'
+  };
+
+  const userInfo2 = {
+    flex: 1
+  };
+
+  const userName = {
+    fontSize: '14px',
+    fontWeight: 600,
+    color: '#333',
+    lineHeight: 1.2
+  };
+
+  const userRole = {
+    fontSize: '12px',
+    color: '#999',
+    marginTop: 2
+  };
+
+  const logoutIcon = {
+    fontSize: '18px',
+    color: '#999',
+    cursor: 'pointer'
+  };
 
   const content = {
     background: '#ffffff',
@@ -127,11 +221,48 @@ const StdDashboard = () => {
     <div style={layout}>
       {/* Sidebar */}
       <aside style={sidebar}>
-        <div style={navActive}>Student Dashboard</div>
-        <div style={navItem}>My Courses</div>
-        <div style={navItem}>Checklist</div>
-        <div style={navItem}>E-Library</div>
-        <div style={navItem}>Activities</div>
+        <div>
+          <div style={navActive}>
+            <span style={iconStyle}>🏠</span>
+            Dashboard
+          </div>
+          <div style={navItem} onClick={() => navigate('/children')}>
+            <span style={iconStyle}>👶</span>
+            My Children
+          </div>
+          <div style={navItem}>
+            <span style={iconStyle}>📋</span>
+            Checklist
+          </div>
+          <div style={navItem}>
+            <span style={iconStyle}>📚</span>
+            E-Library
+          </div>
+          <div style={navItem}>
+            <span style={iconStyle}>💡</span>
+            Activities
+          </div>
+        </div>
+
+        {/* User Profile Section */}
+        <div style={userSection}>
+          <div style={userProfile}>
+            <div style={userAvatar}>
+              {userInfo.first_name.charAt(0)}{userInfo.last_name.charAt(0)}
+            </div>
+            <div style={userInfo2}>
+              <div style={userName}>
+                {userInfo.first_name} {userInfo.last_name}
+              </div>
+              <div style={userRole}>
+                {userInfo.role}
+              </div>
+            </div>
+            <div style={logoutIcon} onClick={handleLogout} title="Logout">
+              ⎋
+            </div>
+          </div>
+        </div>
       </aside>
 
       {/* Main Content */}
