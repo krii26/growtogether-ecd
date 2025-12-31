@@ -232,7 +232,7 @@ const StdDashboard = () => {
           </div>
           <div style={navItem}>
             <span style={iconStyle}>📋</span>
-            Checklist
+            Milestones
           </div>
           <div style={navItem}>
             <span style={iconStyle}>📚</span>

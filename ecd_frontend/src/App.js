@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Home from './pages/Home';
 import Children from './pages/Children';
+import Milestones from './pages/Milestones';
 import Register from './pages/Register';
 import Login from './pages/Login';
 import StdDashboard from './pages/StdDashboard';
@@ -16,6 +17,7 @@ const App = () => {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/children" element={<Children />} />
+          <Route path="/milestones" element={<Milestones />} />
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
           <Route path="/std_dashboard" element={<StdDashboard />} />

@@ -1,0 +1,349 @@
+/* Milestones Page Styles */
+
+.milestones-container {
+  min-height: 100vh;
+  background: #f8f9fa;
+  padding: 20px;
+}
+
+.milestones-header {
+  max-width: 1200px;
+  margin: 0 auto 30px;
+}
+
+.milestones-back-btn {
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  font-size: 14px;
+  margin-bottom: 10px;
+  padding: 0;
+}
+
+.milestones-back-btn:hover {
+  color: #333;
+}
+
+.milestones-title {
+  font-size: 28px;
+  margin: 10px 0 5px 0;
+  color: #333;
+}
+
+.milestones-subtitle {
+  color: #666;
+  margin: 0;
+}
+
+.milestones-add-btn {
+  padding: 10px 20px;
+  background: #8b5cf6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 30px;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+  display: block;
+}
+
+.milestones-add-btn:hover {
+  background: #7c3aed;
+}
+
+.milestones-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.milestone-card {
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.milestone-header {
+  color: white;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.milestone-header-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.milestone-count {
+  background: rgba(255, 255, 255, 0.3);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.milestone-content {
+  padding: 16px;
+}
+
+.milestone-empty {
+  color: #999;
+  text-align: center;
+  margin: 0;
+}
+
+.milestone-items {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.milestone-item {
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 12px;
+  background: #fafafa;
+}
+
+.milestone-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  margin-bottom: 8px;
+}
+
+.milestone-item-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  flex: 1;
+}
+
+.milestone-delete-btn {
+  background: #fee2e2;
+  color: #dc2626;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  margin-left: 8px;
+}
+
+.milestone-delete-btn:hover {
+  background: #fecaca;
+}
+
+.milestone-description {
+  font-size: 12px;
+  color: #666;
+  margin: 8px 0;
+  line-height: 1.4;
+}
+
+.milestone-image {
+  margin-top: 10px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.milestone-image img {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+}
+
+.milestone-date {
+  font-size: 11px;
+  color: #999;
+  margin: 8px 0 0 0;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.modal-title {
+  margin: 0 0 20px 0;
+  font-size: 20px;
+  color: #333;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #333;
+}
+
+.form-input,
+.form-textarea,
+.form-select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.form-textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.form-select {
+  cursor: pointer;
+}
+
+.image-upload {
+  border: 2px dashed #d1d5db;
+  border-radius: 6px;
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  background: #f9fafb;
+  transition: all 0.3s;
+}
+
+.image-upload:hover {
+  border-color: #8b5cf6;
+  background: #f3f0ff;
+}
+
+.image-upload-text {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  color: #666;
+}
+
+.image-upload-hint {
+  margin: 0;
+  font-size: 12px;
+  color: #999;
+}
+
+.image-preview {
+  max-width: 100%;
+  max-height: 200px;
+  border-radius: 4px;
+  margin-bottom: 10px;
+}
+
+.image-preview-text {
+  margin: 0;
+  font-size: 12px;
+  color: #666;
+}
+
+.form-error {
+  background: #fee2e2;
+  color: #dc2626;
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.form-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+.btn-cancel {
+  padding: 10px 16px;
+  background: #e5e7eb;
+  color: #333;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.btn-cancel:hover {
+  background: #d1d5db;
+}
+
+.btn-submit {
+  padding: 10px 16px;
+  background: #8b5cf6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.btn-submit:hover:not(:disabled) {
+  background: #7c3aed;
+}
+
+.btn-submit:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .milestones-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-content {
+    width: 95%;
+  }
+
+  .milestone-item-header {
+    flex-direction: column;
+  }
+
+  .milestone-delete-btn {
+    margin-left: 0;
+    margin-top: 8px;
+  }
+}

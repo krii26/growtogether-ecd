@@ -429,9 +429,9 @@ const Children = () => {
             <span style={iconStyle}>👶</span>
             My Children
           </div>
-          <div style={navItem}>
+          <div style={navItem} onClick={() => navigate('/milestones')}>
             <span style={iconStyle}>📋</span>
-            Checklist
+            Milestones
           </div>
           <div style={navItem}>
             <span style={iconStyle}>📚</span>
@@ -522,7 +522,12 @@ const Children = () => {
                   </div>
                 </div>
               </div>
-              <button style={viewButton}>View Profile</button>
+              <button 
+                onClick={() => navigate(`/milestones?childId=${child.id}`)}
+                style={viewButton}
+              >
+                View Milestones
+              </button>
             </div>
           ))}
           {children.length === 0 && (

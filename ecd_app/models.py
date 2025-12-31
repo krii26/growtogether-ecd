@@ -8,6 +8,8 @@ class Child(models.Model):
     name = models.CharField(max_length=100)
     age = models.IntegerField()
     parent_name = models.CharField(max_length=100)
+    date_of_birth = models.DateField(null=True, blank=True)
+    photo = models.URLField(null=True, blank=True)
     date_registered = models.DateField(auto_now_add=True)
 
     def __str__(self):
@@ -15,13 +17,25 @@ class Child(models.Model):
 
 
 class Milestone(models.Model):
+    CATEGORY_CHOICES = (
+        ('social-emotional', 'Social-Emotional'),
+        ('cognitive', 'Cognitive'),
+        ('physical', 'Physical'),
+        ('language', 'Language'),
+    )
+    
     child = models.ForeignKey(Child, on_delete=models.CASCADE, related_name='milestones')
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='social-emotional')
     title = models.CharField(max_length=100)
     description = models.TextField()
     date_achieved = models.DateField(null=True, blank=True)
+    image = models.ImageField(upload_to='milestone_images/', null=True, blank=True)
 
     def __str__(self):
         return f"{self.child.name} - {self.title}"
+    
+    class Meta:
+        ordering = ['category', 'title']
 
 
 # -----------------------------
