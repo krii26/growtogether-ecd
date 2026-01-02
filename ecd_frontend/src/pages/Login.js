@@ -38,10 +38,22 @@ const Login = () => {
       };
 
       // Attempt login; backend endpoint can be added later
-      await API.post('login/', payload);
+      const response = await API.post('login/', payload);
+      
+      // Store user info including role
+      if (response.data && response.data.user) {
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+      } else {
+        // Fallback if backend doesn't return user data
+        localStorage.setItem('user', JSON.stringify({ role: form.role }));
+      }
+      
       setSuccess('Login successful. Redirecting...');
       setError('');
-      setTimeout(() => navigate('/std_dashboard'), 800);
+      
+      // Route based on role
+      const dashboardPath = form.role === 'TEACHER' ? '/teacher_dashboard' : '/std_dashboard';
+      setTimeout(() => navigate(dashboardPath), 800);
     } catch (err) {
       console.error(err);
       setError('Login failed. Please verify your credentials.');
@@ -61,9 +73,19 @@ const Login = () => {
         callback: async (response) => {
           try {
             const res = await API.post('google-login/', { credential: response.credential });
+            
+            // Store user info including role
+            if (res.data && res.data.user) {
+              localStorage.setItem('user', JSON.stringify(res.data.user));
+            }
+            
             setSuccess('Login successful. Redirecting...');
             setError('');
-            setTimeout(() => navigate('/std_dashboard'), 800);
+            
+            // Route based on role from response or default to parent dashboard
+            const userRole = res.data?.user?.role || 'PARENT';
+            const dashboardPath = userRole === 'TEACHER' ? '/teacher_dashboard' : '/std_dashboard';
+            setTimeout(() => navigate(dashboardPath), 800);
           } catch (err) {
             console.error(err);
             setError('Google login failed.');

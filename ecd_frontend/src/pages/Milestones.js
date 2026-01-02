@@ -328,7 +328,12 @@ const Milestones = () => {
 
   // Get user info from localStorage for display
   const storedUser = localStorage.getItem('user');
-  const currentUser = storedUser ? JSON.parse(storedUser) : { first_name: 'John', last_name: 'Doe', role: 'Parent' };
+  const parsedUser = storedUser ? JSON.parse(storedUser) : {};
+  const currentUser = {
+    first_name: parsedUser.first_name || 'John',
+    last_name: parsedUser.last_name || 'Doe',
+    role: parsedUser.role || 'Parent'
+  };
 
   return (
     <div style={layout}>
