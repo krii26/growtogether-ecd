@@ -47,7 +47,7 @@ const ELibrary = () => {
       title: 'Managing Tantrums Effectively',
       category: 'Behavior',
       description: 'Practical strategies for handling challenging behaviors in young children.',
-      image: 'https://images.unsplash.com/photo-1503454537688-e0cecad2476a?w=400&h=300&fit=crop',
+      image: '/traumakid.jpg',
       link: '#'
     },
     {
