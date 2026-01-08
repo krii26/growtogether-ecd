@@ -230,7 +230,7 @@ const StdDashboard = () => {
             <span style={iconStyle}>👶</span>
             My Children
           </div>
-          <div style={navItem}>
+          <div style={navItem} onClick={() => navigate('/milestones')}>
             <span style={iconStyle}>📋</span>
             Milestones
           </div>
