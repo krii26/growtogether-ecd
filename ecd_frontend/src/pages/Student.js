@@ -1,35 +1,36 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import API from '../api/api';
 
 const Student = () => {
   const navigate = useNavigate();
+  const [children, setChildren] = useState([]);
+  const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const students = [
-    {
-      id: 1,
-      name: 'Emma Johnson',
-      age: '4 years 3 months',
-      parent: 'Sarah Johnson',
-      progress: 85,
-      avatar: '/happychild.jpg'
-    },
-    {
-      id: 2,
-      name: 'Oliver Smith',
-      age: '5 years 8 months',
-      parent: 'Michael Smith',
-      progress: 92,
-      avatar: '/traumakid.jpg'
-    },
-    {
-      id: 3,
-      name: 'Sophia Davis',
-      age: '2 years 11 months',
-      parent: 'Jennifer Davis',
-      progress: 68,
-      avatar: '/languageDev.png'
-    },
-  ];
+  const filtered = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    if (!term) return children;
+    return children.filter((c) =>
+      (c.name || '').toLowerCase().includes(term) ||
+      (c.parent_name || '').toLowerCase().includes(term)
+    );
+  }, [children, search]);
+
+  useEffect(() => {
+    const fetchChildren = async () => {
+      try {
+        setLoading(true);
+        const res = await API.get('children/');
+        setChildren(res.data || []);
+      } catch (err) {
+        console.error('Failed to load students', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchChildren();
+  }, []);
 
   const layout = {
     display: 'grid',
@@ -148,6 +149,31 @@ const Student = () => {
   const badge = { fontWeight: 600, color: '#6b7280', fontSize: 13 };
   const actionBtn = { background: '#f3e8ff', color: '#7c3aed', border: 'none', borderRadius: 10, padding: '8px 12px', cursor: 'pointer', fontWeight: 600 };
 
+  const formatAge = (child) => {
+    if (child?.date_of_birth) {
+      const dob = new Date(child.date_of_birth);
+      const today = new Date();
+      const years = today.getFullYear() - dob.getFullYear();
+      const months = today.getMonth() - dob.getMonth() + (today.getDate() < dob.getDate() ? -1 : 0);
+      const totalMonths = years * 12 + months;
+      const y = Math.max(0, Math.floor(totalMonths / 12));
+      const m = Math.max(0, totalMonths % 12);
+      return `${y} years ${m} months`;
+    }
+    if (typeof child?.age === 'number') return `${child.age} years`;
+    return 'N/A';
+  };
+
+  const computeProgress = (child) => {
+    const milestones = child?.milestones || [];
+    if (!milestones.length) return 0;
+    return Math.min(100, milestones.length * 10);
+  };
+
+  const getAvatar = (child) => {
+    return child?.photo || '/happychild.jpg';
+  };
+
   return (
     <div style={layout}>
       <aside style={sidebar}>
@@ -199,6 +225,8 @@ const Student = () => {
             <input
               type="text"
               placeholder="Search students..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
               style={{
                 padding: '10px 14px',
                 borderRadius: 12,
@@ -222,29 +250,42 @@ const Student = () => {
               </tr>
             </thead>
             <tbody>
-              {students.map((s) => (
-                <tr key={s.id} style={tr}>
-                  <td style={td}>
-                    <div style={studentCell}>
-                      <img src={s.avatar} alt={s.name} style={avatar} />
-                      <div style={name}>{s.name}</div>
-                    </div>
-                  </td>
-                  <td style={td}>{s.age}</td>
-                  <td style={td}>{s.parent}</td>
-                  <td style={td}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <div style={progressBarOuter}>
-                        <div style={progressBarInner(s.progress)} />
+              {filtered.map((s) => {
+                const progress = computeProgress(s);
+                return (
+                  <tr key={s.id} style={tr}>
+                    <td style={td}>
+                      <div style={studentCell}>
+                        <img src={getAvatar(s)} alt={s.name} style={avatar} />
+                        <div style={name}>{s.name}</div>
                       </div>
-                      <span style={badge}>{s.progress}%</span>
-                    </div>
-                  </td>
-                  <td style={td}>
-                    <button style={actionBtn}>View Profile</button>
-                  </td>
+                    </td>
+                    <td style={td}>{formatAge(s)}</td>
+                    <td style={td}>{s.parent_name || 'N/A'}</td>
+                    <td style={td}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={progressBarOuter}>
+                          <div style={progressBarInner(progress)} />
+                        </div>
+                        <span style={badge}>{progress}%</span>
+                      </div>
+                    </td>
+                    <td style={td}>
+                      <button style={actionBtn}>View Profile</button>
+                    </td>
+                  </tr>
+                );
+              })}
+              {!loading && filtered.length === 0 && (
+                <tr>
+                  <td style={{ ...td, textAlign: 'center' }} colSpan={5}>No students found.</td>
                 </tr>
-              ))}
+              )}
+              {loading && (
+                <tr>
+                  <td style={{ ...td, textAlign: 'center' }} colSpan={5}>Loading...</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

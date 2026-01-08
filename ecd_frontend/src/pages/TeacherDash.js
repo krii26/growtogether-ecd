@@ -351,7 +351,7 @@ const TeacherDash = () => {
             <span style={iconStyle}>📚</span>
             E-Library
           </div>
-          <div style={navItem}>
+          <div style={navItem} onClick={() => navigate('/publish-results')}>
             <span style={iconStyle}>📊</span>
             Publish Results
           </div>

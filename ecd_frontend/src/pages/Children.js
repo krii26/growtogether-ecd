@@ -16,8 +16,9 @@ const Children = () => {
   const [form, setForm] = useState({
     name: '',
     date_of_birth: '',
-    photo: ''
+    photo: null
   });
+  const [photoPreview, setPhotoPreview] = useState('');
 
   useEffect(() => {
     fetchChildren();
@@ -46,8 +47,21 @@ const Children = () => {
   };
 
   const handleChange = (e) => {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
     setError('');
+  };
+
+  const handlePhotoChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setForm((prev) => ({ ...prev, photo: file }));
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setPhotoPreview(event.target?.result || '');
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleAddChild = async (e) => {
@@ -55,10 +69,21 @@ const Children = () => {
     setSaving(true);
     setError('');
     try {
-      await API.post('children/', form);
+      const formData = new FormData();
+      formData.append('name', form.name);
+      formData.append('date_of_birth', form.date_of_birth);
+      formData.append('parent_name', userInfo.first_name + ' ' + userInfo.last_name || 'Parent');
+      if (form.photo instanceof File) {
+        formData.append('photo', form.photo);
+      }
+      
+      await API.post('children/', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
       await fetchChildren();
       setShowModal(false);
-      setForm({ name: '', date_of_birth: '', photo: '' });
+      setForm({ name: '', date_of_birth: '', photo: null });
+      setPhotoPreview('');
     } catch (err) {
       console.error('Error adding child:', err);
       setError('Failed to add child. Please try again.');
@@ -562,17 +587,45 @@ const Children = () => {
                   style={inputStyle}
                   required
                 />
-                <input
-                  name="photo"
-                  placeholder="Photo URL (optional)"
-                  value={form.photo}
-                  onChange={handleChange}
-                  style={inputStyle}
-                />
+                
+                <div style={{ marginBottom: '12px' }}>
+                  <label style={{ fontSize: '13px', fontWeight: 600, color: '#333', display: 'block', marginBottom: '6px' }}>
+                    Upload Photo (Optional)
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePhotoChange}
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      borderRadius: '8px',
+                      border: '1px solid #e0e0e0',
+                      fontSize: '13px',
+                      cursor: 'pointer'
+                    }}
+                  />
+                  {photoPreview && (
+                    <div style={{ marginTop: '10px', textAlign: 'center' }}>
+                      <img
+                        src={photoPreview}
+                        alt="Preview"
+                        style={{
+                          width: '80px',
+                          height: '80px',
+                          borderRadius: '8px',
+                          objectFit: 'cover',
+                          border: '2px solid #a855f7'
+                        }}
+                      />
+                      <p style={{ fontSize: '12px', color: '#666', marginTop: '6px' }}>Preview</p>
+                    </div>
+                  )}
+                </div>
                 <div style={modalActions}>
                   <button
                     type="button"
-                    onClick={() => { setShowModal(false); setError(''); }}
+                    onClick={() => { setShowModal(false); setError(''); setPhotoPreview(''); }}
                     style={{ padding: '10px 14px', borderRadius: '8px', border: '1px solid #e5e7eb', background: '#fff', cursor: 'pointer' }}
                   >
                     Cancel

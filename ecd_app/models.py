@@ -6,10 +6,10 @@ from django.contrib.auth.models import User
 # -----------------------------
 class Child(models.Model):
     name = models.CharField(max_length=100)
-    age = models.IntegerField()
-    parent_name = models.CharField(max_length=100)
+    age = models.IntegerField(null=True, blank=True)
+    parent_name = models.CharField(max_length=100, null=True, blank=True)
     date_of_birth = models.DateField(null=True, blank=True)
-    photo = models.URLField(null=True, blank=True)
+    photo = models.ImageField(upload_to='child_photos/', null=True, blank=True)
     date_registered = models.DateField(auto_now_add=True)
 
     def __str__(self):
