@@ -10,6 +10,8 @@ const TeacherDash = () => {
     resourcesAccessed: 0,
   });
   const [recentActivities, setRecentActivities] = useState([]);
+  const [recentAssessments, setRecentAssessments] = useState([]);
+  const [children, setChildren] = useState([]);
   const [userInfo, setUserInfo] = useState({
     first_name: '',
     last_name: '',
@@ -31,39 +33,43 @@ const TeacherDash = () => {
         }
 
         // Load dashboard data
-        const [childrenRes] = await Promise.all([
+        const [childrenRes, reportsRes] = await Promise.all([
           API.get('children/'),
+          API.get('progress_reports/'),
         ]);
         
+        setChildren(childrenRes.data || []);
+        const reports = reportsRes.data || [];
+        setRecentAssessments(reports.slice(-5).reverse());
+        
         setStats({
-          totalStudents: childrenRes.data?.length || 24,
-          resultsPublished: 18,
+          totalStudents: childrenRes.data?.length || 0,
+          resultsPublished: reports.length || 0,
           resourcesAccessed: 42,
         });
 
-        // Mock recent activities
-        setRecentActivities([
-          {
-            id: 1,
+        // Recent activities from published assessments
+        const activityList = reports.slice(-2).reverse().map(report => {
+          const child = childrenRes.data.find(c => c.id === report.child);
+          const childName = child ? child.name : 'Unknown Student';
+          const date = new Date(report.report_date);
+          const now = new Date();
+          const diffHours = Math.floor((now - date) / (1000 * 60 * 60));
+          const timeAgo = diffHours < 1 ? 'Just now' : diffHours < 24 ? `${diffHours} hour${diffHours > 1 ? 's' : ''} ago` : `${Math.floor(diffHours / 24)} day${Math.floor(diffHours / 24) > 1 ? 's' : ''} ago`;
+          
+          return {
+            id: report.id,
             type: 'result',
             icon: '✓',
             iconBg: '#d1fae5',
             iconColor: '#059669',
-            title: 'Published results for Emma Johnson',
-            subtitle: 'Social-Emotional Development Assessment',
-            time: '1 hour ago'
-          },
-          {
-            id: 2,
-            type: 'library',
-            icon: '📚',
-            iconBg: '#dbeafe',
-            iconColor: '#2563eb',
-            title: 'Accessed E-Library resource',
-            subtitle: 'Emotional Development Stages',
-            time: '3 hours ago'
-          }
-        ]);
+            title: `Published results for ${childName}`,
+            subtitle: report.notes.split(':')[0] || 'Assessment',
+            time: timeAgo
+          };
+        });
+
+        setRecentActivities(activityList);
       } catch (err) {
         console.error('Failed to load dashboard data', err);
       }

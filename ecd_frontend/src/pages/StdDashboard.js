@@ -12,6 +12,8 @@ const StdDashboard = () => {
   });
   const [recentActivities, setRecentActivities] = useState([]);
   const [upcomingMilestones, setUpcomingMilestones] = useState([]);
+  const [progressReports, setProgressReports] = useState([]);
+  const [children, setChildren] = useState([]);
   const [userInfo, setUserInfo] = useState({
     first_name: '',
     last_name: '',
@@ -44,8 +46,10 @@ const StdDashboard = () => {
           milestones: milestonesRes.data?.length || 0,
           reports: reportsRes.data?.length || 0,
         });
+        setChildren(childrenRes.data || []);
         setRecentActivities((activitiesRes.data || []).slice(0, 3));
         setUpcomingMilestones((milestonesRes.data || []).slice(0, 3));
+        setProgressReports((reportsRes.data || []).slice(-5).reverse());
       } catch (err) {
         console.error('Failed to load dashboard data', err);
       }
@@ -338,6 +342,47 @@ const StdDashboard = () => {
                 );
               })}
             </div>
+          </div>
+
+          {/* Progress Reports Section */}
+          <div style={listCard}>
+            <div style={{ fontWeight: 700, marginBottom: 12, fontSize: 16 }}>📊 Recent Progress Reports</div>
+            {progressReports.length === 0 ? (
+              <div style={{ color: '#777', fontSize: 13, padding: '12px 0' }}>No progress reports published yet.</div>
+            ) : (
+              progressReports.map((report) => {
+                const child = children.find(c => c.id === report.child);
+                const childName = child ? child.name : 'Unknown Child';
+                const date = new Date(report.report_date);
+                const formattedDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                
+                return (
+                  <div key={report.id} style={{
+                    border: '1px solid #e5e7eb',
+                    borderRadius: 12,
+                    padding: '14px 16px',
+                    marginBottom: 12,
+                    background: '#fafafa'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                      <div style={{ fontWeight: 600, fontSize: 15, color: '#1f2937' }}>{childName}</div>
+                      <div style={{
+                        background: report.overall_score >= 75 ? '#d1fae5' : report.overall_score >= 50 ? '#fef3c7' : '#fee2e2',
+                        color: report.overall_score >= 75 ? '#059669' : report.overall_score >= 50 ? '#d97706' : '#dc2626',
+                        padding: '4px 10px',
+                        borderRadius: 6,
+                        fontSize: 13,
+                        fontWeight: 700
+                      }}>
+                        Score: {report.overall_score || 'N/A'}/100
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 6 }}>{report.notes}</div>
+                    <div style={{ fontSize: 12, color: '#9ca3af' }}>Published: {formattedDate}</div>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       </main>

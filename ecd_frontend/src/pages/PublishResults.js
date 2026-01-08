@@ -10,9 +10,14 @@ const PublishResults = () => {
   const [assessmentType, setAssessmentType] = useState('');
   const [score, setScore] = useState('');
   const [comments, setComments] = useState('');
+  const [recentReports, setRecentReports] = useState([]);
+  const [publishing, setPublishing] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     fetchChildren();
+    fetchRecentReports();
   }, []);
 
   const fetchChildren = async () => {
@@ -25,6 +30,80 @@ const PublishResults = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchRecentReports = async () => {
+    try {
+      const response = await API.get('progress_reports/');
+      // Get the 5 most recent reports
+      const reports = (response.data || []).slice(-5).reverse();
+      setRecentReports(reports);
+    } catch (error) {
+      console.error('Error fetching reports:', error);
+      setRecentReports([]);
+    }
+  };
+
+  const handlePublishAssessment = async (e) => {
+    e.preventDefault();
+    
+    // Validation
+    if (!selectedStudent || !assessmentType || !score) {
+      setErrorMessage('Please fill in all required fields');
+      return;
+    }
+
+    if (score < 0 || score > 100) {
+      setErrorMessage('Score must be between 0 and 100');
+      return;
+    }
+
+    setPublishing(true);
+    setErrorMessage('');
+    setSuccessMessage('');
+
+    try {
+      // Create a progress report
+      const reportData = {
+        child: selectedStudent,
+        notes: `${assessmentType}: ${comments || 'No additional comments'}`,
+        overall_score: parseInt(score),
+      };
+
+      await API.post('progress_reports/', reportData);
+      
+      // Clear form
+      setSelectedStudent('');
+      setAssessmentType('');
+      setScore('');
+      setComments('');
+      setSuccessMessage('Assessment published successfully!');
+      
+      // Refresh recent reports
+      await fetchRecentReports();
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (error) {
+      console.error('Error publishing assessment:', error);
+      setErrorMessage('Failed to publish assessment. Please try again.');
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  const getTimeAgo = (date) => {
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMins < 60) return `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    return date.toLocaleDateString();
   };
 
   const assessments = useMemo(() => [
@@ -226,6 +305,18 @@ const PublishResults = () => {
         <div style={card}>
           <div style={{ fontWeight: 700, fontSize: 16, color: '#1f2937', marginBottom: 16 }}>Create New Assessment</div>
 
+          {successMessage && (
+            <div style={{ padding: '12px', background: '#d1fae5', color: '#059669', borderRadius: '8px', marginBottom: '16px', fontSize: '14px' }}>
+              ✓ {successMessage}
+            </div>
+          )}
+          {errorMessage && (
+            <div style={{ padding: '12px', background: '#fee2e2', color: '#dc2626', borderRadius: '8px', marginBottom: '16px', fontSize: '14px' }}>
+              ✕ {errorMessage}
+            </div>
+          )}
+
+          <form onSubmit={handlePublishAssessment}>
           <div style={{ marginBottom: 16 }}>
             <div style={label}>Select Student</div>
             {loading ? (
@@ -289,18 +380,37 @@ const PublishResults = () => {
             />
           </div>
 
-          <button style={publishBtn}>Publish Assessment</button>
+          <button 
+            type="submit"
+            style={{ ...publishBtn, opacity: publishing ? 0.6 : 1, cursor: publishing ? 'not-allowed' : 'pointer' }}
+            disabled={publishing}
+          >
+            {publishing ? 'Publishing...' : 'Publish Assessment'}
+          </button>
+          </form>
         </div>
 
         <div style={recentCard}>
           <div style={{ fontWeight: 700, fontSize: 16, color: '#1f2937', marginBottom: 12 }}>Recent Assessments</div>
-          {recent.map((r) => (
-            <div key={r.id} style={recentItem}>
-              <div style={recentTitle}>{r.title}</div>
-              <div style={recentMeta}>Score: {r.score}/100</div>
-              <div style={recentMeta}>{r.time}</div>
-            </div>
-          ))}
+          {recentReports.length === 0 ? (
+            <div style={{ color: '#9ca3af', fontSize: '14px', padding: '12px' }}>No assessments published yet.</div>
+          ) : (
+            recentReports.map((report) => {
+              const child = children.find(c => c.id === report.child);
+              const childName = child ? child.name : 'Unknown Student';
+              const date = new Date(report.report_date);
+              const timeAgo = getTimeAgo(date);
+              
+              return (
+                <div key={report.id} style={recentItem}>
+                  <div style={recentTitle}>{childName} - Assessment</div>
+                  <div style={recentMeta}>Score: {report.overall_score || 'N/A'}/100</div>
+                  <div style={recentMeta}>{timeAgo}</div>
+                  <div style={{ ...recentMeta, marginTop: 4 }}>{report.notes}</div>
+                </div>
+              );
+            })
+          )}
         </div>
       </main>
     </div>
