@@ -1,14 +1,31 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import API from '../api/api';
 
 const PublishResults = () => {
   const navigate = useNavigate();
+  const [children, setChildren] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedStudent, setSelectedStudent] = useState('');
+  const [assessmentType, setAssessmentType] = useState('');
+  const [score, setScore] = useState('');
+  const [comments, setComments] = useState('');
 
-  const students = useMemo(() => [
-    { id: 1, name: 'Emma Johnson' },
-    { id: 2, name: 'Oliver Smith' },
-    { id: 3, name: 'Sophia Davis' },
-  ], []);
+  useEffect(() => {
+    fetchChildren();
+  }, []);
+
+  const fetchChildren = async () => {
+    try {
+      const response = await API.get('children/');
+      setChildren(response.data || []);
+    } catch (error) {
+      console.error('Error fetching children:', error);
+      setChildren([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const assessments = useMemo(() => [
     'Social-Emotional Development',
@@ -211,30 +228,65 @@ const PublishResults = () => {
 
           <div style={{ marginBottom: 16 }}>
             <div style={label}>Select Student</div>
-            <select style={select} defaultValue={students[0].id}>
-              {students.map((s) => (
-                <option key={s.id} value={s.id}>{s.name}</option>
-              ))}
-            </select>
+            {loading ? (
+              <select style={select} disabled>
+                <option>Loading students...</option>
+              </select>
+            ) : children.length === 0 ? (
+              <select style={select} disabled>
+                <option>No students with child profiles found</option>
+              </select>
+            ) : (
+              <select 
+                style={select} 
+                value={selectedStudent}
+                onChange={(e) => setSelectedStudent(e.target.value)}
+              >
+                <option value="">-- Select a student --</option>
+                {children.map((child) => (
+                  <option key={child.id} value={child.id}>{child.name}</option>
+                ))}
+              </select>
+            )}
           </div>
 
           <div style={{ marginBottom: 16 }}>
             <div style={label}>Assessment Type</div>
-            <select style={select} defaultValue={assessments[0]}>
-              {assessments.map((a) => (
-                <option key={a} value={a}>{a}</option>
-              ))}
+            <select 
+              style={select}
+              value={assessmentType}
+              onChange={(e) => setAssessmentType(e.target.value)}
+            >
+              <option value="">-- Select assessment type --</option>
+              <option value="Social-Emotional Development">Social-Emotional Development</option>
+              <option value="Cognitive">Cognitive</option>
+              <option value="Language">Language</option>
+              <option value="Motor Skills">Motor Skills</option>
+              <option value="Behavior">Behavior</option>
             </select>
           </div>
 
           <div style={{ marginBottom: 16 }}>
             <div style={label}>Score</div>
-            <input style={input} placeholder="Enter score (0-100)" type="number" min="0" max="100" />
+            <input 
+              style={input} 
+              placeholder="Enter score (0-100)" 
+              type="number" 
+              min="0" 
+              max="100"
+              value={score}
+              onChange={(e) => setScore(e.target.value)}
+            />
           </div>
 
           <div style={{ marginBottom: 16 }}>
             <div style={label}>Comments</div>
-            <textarea style={textarea} placeholder="Add your observations and comments..." />
+            <textarea 
+              style={textarea} 
+              placeholder="Add your observations and comments..."
+              value={comments}
+              onChange={(e) => setComments(e.target.value)}
+            />
           </div>
 
           <button style={publishBtn}>Publish Assessment</button>

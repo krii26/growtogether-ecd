@@ -19,6 +19,8 @@ const Children = () => {
     photo: null
   });
   const [photoPreview, setPhotoPreview] = useState('');
+  const [editingChildId, setEditingChildId] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     fetchChildren();
@@ -108,6 +110,52 @@ const Children = () => {
     } catch (err) {
       console.error('Error deleting child:', err);
       alert('Failed to delete child profile. Please try again.');
+    }
+  };
+
+  const handleEditChild = (child) => {
+    setEditingChildId(child.id);
+    setIsEditing(true);
+    setForm({
+      name: child.name,
+      date_of_birth: child.date_of_birth || '',
+      photo: null
+    });
+    if (child.photo) {
+      setPhotoPreview(child.photo);
+    } else {
+      setPhotoPreview('');
+    }
+    setShowModal(true);
+  };
+
+  const handleUpdateChild = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    setError('');
+    try {
+      const formData = new FormData();
+      formData.append('name', form.name);
+      formData.append('date_of_birth', form.date_of_birth);
+      formData.append('parent_name', userInfo.first_name + ' ' + userInfo.last_name || 'Parent');
+      if (form.photo instanceof File) {
+        formData.append('photo', form.photo);
+      }
+      
+      await API.patch(`children/${editingChildId}/`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      await fetchChildren();
+      setShowModal(false);
+      setEditingChildId(null);
+      setIsEditing(false);
+      setForm({ name: '', date_of_birth: '', photo: null });
+      setPhotoPreview('');
+    } catch (err) {
+      console.error('Error updating child:', err);
+      setError('Failed to update child. Please try again.');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -567,6 +615,17 @@ const Children = () => {
                 View Milestones
               </button>
               <button 
+                onClick={() => handleEditChild(child)}
+                style={{
+                  ...viewButton,
+                  background: '#fef3c7',
+                  color: '#d97706',
+                  marginLeft: '8px'
+                }}
+              >
+                Edit
+              </button>
+              <button 
                 onClick={() => handleDeleteChild(child.id)}
                 style={{
                   ...viewButton,
@@ -589,11 +648,11 @@ const Children = () => {
         {showModal && (
           <div style={modalOverlay}>
             <div style={modalCard}>
-              <h3 style={modalTitle}>Add Child</h3>
+              <h3 style={modalTitle}>{isEditing ? 'Edit Child' : 'Add Child'}</h3>
               {error && (
                 <div style={{ marginBottom: '12px', color: '#b91c1c', fontSize: '13px' }}>{error}</div>
               )}
-              <form onSubmit={handleAddChild}>
+              <form onSubmit={(e) => isEditing ? handleUpdateChild(e) : handleAddChild(e)}>
                 <input
                   name="name"
                   placeholder="Child name"
@@ -649,7 +708,14 @@ const Children = () => {
                 <div style={modalActions}>
                   <button
                     type="button"
-                    onClick={() => { setShowModal(false); setError(''); setPhotoPreview(''); }}
+                    onClick={() => { 
+                      setShowModal(false); 
+                      setError(''); 
+                      setPhotoPreview(''); 
+                      setEditingChildId(null);
+                      setIsEditing(false);
+                      setForm({ name: '', date_of_birth: '', photo: null });
+                    }}
                     style={{ padding: '10px 14px', borderRadius: '8px', border: '1px solid #e5e7eb', background: '#fff', cursor: 'pointer' }}
                   >
                     Cancel
