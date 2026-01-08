@@ -39,7 +39,7 @@ const ELibrary = () => {
       title: 'Emotional Development Stages',
       category: 'Psychology',
       description: "Understanding your child's emotional growth and how to support it effectively.",
-      image: 'https://images.unsplash.com/photo-1503454537688-e0cecad2476a?w=400&h=300&fit=crop',
+      image: '/social-emotional.jpg',
       link: '#'
     },
     {
