@@ -343,11 +343,11 @@ const TeacherDash = () => {
             <span style={iconStyle}>🏠</span>
              Dashboard
           </div>
-          <div style={navItem} onClick={() => navigate('/children')}>
+          <div style={navItem} onClick={() => navigate('/students')}>
             <span style={iconStyle}>👥</span>
             Students
           </div>
-          <div style={navItem}>
+          <div style={navItem} onClick={() => navigate('/e-library')}>
             <span style={iconStyle}>📚</span>
             E-Library
           </div>

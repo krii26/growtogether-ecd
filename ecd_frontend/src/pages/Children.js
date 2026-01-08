@@ -433,7 +433,7 @@ const Children = () => {
             <span style={iconStyle}>📋</span>
             Milestones
           </div>
-          <div style={navItem}>
+          <div style={navItem} onClick={() => navigate('/e-library')}>
             <span style={iconStyle}>📚</span>
             E-Library
           </div>

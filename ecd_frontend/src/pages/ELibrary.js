@@ -379,13 +379,13 @@ const ELibrary = () => {
             style={navItem(activeNav === 'My Children')}
             onClick={() => navigateTo('/children', 'My Children')}
           >
-            👨‍👩‍👧‍👦 My Children
+            👶 My Children
           </div>
           <div
             style={navItem(activeNav === 'Checklist')}
             onClick={() => navigateTo('/children', 'Checklist')}
           >
-            ✓ Checklist
+            📋 Milestone
           </div>
           <div
             style={navItem(activeNav === 'E-Library')}
@@ -397,7 +397,7 @@ const ELibrary = () => {
             style={navItem(activeNav === 'Activities')}
             onClick={() => navigateTo('/children', 'Activities')}
           >
-            🎯 Activities
+            💡 Activities
           </div>
         </div>
 
