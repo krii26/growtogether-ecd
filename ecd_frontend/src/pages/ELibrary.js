@@ -63,7 +63,7 @@ const ELibrary = () => {
       title: 'Language Development Milestones',
       category: 'Language',
       description: 'Supporting your child\'s communication skills from birth to age 6.',
-      image: 'https://images.unsplash.com/photo-1503454537688-e0cecad2476a?w=400&h=300&fit=crop',
+      image: '/languageDev.png',
       link: '#'
     },
     {
@@ -71,7 +71,7 @@ const ELibrary = () => {
       title: 'Child Safety Essentials',
       category: 'Safety',
       description: 'Comprehensive guide to keeping your child safe at home and outdoors.',
-      image: 'https://images.unsplash.com/photo-1503454537688-e0cecad2476a?w=400&h=300&fit=crop',
+      image: '/safety.jpg',
       link: '#'
     },
   ];
