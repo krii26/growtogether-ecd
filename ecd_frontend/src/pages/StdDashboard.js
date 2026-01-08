@@ -224,7 +224,7 @@ const StdDashboard = () => {
         <div>
           <div style={navActive}>
             <span style={iconStyle}>🏠</span>
-            Dashboard
+            Student Dashboard
           </div>
           <div style={navItem} onClick={() => navigate('/children')}>
             <span style={iconStyle}>👶</span>
@@ -234,7 +234,7 @@ const StdDashboard = () => {
             <span style={iconStyle}>📋</span>
             Milestones
           </div>
-          <div style={navItem}>
+          <div style={navItem} onClick={() => navigate('/e-library')}>
             <span style={iconStyle}>📚</span>
             E-Library
           </div>
