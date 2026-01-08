@@ -55,7 +55,7 @@ const ELibrary = () => {
       title: 'Healthy Sleep Habits',
       category: 'Sleep',
       description: 'Creating bedtime routines and ensuring quality sleep for optimal development.',
-      image: 'https://images.unsplash.com/photo-1503454537688-e0cecad2476a?w=400&h=300&fit=crop',
+      image: '/healthySleep.jpg',
       link: '#'
     },
     {
