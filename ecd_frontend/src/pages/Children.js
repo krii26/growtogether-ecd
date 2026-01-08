@@ -98,6 +98,19 @@ const Children = () => {
     navigate('/login');
   };
 
+  const handleDeleteChild = async (childId) => {
+    if (!window.confirm('Are you sure you want to delete this child profile? This action cannot be undone.')) {
+      return;
+    }
+    try {
+      await API.delete(`children/${childId}/`);
+      await fetchChildren();
+    } catch (err) {
+      console.error('Error deleting child:', err);
+      alert('Failed to delete child profile. Please try again.');
+    }
+  };
+
   const calculateAge = (birthDate) => {
     if (!birthDate) return 'N/A';
     const birth = new Date(birthDate);
@@ -552,6 +565,17 @@ const Children = () => {
                 style={viewButton}
               >
                 View Milestones
+              </button>
+              <button 
+                onClick={() => handleDeleteChild(child.id)}
+                style={{
+                  ...viewButton,
+                  background: '#fee2e2',
+                  color: '#dc2626',
+                  marginLeft: '8px'
+                }}
+              >
+                Delete
               </button>
             </div>
           ))}
