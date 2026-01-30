@@ -32,7 +32,7 @@ const ELibrary = () => {
       category: 'Nutrition',
       description: 'Essential nutrition guidelines and meal planning tips for children aged 1-3 years.',
       image: '/healthyeating.jpg',
-      link: '#'
+      link: 'https://babyfriendlynl.ca/wp-content/uploads/2018/06/Healthy-Eating-for-Your-Toddler-2014-with-vit.-D-update-Feb.-2017.pdf'
     },
     {
       id: 2,
@@ -40,7 +40,7 @@ const ELibrary = () => {
       category: 'Psychology',
       description: "Understanding your child's emotional growth and how to support it effectively.",
       image: '/social-emotional.jpg',
-      link: '#'
+      link: 'https://www.rasmussen.edu/degrees/education/blog/stages-of-emotional-development/'
     },
     {
       id: 3,
@@ -48,7 +48,7 @@ const ELibrary = () => {
       category: 'Behavior',
       description: 'Practical strategies for handling challenging behaviors in young children.',
       image: '/traumakid.jpg',
-      link: '#'
+      link: 'https://snhr.org/wp-content/uploads/2023/05/TPYK-Handbook-EN06122022.pdf'
     },
     {
       id: 4,
@@ -465,7 +465,7 @@ const ELibrary = () => {
                     </div>
                     <h3 style={resourceTitle}>{resource.title}</h3>
                     <p style={resourceDescription}>{resource.description}</p>
-                    <a href={resource.link} style={readMoreLink}>
+                    <a href={resource.link} target="_blank" rel="noopener noreferrer" style={readMoreLink}>
                       Read More →
                     </a>
                   </div>
