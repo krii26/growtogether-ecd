@@ -56,7 +56,7 @@ const ELibrary = () => {
       category: 'Sleep',
       description: 'Creating bedtime routines and ensuring quality sleep for optimal development.',
       image: '/healthySleep.jpg',
-      link: '#'
+      link: 'https://www.nationwidechildrens.org/conditions/health-library/healthy-sleep-habits-in-children'
     },
     {
       id: 5,
@@ -64,7 +64,7 @@ const ELibrary = () => {
       category: 'Language',
       description: 'Supporting your child\'s communication skills from birth to age 6.',
       image: '/languageDev.png',
-      link: '#'
+      link: 'https://socialsci.libretexts.org/Bookshelves/Human_Development/Lifespan_Development_(OpenStax)/03%3A_Physical_and_Cognitive_Development_in_Infants_and_Toddlers_(Birth_to_Age_3)/3.05%3A_Language_in_Infants_and_Toddlers'
     },
     {
       id: 6,
@@ -72,7 +72,7 @@ const ELibrary = () => {
       category: 'Safety',
       description: 'Comprehensive guide to keeping your child safe at home and outdoors.',
       image: '/safety.jpg',
-      link: '#'
+      link: 'https://www.savethechildren.net/stories/tips-keeping-children-under-12-safe-online'
     },
   ];
 
@@ -395,7 +395,7 @@ const ELibrary = () => {
           </div>
           <div
             style={navItem(activeNav === 'Activities')}
-            onClick={() => navigateTo('/children', 'Activities')}
+            onClick={() => navigateTo('/activities', 'Activities')}
           >
             💡 Activities
           </div>

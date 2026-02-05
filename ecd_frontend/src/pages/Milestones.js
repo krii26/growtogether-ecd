@@ -351,11 +351,11 @@ const Milestones = () => {
             <span style={iconStyle}>📋</span>
             Milestones
           </div>
-          <div style={navItem}>
+          <div style={navItem} onClick={() => navigate('/e-library')}>
             <span style={iconStyle}>📚</span>
             E-Library
           </div>
-          <div style={navItem}>
+          <div style={navItem} onClick={() => navigate('/activities')}>
             <span style={iconStyle}>💡</span>
             Activities
           </div>

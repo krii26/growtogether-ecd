@@ -10,6 +10,7 @@ import TeacherDash from './pages/TeacherDash';
 import ELibrary from './pages/ELibrary';
 import Student from './pages/Student';
 import PublishResults from './pages/PublishResults';
+import Activities from './pages/Activities';
 import Header from './components/Header';
 import Footer from './components/Footer';
 
@@ -29,6 +30,7 @@ const App = () => {
           <Route path="/students" element={<Student />} />
           <Route path="/publish-results" element={<PublishResults />} />
           <Route path="/e-library" element={<ELibrary />} />
+          <Route path="/activities" element={<Activities />} />
         </Routes>
       </div>
       <Footer />
