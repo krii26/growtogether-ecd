@@ -16,6 +16,8 @@ const Student = () => {
   });
   const [loadingMilestones, setLoadingMilestones] = useState(false);
   const [reviewingMilestone, setReviewingMilestone] = useState(null);
+  const [rating, setRating] = useState(0);
+  const [suggestions, setSuggestions] = useState('');
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -82,10 +84,14 @@ const Student = () => {
 
   const handleReviewMilestone = (milestone) => {
     setReviewingMilestone(milestone);
+    setRating(0);
+    setSuggestions('');
   };
 
   const handleCloseReview = () => {
     setReviewingMilestone(null);
+    setRating(0);
+    setSuggestions('');
   };
 
   const layout = {
@@ -859,16 +865,136 @@ const Student = () => {
                   </div>
                 )}
 
-                {/* Mark Complete Button */}
+                {/* Rating Section */}
                 <div style={{
                   marginTop: '24px',
                   paddingTop: '20px',
                   borderTop: '1px solid #e5e7eb'
                 }}>
+                  <h3 style={{
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    color: '#111827',
+                    marginBottom: '12px'
+                  }}>
+                    Rate Performance (1-10)
+                  </h3>
+                  <div style={{
+                    display: 'flex',
+                    gap: '8px',
+                    flexWrap: 'wrap',
+                    marginBottom: '16px'
+                  }}>
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
+                      <button
+                        key={num}
+                        onClick={() => setRating(num)}
+                        style={{
+                          width: '40px',
+                          height: '40px',
+                          borderRadius: '8px',
+                          border: rating === num ? '2px solid #8b5cf6' : '1px solid #e5e7eb',
+                          background: rating === num ? '#8b5cf6' : 'white',
+                          color: rating === num ? 'white' : '#111827',
+                          cursor: 'pointer',
+                          fontSize: '14px',
+                          fontWeight: rating === num ? '700' : '500',
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        {num}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Suggestions Section */}
+                <div style={{ marginTop: '16px' }}>
+                  <h3 style={{
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    color: '#111827',
+                    marginBottom: '12px'
+                  }}>
+                    Suggestions
+                  </h3>
+                  <textarea
+                    value={suggestions}
+                    onChange={(e) => setSuggestions(e.target.value)}
+                    placeholder="Write your suggestions or comments here..."
+                    style={{
+                      width: '100%',
+                      minHeight: '100px',
+                      padding: '12px',
+                      borderRadius: '8px',
+                      border: '1px solid #e5e7eb',
+                      fontSize: '14px',
+                      fontFamily: 'inherit',
+                      resize: 'vertical',
+                      outline: 'none',
+                      transition: 'border-color 0.2s'
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = '#8b5cf6'}
+                    onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+                  />
+                </div>
+
+                {/* Mark Complete Button */}
+                <div style={{
+                  marginTop: '24px'
+                }}>
                   <button
-                    onClick={() => {
-                      alert(`Milestone "${reviewingMilestone.title}" marked as complete!`);
-                      handleCloseReview();
+                    onClick={async () => {
+                      if (rating === 0) {
+                        alert('Please provide a rating before marking as complete.');
+                        return;
+                      }
+                      
+                      try {
+                        // Create progress report with behavior as notes
+                        const behavior = reviewingMilestone.title || 'Milestone completed';
+                        const notesText = suggestions ? `Behavior: ${behavior}\n\nSuggestions: ${suggestions}` : `Behavior: ${behavior}`;
+                        
+                        const progressData = {
+                          child: selectedStudent.id,
+                          notes: notesText,
+                          overall_score: rating * 10 // Convert 1-10 to percentage
+                        };
+                        
+                        await API.post('progress_reports/', progressData);
+                        
+                        // Save to completed milestones in localStorage
+                        const completedMilestone = {
+                          ...reviewingMilestone,
+                          rating: rating,
+                          suggestions: suggestions,
+                          completedDate: new Date().toISOString(),
+                          childId: selectedStudent.id,
+                          childName: selectedStudent.name
+                        };
+                        
+                        const storageKey = `completedMilestones_${selectedStudent.id}`;
+                        const existing = JSON.parse(localStorage.getItem(storageKey) || '[]');
+                        existing.push(completedMilestone);
+                        localStorage.setItem(storageKey, JSON.stringify(existing));
+                        
+                        // Delete the milestone from active milestones
+                        await API.delete(`milestones/${reviewingMilestone.id}/`);
+                        
+                        // Remove from local state
+                        const category = reviewingMilestone.category;
+                        setStudentMilestones(prev => ({
+                          ...prev,
+                          [category]: prev[category].filter(m => m.id !== reviewingMilestone.id)
+                        }));
+                        
+                        alert(`Milestone marked as complete!\nRating: ${rating}/10\nMilestone moved to completed section!`);
+                        handleCloseReview();
+                        // Don't close profile so user can see updated list
+                      } catch (error) {
+                        console.error('Error completing milestone:', error);
+                        alert('Failed to mark milestone as complete. Please try again.');
+                      }
                     }}
                     style={{
                       width: '100%',

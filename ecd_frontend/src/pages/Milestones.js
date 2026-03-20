@@ -102,6 +102,11 @@ const Milestones = () => {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
   const [editingMilestone, setEditingMilestone] = useState(null);
+  const [activeTab, setActiveTab] = useState('active'); // 'active' or 'completed'
+  const [completedFilter, setCompletedFilter] = useState('all'); // 'all', 'social-emotional', 'cognitive', 'physical', 'language'
+  const [completedSort, setCompletedSort] = useState('recent'); // 'recent', 'rating', 'category'
+  const [completedMilestones, setCompletedMilestones] = useState([]);
+  const [quickViewMilestone, setQuickViewMilestone] = useState(null);
   const [form, setForm] = useState({
     title: '',
     description: '',
@@ -119,6 +124,13 @@ const Milestones = () => {
     // When selectedChildId changes, fetch that child's milestones
     if (selectedChildId) {
       fetchChildAndMilestones(selectedChildId);
+      // Load completed milestones from localStorage
+      const storedCompleted = localStorage.getItem(`completedMilestones_${selectedChildId}`);
+      if (storedCompleted) {
+        setCompletedMilestones(JSON.parse(storedCompleted));
+      } else {
+        setCompletedMilestones([]);
+      }
     }
   }, [selectedChildId]);
 
@@ -592,7 +604,155 @@ const Milestones = () => {
           </div>
         )}
 
-        {/* Milestones Grid */}
+        {/* Tab Navigation */}
+        <div style={{
+          display: 'flex',
+          gap: '8px',
+          marginBottom: '20px',
+          borderBottom: '2px solid #e5e7eb'
+        }}>
+          <button
+            onClick={() => setActiveTab('active')}
+            style={{
+              padding: '12px 24px',
+              background: activeTab === 'active' ? '#8b5cf6' : 'transparent',
+              color: activeTab === 'active' ? 'white' : '#6b7280',
+              border: 'none',
+              borderBottom: activeTab === 'active' ? '3px solid #8b5cf6' : '3px solid transparent',
+              cursor: 'pointer',
+              fontSize: '15px',
+              fontWeight: '600',
+              transition: 'all 0.2s',
+              marginBottom: '-2px'
+            }}
+          >
+            Active Milestones ({Object.values(milestones).flat().length})
+          </button>
+          <button
+            onClick={() => setActiveTab('completed')}
+            style={{
+              padding: '12px 24px',
+              background: activeTab === 'completed' ? '#8b5cf6' : 'transparent',
+              color: activeTab === 'completed' ? 'white' : '#6b7280',
+              border: 'none',
+              borderBottom: activeTab === 'completed' ? '3px solid #8b5cf6' : '3px solid transparent',
+              cursor: 'pointer',
+              fontSize: '15px',
+              fontWeight: '600',
+              transition: 'all 0.2s',
+              marginBottom: '-2px'
+            }}
+          >
+            Completed Milestones ({completedMilestones.length})
+          </button>
+        </div>
+
+        {/* Stats Banner */}
+        <div style={{
+          background: 'linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%)',
+          padding: '16px 20px',
+          borderRadius: '12px',
+          marginBottom: '24px',
+          display: 'flex',
+          justifyContent: 'space-around',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '16px'
+        }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '24px', fontWeight: '700', color: '#7c3aed' }}>
+              {Object.values(milestones).flat().length}
+            </div>
+            <div style={{ fontSize: '13px', color: '#6b21a8', marginTop: '4px' }}>
+              Active
+            </div>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '24px', fontWeight: '700', color: '#059669' }}>
+              {completedMilestones.length}
+            </div>
+            <div style={{ fontSize: '13px', color: '#065f46', marginTop: '4px' }}>
+              Completed
+            </div>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '24px', fontWeight: '700', color: '#ea580c' }}>
+              {completedMilestones.length > 0 
+                ? ((completedMilestones.reduce((sum, m) => sum + (m.rating || 0), 0) / completedMilestones.length).toFixed(1))
+                : '0'}/10
+            </div>
+            <div style={{ fontSize: '13px', color: '#9a3412', marginTop: '4px' }}>
+              Avg Rating
+            </div>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '24px', fontWeight: '700', color: '#0891b2' }}>
+              {Math.round((completedMilestones.length / (Object.values(milestones).flat().length + completedMilestones.length) * 100) || 0)}%
+            </div>
+            <div style={{ fontSize: '13px', color: '#164e63', marginTop: '4px' }}>
+              Progress
+            </div>
+          </div>
+        </div>
+
+        {/* Filter and Sort Controls for Completed Tab */}
+        {activeTab === 'completed' && completedMilestones.length > 0 && (
+          <div style={{
+            display: 'flex',
+            gap: '12px',
+            marginBottom: '20px',
+            flexWrap: 'wrap',
+            alignItems: 'center'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <label style={{ fontSize: '14px', fontWeight: '600', color: '#374151' }}>
+                Filter:
+              </label>
+              <select
+                value={completedFilter}
+                onChange={(e) => setCompletedFilter(e.target.value)}
+                style={{
+                  padding: '8px 12px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '6px',
+                  fontSize: '13px',
+                  fontFamily: 'inherit',
+                  cursor: 'pointer'
+                }}
+              >
+                <option value="all">All Categories</option>
+                <option value="social-emotional">Social-Emotional</option>
+                <option value="cognitive">Cognitive</option>
+                <option value="physical">Physical</option>
+                <option value="language">Language</option>
+              </select>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <label style={{ fontSize: '14px', fontWeight: '600', color: '#374151' }}>
+                Sort by:
+              </label>
+              <select
+                value={completedSort}
+                onChange={(e) => setCompletedSort(e.target.value)}
+                style={{
+                  padding: '8px 12px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '6px',
+                  fontSize: '13px',
+                  fontFamily: 'inherit',
+                  cursor: 'pointer'
+                }}
+              >
+                <option value="recent">Most Recent</option>
+                <option value="rating">Highest Rating</option>
+                <option value="category">Category</option>
+              </select>
+            </div>
+          </div>
+        )}
+
+        {/* Active Milestones Grid */}
+        {activeTab === 'active' && (
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
@@ -762,6 +922,446 @@ const Milestones = () => {
             </div>
           ))}
         </div>
+        )}
+
+        {/* Completed Milestones Section */}
+        {activeTab === 'completed' && (
+          <div>
+            {completedMilestones.length === 0 ? (
+              <div style={{
+                textAlign: 'center',
+                padding: '60px 20px',
+                background: 'white',
+                borderRadius: '12px',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+              }}>
+                <div style={{ fontSize: '48px', marginBottom: '16px' }}>🎯</div>
+                <h3 style={{ fontSize: '20px', color: '#374151', marginBottom: '8px' }}>
+                  No Completed Milestones Yet
+                </h3>
+                <p style={{ color: '#6b7280', fontSize: '14px' }}>
+                  Mark milestones as complete from the student profile to see them here!
+                </p>
+              </div>
+            ) : (
+              <>
+                {/* Group completed milestones by timeline */}
+                {(() => {
+                  const now = new Date();
+                  const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                  const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+                  // Filter and sort
+                  let filtered = completedMilestones.filter(m => 
+                    completedFilter === 'all' || m.category === completedFilter
+                  );
+
+                  if (completedSort === 'recent') {
+                    filtered.sort((a, b) => new Date(b.completedDate) - new Date(a.completedDate));
+                  } else if (completedSort === 'rating') {
+                    filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+                  } else if (completedSort === 'category') {
+                    filtered.sort((a, b) => a.category.localeCompare(b.category));
+                  }
+
+                  // Group by timeline
+                  const thisWeek = filtered.filter(m => new Date(m.completedDate) >= oneWeekAgo);
+                  const thisMonth = filtered.filter(m => {
+                    const date = new Date(m.completedDate);
+                    return date < oneWeekAgo && date >= oneMonthAgo;
+                  });
+                  const earlier = filtered.filter(m => new Date(m.completedDate) < oneMonthAgo);
+
+                  const renderMilestoneCard = (milestone, index) => {
+                    const config = categoryConfig[milestone.category];
+                    const achievementBadge = index === 0 ? '🥇 First!' : 
+                                            filtered.length === 10 && index === 9 ? '🎖️ 10th!' :
+                                            filtered.length === 25 && index === 24 ? '🏆 25th!' : null;
+
+                    return (
+                      <div
+                        key={milestone.id}
+                        style={{
+                          background: 'white',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '12px',
+                          padding: '16px',
+                          boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                          position: 'relative',
+                          overflow: 'hidden'
+                        }}
+                      >
+                        {/* Achievement Badge */}
+                        {achievementBadge && (
+                          <div style={{
+                            position: 'absolute',
+                            top: '12px',
+                            right: '12px',
+                            background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',
+                            color: 'white',
+                            padding: '4px 12px',
+                            borderRadius: '12px',
+                            fontSize: '12px',
+                            fontWeight: '700',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                          }}>
+                            {achievementBadge}
+                          </div>
+                        )}
+
+                        <div style={{ display: 'flex', alignItems: 'start', gap: '12px', marginBottom: '12px' }}>
+                          <div style={{
+                            background: config?.color || '#8b5cf6',
+                            padding: '8px',
+                            borderRadius: '8px',
+                            fontSize: '20px',
+                            lineHeight: 1
+                          }}>
+                            {config?.icon || '📌'}
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <h3 style={{
+                              margin: '0 0 4px 0',
+                              fontSize: '16px',
+                              fontWeight: '600',
+                              color: '#111827'
+                            }}>
+                              {milestone.title}
+                            </h3>
+                            <div style={{
+                              fontSize: '12px',
+                              color: '#6b7280',
+                              textTransform: 'capitalize'
+                            }}>
+                              {milestone.category.replace('-', ' ')}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Rating */}
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          marginBottom: '12px'
+                        }}>
+                          <span style={{ fontSize: '13px', fontWeight: '600', color: '#374151' }}>
+                            Rating:
+                          </span>
+                          <div style={{ display: 'flex', gap: '2px' }}>
+                            {[...Array(10)].map((_, i) => (
+                              <span key={i} style={{
+                                fontSize: '14px',
+                                color: i < (milestone.rating || 0) ? '#fbbf24' : '#e5e7eb'
+                              }}>
+                                ⭐
+                              </span>
+                            ))}
+                          </div>
+                          <span style={{
+                            fontSize: '14px',
+                            fontWeight: '700',
+                            color: '#059669'
+                          }}>
+                            {milestone.rating || 0}/10
+                          </span>
+                        </div>
+
+                        {/* Image Preview */}
+                        {milestone.image && (
+                          <div style={{
+                            marginBottom: '12px',
+                            borderRadius: '8px',
+                            overflow: 'hidden'
+                          }}>
+                            <img
+                              src={milestone.image}
+                              alt={milestone.title}
+                              style={{
+                                width: '100%',
+                                maxHeight: '120px',
+                                objectFit: 'cover'
+                              }}
+                            />
+                          </div>
+                        )}
+
+                        {/* Suggestions Preview */}
+                        {milestone.suggestions && (
+                          <div style={{
+                            fontSize: '13px',
+                            color: '#6b7280',
+                            fontStyle: 'italic',
+                            marginBottom: '12px',
+                            maxHeight: '40px',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis'
+                          }}>
+                            "{milestone.suggestions}"
+                          </div>
+                        )}
+
+                        {/* Date and Actions */}
+                        <div style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          paddingTop: '12px',
+                          borderTop: '1px solid #e5e7eb'
+                        }}>
+                          <div style={{
+                            fontSize: '12px',
+                            color: '#9ca3af',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}>
+                            ✅ {new Date(milestone.completedDate).toLocaleDateString()}
+                          </div>
+                          <button
+                            onClick={() => setQuickViewMilestone(milestone)}
+                            style={{
+                              background: '#e0e7ff',
+                              color: '#4338ca',
+                              border: 'none',
+                              padding: '6px 12px',
+                              borderRadius: '6px',
+                              fontSize: '12px',
+                              fontWeight: '600',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Quick View
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  };
+
+                  return (
+                    <>
+                      {thisWeek.length > 0 && (
+                        <div style={{ marginBottom: '32px' }}>
+                          <h3 style={{
+                            fontSize: '18px',
+                            fontWeight: '700',
+                            color: '#111827',
+                            marginBottom: '16px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px'
+                          }}>
+                            📅 This Week
+                            <span style={{
+                              fontSize: '14px',
+                              fontWeight: '600',
+                              color: '#6b7280',
+                              background: '#f3f4f6',
+                              padding: '2px 8px',
+                              borderRadius: '12px'
+                            }}>
+                              {thisWeek.length}
+                            </span>
+                          </h3>
+                          <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+                            gap: '16px'
+                          }}>
+                            {thisWeek.map((m, i) => renderMilestoneCard(m, i))}
+                          </div>
+                        </div>
+                      )}
+
+                      {thisMonth.length > 0 && (
+                        <div style={{ marginBottom: '32px' }}>
+                          <h3 style={{
+                            fontSize: '18px',
+                            fontWeight: '700',
+                            color: '#111827',
+                            marginBottom: '16px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px'
+                          }}>
+                            📆 This Month
+                            <span style={{
+                              fontSize: '14px',
+                              fontWeight: '600',
+                              color: '#6b7280',
+                              background: '#f3f4f6',
+                              padding: '2px 8px',
+                              borderRadius: '12px'
+                            }}>
+                              {thisMonth.length}
+                            </span>
+                          </h3>
+                          <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+                            gap: '16px'
+                          }}>
+                            {thisMonth.map((m, i) => renderMilestoneCard(m, thisWeek.length + i))}
+                          </div>
+                        </div>
+                      )}
+
+                      {earlier.length > 0 && (
+                        <div style={{ marginBottom: '32px' }}>
+                          <h3 style={{
+                            fontSize: '18px',
+                            fontWeight: '700',
+                            color: '#111827',
+                            marginBottom: '16px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px'
+                          }}>
+                            📜 Earlier
+                            <span style={{
+                              fontSize: '14px',
+                              fontWeight: '600',
+                              color: '#6b7280',
+                              background: '#f3f4f6',
+                              padding: '2px 8px',
+                              borderRadius: '12px'
+                            }}>
+                              {earlier.length}
+                            </span>
+                          </h3>
+                          <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+                            gap: '16px'
+                          }}>
+                            {earlier.map((m, i) => renderMilestoneCard(m, thisWeek.length + thisMonth.length + i))}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Quick View Modal */}
+        {quickViewMilestone && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1001,
+            padding: '20px'
+          }}>
+            <div style={{
+              background: 'white',
+              borderRadius: '16px',
+              maxWidth: '600px',
+              width: '100%',
+              maxHeight: '80vh',
+              overflowY: 'auto',
+              boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)'
+            }}>
+              <div style={{
+                background: categoryConfig[quickViewMilestone.category]?.color || '#8b5cf6',
+                padding: '20px',
+                borderTopLeftRadius: '16px',
+                borderTopRightRadius: '16px',
+                color: 'white',
+                position: 'relative'
+              }}>
+                <button
+                  onClick={() => setQuickViewMilestone(null)}
+                  style={{
+                    position: 'absolute',
+                    top: '16px',
+                    right: '16px',
+                    background: 'rgba(255,255,255,0.2)',
+                    border: 'none',
+                    color: 'white',
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '50%',
+                    cursor: 'pointer',
+                    fontSize: '18px'
+                  }}
+                >
+                  ✕
+                </button>
+                <h2 style={{ margin: '0 0 8px 0', fontSize: '24px' }}>
+                  {quickViewMilestone.title}
+                </h2>
+                <div style={{ fontSize: '14px', opacity: 0.9, textTransform: 'capitalize' }}>
+                  {quickViewMilestone.category.replace('-', ' ')} • Completed {new Date(quickViewMilestone.completedDate).toLocaleDateString()}
+                </div>
+              </div>
+              <div style={{ padding: '24px' }}>
+                {quickViewMilestone.image && (
+                  <img
+                    src={quickViewMilestone.image}
+                    alt={quickViewMilestone.title}
+                    style={{
+                      width: '100%',
+                      borderRadius: '12px',
+                      marginBottom: '20px'
+                    }}
+                  />
+                )}
+                <div style={{ marginBottom: '20px' }}>
+                  <div style={{ fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>
+                    Rating: {quickViewMilestone.rating || 0}/10
+                  </div>
+                  <div style={{ display: 'flex', gap: '4px' }}>
+                    {[...Array(10)].map((_, i) => (
+                      <span key={i} style={{
+                        fontSize: '20px',
+                        color: i < (quickViewMilestone.rating || 0) ? '#fbbf24' : '#e5e7eb'
+                      }}>
+                        ⭐
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                {quickViewMilestone.description && (
+                  <div style={{ marginBottom: '20px' }}>
+                    <div style={{ fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>
+                      Description
+                    </div>
+                    <div style={{ fontSize: '14px', color: '#6b7280', lineHeight: '1.6' }}>
+                      {quickViewMilestone.description}
+                    </div>
+                  </div>
+                )}
+                {quickViewMilestone.suggestions && (
+                  <div>
+                    <div style={{ fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>
+                      Teacher's Suggestions
+                    </div>
+                    <div style={{
+                      fontSize: '14px',
+                      color: '#6b7280',
+                      fontStyle: 'italic',
+                      background: '#f9fafb',
+                      padding: '12px',
+                      borderRadius: '8px',
+                      borderLeft: '3px solid #8b5cf6'
+                    }}>
+                      "{quickViewMilestone.suggestions}"
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Add Milestone Modal */}
         {showAddModal && (
