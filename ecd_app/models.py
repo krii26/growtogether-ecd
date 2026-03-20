@@ -48,15 +48,33 @@ class ELibrary(models.Model):
         ('IMAGE', 'Image'),
         ('DOC', 'Document'),
     )
+    
+    CATEGORIES = (
+        ('Nutrition', 'Nutrition'),
+        ('Psychology', 'Psychology'),
+        ('Behavior', 'Behavior'),
+        ('Sleep', 'Sleep'),
+        ('Language', 'Language'),
+        ('Safety', 'Safety'),
+    )
 
     title = models.CharField(max_length=200)
     resource_type = models.CharField(max_length=10, choices=RESOURCE_TYPES)
+    category = models.CharField(max_length=50, choices=CATEGORIES, default='Nutrition')
     description = models.TextField(blank=True)
+    image = models.CharField(max_length=500, blank=True, null=True)  # Image URL/path (supports both local paths and external URLs)
+    image_file = models.ImageField(upload_to='library_images/', blank=True, null=True)  # For uploaded images
     file_url = models.URLField(blank=True, null=True)  # Can store file link or cloud URL
     date_uploaded = models.DateField(auto_now_add=True)
 
     def __str__(self):
         return self.title
+    
+    def get_image_url(self):
+        """Return the image URL - either from uploaded file or from image field"""
+        if self.image_file:
+            return self.image_file.url
+        return self.image
 
 
 # -----------------------------

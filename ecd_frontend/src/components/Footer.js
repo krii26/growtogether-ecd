@@ -15,7 +15,7 @@ const Footer = () => {
 
   return (
     <footer style={wrapper}>
-      <div style={text}>Copyright GrowTogether, Inc© 2025</div>
+      <div style={text}>Copyright GrowTogether, Inc© 2026</div>
     </footer>
   );
 };

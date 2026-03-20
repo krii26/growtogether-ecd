@@ -3,6 +3,26 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import API from '../api/api';
 import '../styles/Milestones.css';
 
+// Cognitive Milestones predefined options
+const cognitiveMilestones = [
+  {
+    title: 'Recognizes Familiar Objects',
+    description: 'The child is able to identify and respond to commonly seen objects such as toys, food items, or familiar people when asked. They may point, look at, or name the object correctly.\n👉 Completed when the child consistently identifies at least 4–5 familiar objects without confusion.'
+  },
+  {
+    title: 'Follows Simple Instructions',
+    description: 'The child understands and acts on short, clear instructions like "sit down," "bring the ball," or "come here" without needing repeated guidance.\n👉 Completed when the child follows 2-step simple instructions correctly most of the time.'
+  },
+  {
+    title: 'Problem-Solving Skills',
+    description: 'The child shows curiosity and attempts to solve simple challenges such as stacking blocks, opening containers, or fitting shapes into the correct slots. They may try different approaches if one fails.\n👉 Completed when the child independently attempts and completes basic problem-solving tasks.'
+  },
+  {
+    title: 'Memory Recall',
+    description: 'The child remembers familiar routines, locations of objects, songs, or actions from previous experiences and can repeat them when prompted.\n👉 Completed when the child recalls and repeats actions, routines, or words after some time delay.'
+  }
+];
+
 const Milestones = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -118,6 +138,34 @@ const Milestones = () => {
   const handleFormChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
+    setError('');
+  };
+
+  const handleCategoryChange = (e) => {
+    const newCategory = e.target.value;
+    setSelectedCategory(newCategory);
+    // Reset form when category changes
+    setForm({
+      title: '',
+      description: '',
+      date_achieved: '',
+      image: null,
+      imagePreview: null
+    });
+    setError('');
+  };
+
+  const handleTitleChange = (e) => {
+    const selectedTitle = e.target.value;
+    setForm((prev) => ({ ...prev, title: selectedTitle }));
+    
+    // Auto-populate description for cognitive milestones
+    if (selectedCategory === 'cognitive') {
+      const selectedMilestone = cognitiveMilestones.find(m => m.title === selectedTitle);
+      if (selectedMilestone) {
+        setForm((prev) => ({ ...prev, description: selectedMilestone.description }));
+      }
+    }
     setError('');
   };
 
@@ -632,7 +680,7 @@ const Milestones = () => {
                   </label>
                   <select
                     value={selectedCategory}
-                    onChange={(e) => setSelectedCategory(e.target.value)}
+                    onChange={handleCategoryChange}
                     style={{
                       width: '100%',
                       padding: '8px 12px',
@@ -661,22 +709,46 @@ const Milestones = () => {
                   }}>
                     Milestone Title *
                   </label>
-                  <input
-                    type="text"
-                    name="title"
-                    value={form.title}
-                    onChange={handleFormChange}
-                    placeholder="e.g., Speaks in complete sentences"
-                    style={{
-                      width: '100%',
-                      padding: '10px 12px',
-                      border: '1px solid #d1d5db',
-                      borderRadius: '6px',
-                      fontSize: '14px',
-                      fontFamily: 'inherit',
-                      boxSizing: 'border-box'
-                    }}
-                  />
+                  {selectedCategory === 'cognitive' ? (
+                    <select
+                      name="title"
+                      value={form.title}
+                      onChange={handleTitleChange}
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '6px',
+                        fontSize: '14px',
+                        fontFamily: 'inherit',
+                        boxSizing: 'border-box'
+                      }}
+                    >
+                      <option value="">-- Select a Cognitive Milestone --</option>
+                      {cognitiveMilestones.map((milestone, idx) => (
+                        <option key={idx} value={milestone.title}>
+                          {milestone.title}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      name="title"
+                      value={form.title}
+                      onChange={handleFormChange}
+                      placeholder="e.g., Speaks in complete sentences"
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '6px',
+                        fontSize: '14px',
+                        fontFamily: 'inherit',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                  )}
                 </div>
 
                 {/* Description */}
@@ -695,6 +767,7 @@ const Milestones = () => {
                     value={form.description}
                     onChange={handleFormChange}
                     placeholder="Add details about this milestone..."
+                    readOnly={selectedCategory === 'cognitive' && form.title !== ''}
                     style={{
                       width: '100%',
                       padding: '10px 12px',
@@ -704,7 +777,9 @@ const Milestones = () => {
                       fontFamily: 'inherit',
                       boxSizing: 'border-box',
                       minHeight: '80px',
-                      resize: 'vertical'
+                      resize: 'vertical',
+                      background: (selectedCategory === 'cognitive' && form.title !== '') ? '#f9fafb' : 'white',
+                      cursor: (selectedCategory === 'cognitive' && form.title !== '') ? 'not-allowed' : 'text'
                     }}
                   />
                 </div>

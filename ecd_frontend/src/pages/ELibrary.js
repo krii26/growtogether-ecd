@@ -78,8 +78,7 @@ const ELibrary = () => {
 
   useEffect(() => {
     loadUserInfo();
-    setResources(mockResources);
-    filterResources(mockResources, 'All Categories', '');
+    fetchResources();
   }, []);
 
   useEffect(() => {
@@ -95,6 +94,29 @@ const ELibrary = () => {
         last_name: user.last_name || 'Doe',
         role: user.role || 'Parent'
       });
+    }
+  };
+
+  const fetchResources = async () => {
+    try {
+      const response = await API.get('/elibrary/');
+      let apiResources = response.data;
+      
+      // Map API response to match frontend format
+      apiResources = apiResources.map(resource => ({
+        ...resource,
+        link: resource.file_url  // Map file_url to link
+      }));
+      
+      // Use API data if available, otherwise fallback to mock data
+      const dataToUse = apiResources.length > 0 ? apiResources : mockResources;
+      setResources(dataToUse);
+      filterResources(dataToUse, 'All Categories', '');
+    } catch (error) {
+      console.error('Error fetching E-Library resources:', error);
+      // Fallback to mock data if API fails
+      setResources(mockResources);
+      filterResources(mockResources, 'All Categories', '');
     }
   };
 

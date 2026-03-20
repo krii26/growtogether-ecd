@@ -23,9 +23,20 @@ class ChildSerializer(serializers.ModelSerializer):
 # E-Library Serializer
 # -----------------------------
 class ELibrarySerializer(serializers.ModelSerializer):
+    image = serializers.SerializerMethodField()
+    
     class Meta:
         model = ELibrary
-        fields = '__all__'
+        fields = ['id', 'title', 'resource_type', 'category', 'description', 'image', 'file_url', 'date_uploaded']
+    
+    def get_image(self, obj):
+        """Return the image URL - handles both uploaded files and URL paths"""
+        if obj.image_file:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.image_file.url)
+            return obj.image_file.url
+        return obj.image  # Return the string path/URL from image field
 
 
 # -----------------------------
