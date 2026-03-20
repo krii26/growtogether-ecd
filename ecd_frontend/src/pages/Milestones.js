@@ -7,19 +7,79 @@ import '../styles/Milestones.css';
 const cognitiveMilestones = [
   {
     title: 'Recognizes Familiar Objects',
-    description: 'The child is able to identify and respond to commonly seen objects such as toys, food items, or familiar people when asked. They may point, look at, or name the object correctly.\n👉 Completed when the child consistently identifies at least 4–5 familiar objects without confusion.'
+    description: 'The child is able to identify and respond to commonly seen objects such as toys, food items, or familiar people when asked. They may point, look at, or name the object correctly.\n\n👉 Completed when the child consistently identifies at least 4–5 familiar objects without confusion.'
   },
   {
     title: 'Follows Simple Instructions',
-    description: 'The child understands and acts on short, clear instructions like "sit down," "bring the ball," or "come here" without needing repeated guidance.\n👉 Completed when the child follows 2-step simple instructions correctly most of the time.'
+    description: 'The child understands and acts on short, clear instructions like "sit down," "bring the ball," or "come here" without needing repeated guidance.\n\n👉 Completed when the child follows 2-step simple instructions correctly most of the time.'
   },
   {
     title: 'Problem-Solving Skills',
-    description: 'The child shows curiosity and attempts to solve simple challenges such as stacking blocks, opening containers, or fitting shapes into the correct slots. They may try different approaches if one fails.\n👉 Completed when the child independently attempts and completes basic problem-solving tasks.'
+    description: 'The child shows curiosity and attempts to solve simple challenges such as stacking blocks, opening containers, or fitting shapes into the correct slots. They may try different approaches if one fails.\n\n👉 Completed when the child independently attempts and completes basic problem-solving tasks.'
   },
   {
     title: 'Memory Recall',
-    description: 'The child remembers familiar routines, locations of objects, songs, or actions from previous experiences and can repeat them when prompted.\n👉 Completed when the child recalls and repeats actions, routines, or words after some time delay.'
+    description: 'The child remembers familiar routines, locations of objects, songs, or actions from previous experiences and can repeat them when prompted.\n\n👉 Completed when the child recalls and repeats actions, routines, or words after some time delay.'
+  }
+];
+
+// Physical Milestones predefined options
+const physicalMilestones = [
+  {
+    title: 'Gross Motor Skills Development',
+    description: 'The child develops large muscle movements such as sitting, crawling, walking, running, or jumping. Balance and coordination gradually improve over time.\n\n👉 Completed when the child performs age-appropriate movements (e.g., walking steadily or running without frequent falls).'
+  },
+  {
+    title: 'Fine Motor Skills Development',
+    description: 'The child uses small muscles in hands and fingers to perform tasks like holding a spoon, picking up small objects, scribbling, or turning pages.\n\n👉 Completed when the child can control hand movements to perform precise actions like holding a crayon or picking small items.'
+  },
+  {
+    title: 'Hand-Eye Coordination',
+    description: 'The child is able to coordinate vision and hand movement in activities such as catching a ball, stacking blocks, or placing objects into containers.\n\n👉 Completed when the child performs coordination tasks with accuracy and minimal error.'
+  },
+  {
+    title: 'Self-Help Physical Skills',
+    description: 'The child begins to perform basic daily activities independently such as feeding themselves, drinking from a cup, or attempting to dress/undress.\n\n👉 Completed when the child can perform simple self-care tasks with little or no assistance.'
+  }
+];
+
+// Social-Emotional Milestones predefined options
+const socialEmotionalMilestones = [
+  {
+    title: 'Interaction with Others',
+    description: 'The child shows interest in engaging with others through playing, talking, or responding to caregivers and peers. They may initiate or respond to interaction.\n\n👉 Completed when the child actively participates in simple play or communication with others.'
+  },
+  {
+    title: 'Expresses Emotions',
+    description: 'The child shows a range of emotions such as happiness, sadness, frustration, or excitement through facial expressions, sounds, or actions.\n\n👉 Completed when the child expresses emotions clearly and in appropriate situations.'
+  },
+  {
+    title: 'Shares and Takes Turns',
+    description: 'The child begins to understand the concept of sharing toys and waiting for their turn during play or group activities, though support may still be needed.\n\n👉 Completed when the child shares or waits briefly without significant resistance.'
+  },
+  {
+    title: 'Responds to Social Cues',
+    description: 'The child reacts to others\' facial expressions, tone of voice, gestures, or body language (e.g., smiling back, stopping when told "no").\n\n👉 Completed when the child appropriately responds to common social signals.'
+  }
+];
+
+// Language Milestones predefined options
+const languageMilestones = [
+  {
+    title: 'Responds to Sounds and Name',
+    description: 'The child reacts to sounds, voices, or their own name by turning their head, making eye contact, or showing attention. This shows early listening and recognition skills.\n\n👉 Completed when the child consistently responds to their name or familiar sounds without repeated attempts.'
+  },
+  {
+    title: 'Uses Simple Words',
+    description: 'The child begins to say basic words such as "mama," "dada," "no," or names of common objects. Speech may not be perfectly clear but is understandable in context.\n\n👉 Completed when the child uses at least 3–5 meaningful words regularly to communicate needs or identify people/objects.'
+  },
+  {
+    title: 'Understands Basic Language',
+    description: 'The child understands simple words, questions, or phrases like "where is your toy?" or "give me the ball," even if they cannot fully speak yet.\n\n👉 Completed when the child responds correctly to simple questions or instructions most of the time.'
+  },
+  {
+    title: 'Combines Words or Gestures',
+    description: 'The child starts combining words (e.g., "want milk") or uses gestures (pointing, waving) along with sounds to express needs and intentions.\n\n👉 Completed when the child uses 2-word combinations or gestures + sounds to communicate clearly.'
   }
 ];
 
@@ -159,12 +219,21 @@ const Milestones = () => {
     const selectedTitle = e.target.value;
     setForm((prev) => ({ ...prev, title: selectedTitle }));
     
-    // Auto-populate description for cognitive milestones
+    // Auto-populate description based on category
+    let selectedMilestone = null;
+    
     if (selectedCategory === 'cognitive') {
-      const selectedMilestone = cognitiveMilestones.find(m => m.title === selectedTitle);
-      if (selectedMilestone) {
-        setForm((prev) => ({ ...prev, description: selectedMilestone.description }));
-      }
+      selectedMilestone = cognitiveMilestones.find(m => m.title === selectedTitle);
+    } else if (selectedCategory === 'physical') {
+      selectedMilestone = physicalMilestones.find(m => m.title === selectedTitle);
+    } else if (selectedCategory === 'social-emotional') {
+      selectedMilestone = socialEmotionalMilestones.find(m => m.title === selectedTitle);
+    } else if (selectedCategory === 'language') {
+      selectedMilestone = languageMilestones.find(m => m.title === selectedTitle);
+    }
+    
+    if (selectedMilestone) {
+      setForm((prev) => ({ ...prev, description: selectedMilestone.description }));
     }
     setError('');
   };
@@ -593,14 +662,31 @@ const Milestones = () => {
                         </div>
 
                         {milestone.description && (
-                          <p style={{
+                          <div style={{
                             fontSize: '12px',
                             color: '#666',
                             margin: '8px 0',
-                            lineHeight: '1.4'
+                            lineHeight: '1.6'
                           }}>
-                            {milestone.description}
-                          </p>
+                            {milestone.description.split('\n').map((line, idx) => {
+                              if (line.startsWith('👉')) {
+                                return (
+                                  <p key={idx} style={{
+                                    margin: '8px 0 0 0',
+                                    color: '#059669',
+                                    fontWeight: '500',
+                                    background: '#d1fae5',
+                                    padding: '6px 8px',
+                                    borderRadius: '4px',
+                                    borderLeft: '3px solid #059669'
+                                  }}>
+                                    {line}
+                                  </p>
+                                );
+                              }
+                              return line ? <p key={idx} style={{ margin: '4px 0' }}>{line}</p> : null;
+                            })}
+                          </div>
                         )}
 
                         {milestone.image && (
@@ -731,6 +817,72 @@ const Milestones = () => {
                         </option>
                       ))}
                     </select>
+                  ) : selectedCategory === 'physical' ? (
+                    <select
+                      name="title"
+                      value={form.title}
+                      onChange={handleTitleChange}
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '6px',
+                        fontSize: '14px',
+                        fontFamily: 'inherit',
+                        boxSizing: 'border-box'
+                      }}
+                    >
+                      <option value="">-- Select a Physical Milestone --</option>
+                      {physicalMilestones.map((milestone, idx) => (
+                        <option key={idx} value={milestone.title}>
+                          {milestone.title}
+                        </option>
+                      ))}
+                    </select>
+                  ) : selectedCategory === 'social-emotional' ? (
+                    <select
+                      name="title"
+                      value={form.title}
+                      onChange={handleTitleChange}
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '6px',
+                        fontSize: '14px',
+                        fontFamily: 'inherit',
+                        boxSizing: 'border-box'
+                      }}
+                    >
+                      <option value="">-- Select a Social-Emotional Milestone --</option>
+                      {socialEmotionalMilestones.map((milestone, idx) => (
+                        <option key={idx} value={milestone.title}>
+                          {milestone.title}
+                        </option>
+                      ))}
+                    </select>
+                  ) : selectedCategory === 'language' ? (
+                    <select
+                      name="title"
+                      value={form.title}
+                      onChange={handleTitleChange}
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '6px',
+                        fontSize: '14px',
+                        fontFamily: 'inherit',
+                        boxSizing: 'border-box'
+                      }}
+                    >
+                      <option value="">-- Select a Language Milestone --</option>
+                      {languageMilestones.map((milestone, idx) => (
+                        <option key={idx} value={milestone.title}>
+                          {milestone.title}
+                        </option>
+                      ))}
+                    </select>
                   ) : (
                     <input
                       type="text"
@@ -767,7 +919,7 @@ const Milestones = () => {
                     value={form.description}
                     onChange={handleFormChange}
                     placeholder="Add details about this milestone..."
-                    readOnly={selectedCategory === 'cognitive' && form.title !== ''}
+                    readOnly={form.title !== '' && ['cognitive', 'physical', 'social-emotional', 'language'].includes(selectedCategory)}
                     style={{
                       width: '100%',
                       padding: '10px 12px',
@@ -776,10 +928,10 @@ const Milestones = () => {
                       fontSize: '14px',
                       fontFamily: 'inherit',
                       boxSizing: 'border-box',
-                      minHeight: '80px',
+                      minHeight: '120px',
                       resize: 'vertical',
-                      background: (selectedCategory === 'cognitive' && form.title !== '') ? '#f9fafb' : 'white',
-                      cursor: (selectedCategory === 'cognitive' && form.title !== '') ? 'not-allowed' : 'text'
+                      background: (form.title !== '' && ['cognitive', 'physical', 'social-emotional', 'language'].includes(selectedCategory)) ? '#f9fafb' : 'white',
+                      cursor: (form.title !== '' && ['cognitive', 'physical', 'social-emotional', 'language'].includes(selectedCategory)) ? 'not-allowed' : 'text'
                     }}
                   />
                 </div>
