@@ -15,6 +15,7 @@ const Student = () => {
     'language': []
   });
   const [loadingMilestones, setLoadingMilestones] = useState(false);
+  const [reviewingMilestone, setReviewingMilestone] = useState(null);
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -77,6 +78,14 @@ const Student = () => {
       'physical': [],
       'language': []
     });
+  };
+
+  const handleReviewMilestone = (milestone) => {
+    setReviewingMilestone(milestone);
+  };
+
+  const handleCloseReview = () => {
+    setReviewingMilestone(null);
   };
 
   const layout = {
@@ -359,6 +368,11 @@ const Student = () => {
               {loading && (
                 <tr>
                   <td style={{ ...td, textAlign: 'center' }} colSpan={5}>Loading...</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
 
         {/* Student Profile Modal */}
         {selectedStudent && (
@@ -555,13 +569,51 @@ const Student = () => {
                                     }}
                                   >
                                     <div style={{
-                                      fontWeight: '600',
-                                      fontSize: '13px',
-                                      color: '#111827',
+                                      display: 'flex',
+                                      justifyContent: 'space-between',
+                                      alignItems: 'flex-start',
                                       marginBottom: '4px'
                                     }}>
-                                      {milestone.title}
+                                      <div style={{
+                                        fontWeight: '600',
+                                        fontSize: '13px',
+                                        color: '#111827',
+                                        flex: 1
+                                      }}>
+                                        {milestone.title}
+                                      </div>
+                                      <button
+                                        onClick={() => handleReviewMilestone(milestone)}
+                                        style={{
+                                          background: '#e0e7ff',
+                                          color: '#4338ca',
+                                          border: 'none',
+                                          padding: '4px 8px',
+                                          borderRadius: '4px',
+                                          cursor: 'pointer',
+                                          fontSize: '11px',
+                                          fontWeight: '600',
+                                          marginLeft: '8px'
+                                        }}
+                                      >
+                                        Review
+                                      </button>
                                     </div>
+                                    {milestone.image && (
+                                      <div style={{ marginBottom: '8px' }}>
+                                        <img
+                                          src={milestone.image}
+                                          alt={milestone.title}
+                                          style={{
+                                            width: '100%',
+                                            maxHeight: '150px',
+                                            objectFit: 'cover',
+                                            borderRadius: '6px',
+                                            border: '1px solid #e5e7eb'
+                                          }}
+                                        />
+                                      </div>
+                                    )}
                                     {milestone.date_achieved && (
                                       <div style={{
                                         fontSize: '11px',
@@ -603,11 +655,247 @@ const Student = () => {
             </div>
           </div>
         )}
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+
+        {/* Milestone Review Modal */}
+        {reviewingMilestone && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1001,
+            padding: '20px'
+          }}>
+            <div style={{
+              background: 'white',
+              borderRadius: '16px',
+              maxWidth: '700px',
+              width: '100%',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)'
+            }}>
+              {/* Modal Header */}
+              <div style={{
+                background: 'linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%)',
+                padding: '24px',
+                borderTopLeftRadius: '16px',
+                borderTopRightRadius: '16px',
+                color: 'white',
+                position: 'relative'
+              }}>
+                <button
+                  onClick={handleCloseReview}
+                  style={{
+                    position: 'absolute',
+                    top: '16px',
+                    right: '16px',
+                    background: 'rgba(255,255,255,0.2)',
+                    border: 'none',
+                    color: 'white',
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '50%',
+                    cursor: 'pointer',
+                    fontSize: '18px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  ✕
+                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{
+                    background: 'rgba(255,255,255,0.2)',
+                    padding: '10px',
+                    borderRadius: '12px',
+                    fontSize: '24px'
+                  }}>
+                    {reviewingMilestone.category === 'social-emotional' && '👥'}
+                    {reviewingMilestone.category === 'cognitive' && '🧠'}
+                    {reviewingMilestone.category === 'physical' && '💪'}
+                    {reviewingMilestone.category === 'language' && '🗣️'}
+                  </div>
+                  <div>
+                    <h2 style={{ margin: '0 0 4px 0', fontSize: '24px', fontWeight: '700' }}>
+                      {reviewingMilestone.title}
+                    </h2>
+                    <div style={{ fontSize: '14px', opacity: 0.9, textTransform: 'capitalize' }}>
+                      {reviewingMilestone.category.replace('-', ' ')} Milestone
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Content */}
+              <div style={{ padding: '24px' }}>
+                {/* Milestone Image */}
+                {reviewingMilestone.image && (
+                  <div style={{ marginBottom: '24px' }}>
+                    <img
+                      src={reviewingMilestone.image}
+                      alt={reviewingMilestone.title}
+                      style={{
+                        width: '100%',
+                        maxHeight: '400px',
+                        objectFit: 'cover',
+                        borderRadius: '12px',
+                        border: '1px solid #e5e7eb'
+                      }}
+                    />
+                  </div>
+                )}
+
+                {/* Date Achieved */}
+                {reviewingMilestone.date_achieved && (
+                  <div style={{
+                    background: '#f3f4f6',
+                    padding: '12px 16px',
+                    borderRadius: '8px',
+                    marginBottom: '20px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}>
+                    <span style={{ fontSize: '18px' }}>📅</span>
+                    <div>
+                      <div style={{ fontSize: '12px', color: '#6b7280' }}>Date Achieved</div>
+                      <div style={{ fontSize: '14px', fontWeight: '600', color: '#111827' }}>
+                        {new Date(reviewingMilestone.date_achieved).toLocaleDateString('en-US', {
+                          weekday: 'long',
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Description */}
+                {reviewingMilestone.description && (
+                  <div style={{ marginBottom: '20px' }}>
+                    <h3 style={{
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      color: '#111827',
+                      marginBottom: '12px'
+                    }}>
+                      Description
+                    </h3>
+                    <div style={{
+                      fontSize: '14px',
+                      color: '#4b5563',
+                      lineHeight: '1.7',
+                      whiteSpace: 'pre-wrap'
+                    }}>
+                      {reviewingMilestone.description.split('\n').map((line, idx) => {
+                        if (line.startsWith('👉')) {
+                          return (
+                            <div key={idx} style={{
+                              background: '#d1fae5',
+                              padding: '12px',
+                              borderRadius: '8px',
+                              marginTop: '12px',
+                              color: '#059669',
+                              fontWeight: '500',
+                              fontSize: '13px'
+                            }}>
+                              {line}
+                            </div>
+                          );
+                        }
+                        return <div key={idx} style={{ marginBottom: '8px' }}>{line}</div>;
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Student Info */}
+                {selectedStudent && (
+                  <div style={{
+                    background: '#f9fafb',
+                    padding: '16px',
+                    borderRadius: '12px',
+                    border: '1px solid #e5e7eb'
+                  }}>
+                    <h3 style={{
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      color: '#6b7280',
+                      marginBottom: '8px'
+                    }}>
+                      Student Information
+                    </h3>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      {selectedStudent.photo && (
+                        <img
+                          src={selectedStudent.photo}
+                          alt={selectedStudent.name}
+                          style={{
+                            width: '40px',
+                            height: '40px',
+                            borderRadius: '50%',
+                            objectFit: 'cover',
+                            border: '2px solid #e5e7eb'
+                          }}
+                        />
+                      )}
+                      <div>
+                        <div style={{ fontSize: '14px', fontWeight: '600', color: '#111827' }}>
+                          {selectedStudent.name}
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                          Parent: {selectedStudent.parent_name || 'N/A'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Mark Complete Button */}
+                <div style={{
+                  marginTop: '24px',
+                  paddingTop: '20px',
+                  borderTop: '1px solid #e5e7eb'
+                }}>
+                  <button
+                    onClick={() => {
+                      alert(`Milestone "${reviewingMilestone.title}" marked as complete!`);
+                      handleCloseReview();
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '14px',
+                      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      transition: 'transform 0.2s'
+                    }}
+                    onMouseOver={(e) => e.target.style.transform = 'scale(1.02)'}
+                    onMouseOut={(e) => e.target.style.transform = 'scale(1)'}
+                  >
+                    ✓ Mark as Complete
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
