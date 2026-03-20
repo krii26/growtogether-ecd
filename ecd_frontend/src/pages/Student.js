@@ -7,6 +7,14 @@ const Student = () => {
   const [children, setChildren] = useState([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [studentMilestones, setStudentMilestones] = useState({
+    'social-emotional': [],
+    'cognitive': [],
+    'physical': [],
+    'language': []
+  });
+  const [loadingMilestones, setLoadingMilestones] = useState(false);
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -31,6 +39,45 @@ const Student = () => {
     };
     fetchChildren();
   }, []);
+
+  const handleViewProfile = async (student) => {
+    setSelectedStudent(student);
+    setLoadingMilestones(true);
+    try {
+      const res = await API.get('milestones/', {
+        params: { child: student.id }
+      });
+      
+      const grouped = {
+        'social-emotional': [],
+        'cognitive': [],
+        'physical': [],
+        'language': []
+      };
+
+      (res.data || []).forEach((milestone) => {
+        if (grouped[milestone.category]) {
+          grouped[milestone.category].push(milestone);
+        }
+      });
+
+      setStudentMilestones(grouped);
+    } catch (err) {
+      console.error('Failed to load milestones', err);
+    } finally {
+      setLoadingMilestones(false);
+    }
+  };
+
+  const handleCloseProfile = () => {
+    setSelectedStudent(null);
+    setStudentMilestones({
+      'social-emotional': [],
+      'cognitive': [],
+      'physical': [],
+      'language': []
+    });
+  };
 
   const layout = {
     display: 'grid',
@@ -174,6 +221,29 @@ const Student = () => {
     return child?.photo || '/happychild.jpg';
   };
 
+  const categoryConfig = {
+    'social-emotional': {
+      title: 'Social-Emotional',
+      color: '#a78bfa',
+      icon: '👥'
+    },
+    'cognitive': {
+      title: 'Cognitive',
+      color: '#60a5fa',
+      icon: '🧠'
+    },
+    'physical': {
+      title: 'Physical',
+      color: '#34d399',
+      icon: '💪'
+    },
+    'language': {
+      title: 'Language',
+      color: '#f472b6',
+      icon: '🗣️'
+    }
+  };
+
   return (
     <div style={layout}>
       <aside style={sidebar}>
@@ -271,7 +341,12 @@ const Student = () => {
                       </div>
                     </td>
                     <td style={td}>
-                      <button style={actionBtn}>View Profile</button>
+                      <button 
+                        style={actionBtn}
+                        onClick={() => handleViewProfile(s)}
+                      >
+                        View Profile
+                      </button>
                     </td>
                   </tr>
                 );
@@ -284,6 +359,250 @@ const Student = () => {
               {loading && (
                 <tr>
                   <td style={{ ...td, textAlign: 'center' }} colSpan={5}>Loading...</td>
+
+        {/* Student Profile Modal */}
+        {selectedStudent && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '20px'
+          }}>
+            <div style={{
+              background: 'white',
+              borderRadius: '16px',
+              maxWidth: '900px',
+              width: '100%',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)'
+            }}>
+              {/* Profile Header */}
+              <div style={{
+                background: 'linear-gradient(135deg, #a855f7 0%, #d946ef 100%)',
+                padding: '24px',
+                borderTopLeftRadius: '16px',
+                borderTopRightRadius: '16px',
+                color: 'white',
+                position: 'relative'
+              }}>
+                <button
+                  onClick={handleCloseProfile}
+                  style={{
+                    position: 'absolute',
+                    top: '16px',
+                    right: '16px',
+                    background: 'rgba(255,255,255,0.2)',
+                    border: 'none',
+                    color: 'white',
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '50%',
+                    cursor: 'pointer',
+                    fontSize: '18px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  ✕
+                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                  <img
+                    src={getAvatar(selectedStudent)}
+                    alt={selectedStudent.name}
+                    style={{
+                      width: '80px',
+                      height: '80px',
+                      borderRadius: '50%',
+                      border: '4px solid rgba(255,255,255,0.3)',
+                      objectFit: 'cover'
+                    }}
+                  />
+                  <div>
+                    <h2 style={{ margin: '0 0 8px 0', fontSize: '24px', fontWeight: '700' }}>
+                      {selectedStudent.name}
+                    </h2>
+                    <div style={{ display: 'flex', gap: '16px', fontSize: '14px', opacity: 0.9 }}>
+                      <span>👶 {formatAge(selectedStudent)}</span>
+                      <span>👨‍👩‍👧 Parent: {selectedStudent.parent_name || 'N/A'}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Profile Content */}
+              <div style={{ padding: '24px' }}>
+                {/* Student Details */}
+                <div style={{
+                  background: '#f9fafb',
+                  padding: '20px',
+                  borderRadius: '12px',
+                  marginBottom: '24px'
+                }}>
+                  <h3 style={{ margin: '0 0 16px 0', fontSize: '18px', fontWeight: '600', color: '#111827' }}>
+                    Student Details
+                  </h3>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
+                    <div>
+                      <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px' }}>Age</div>
+                      <div style={{ fontSize: '14px', fontWeight: '600', color: '#111827' }}>
+                        {formatAge(selectedStudent)}
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px' }}>Parent Name</div>
+                      <div style={{ fontSize: '14px', fontWeight: '600', color: '#111827' }}>
+                        {selectedStudent.parent_name || 'N/A'}
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px' }}>Date of Birth</div>
+                      <div style={{ fontSize: '14px', fontWeight: '600', color: '#111827' }}>
+                        {selectedStudent.date_of_birth ? new Date(selectedStudent.date_of_birth).toLocaleDateString() : 'N/A'}
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px' }}>Progress</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={progressBarOuter}>
+                          <div style={progressBarInner(computeProgress(selectedStudent))} />
+                        </div>
+                        <span style={{ fontSize: '14px', fontWeight: '600', color: '#111827' }}>
+                          {computeProgress(selectedStudent)}%
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Milestones Section */}
+                <div>
+                  <h3 style={{ margin: '0 0 16px 0', fontSize: '18px', fontWeight: '600', color: '#111827' }}>
+                    Developmental Milestones
+                  </h3>
+
+                  {loadingMilestones ? (
+                    <div style={{ textAlign: 'center', padding: '40px', color: '#6b7280' }}>
+                      Loading milestones...
+                    </div>
+                  ) : (
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(2, 1fr)',
+                      gap: '16px'
+                    }}>
+                      {Object.entries(categoryConfig).map(([category, config]) => (
+                        <div
+                          key={category}
+                          style={{
+                            background: 'white',
+                            border: '1px solid #e5e7eb',
+                            borderRadius: '12px',
+                            overflow: 'hidden'
+                          }}
+                        >
+                          <div style={{
+                            background: config.color,
+                            color: 'white',
+                            padding: '12px 16px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between'
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span style={{ fontSize: '18px' }}>{config.icon}</span>
+                              <span style={{ fontWeight: '600', fontSize: '14px' }}>{config.title}</span>
+                            </div>
+                            <span style={{
+                              background: 'rgba(255,255,255,0.3)',
+                              padding: '2px 8px',
+                              borderRadius: '12px',
+                              fontSize: '12px',
+                              fontWeight: '600'
+                            }}>
+                              {studentMilestones[category].length}
+                            </span>
+                          </div>
+
+                          <div style={{ padding: '12px' }}>
+                            {studentMilestones[category].length === 0 ? (
+                              <div style={{ 
+                                textAlign: 'center', 
+                                padding: '20px', 
+                                color: '#9ca3af',
+                                fontSize: '13px'
+                              }}>
+                                No milestones yet
+                              </div>
+                            ) : (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                {studentMilestones[category].map((milestone) => (
+                                  <div
+                                    key={milestone.id}
+                                    style={{
+                                      padding: '10px',
+                                      background: '#f9fafb',
+                                      borderRadius: '8px',
+                                      border: '1px solid #e5e7eb'
+                                    }}
+                                  >
+                                    <div style={{
+                                      fontWeight: '600',
+                                      fontSize: '13px',
+                                      color: '#111827',
+                                      marginBottom: '4px'
+                                    }}>
+                                      {milestone.title}
+                                    </div>
+                                    {milestone.date_achieved && (
+                                      <div style={{
+                                        fontSize: '11px',
+                                        color: '#6b7280',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '4px'
+                                      }}>
+                                        📅 {new Date(milestone.date_achieved).toLocaleDateString()}
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Total Milestones Summary */}
+                <div style={{
+                  marginTop: '24px',
+                  padding: '16px',
+                  background: 'linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%)',
+                  borderRadius: '12px',
+                  textAlign: 'center'
+                }}>
+                  <div style={{ fontSize: '14px', color: '#6b21a8', marginBottom: '4px' }}>
+                    Total Milestones Achieved
+                  </div>
+                  <div style={{ fontSize: '32px', fontWeight: '700', color: '#7c3aed' }}>
+                    {Object.values(studentMilestones).reduce((sum, arr) => sum + arr.length, 0)}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
                 </tr>
               )}
             </tbody>

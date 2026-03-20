@@ -101,6 +101,7 @@ const Milestones = () => {
   const [selectedCategory, setSelectedCategory] = useState('social-emotional');
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
+  const [editingMilestone, setEditingMilestone] = useState(null);
   const [form, setForm] = useState({
     title: '',
     description: '',
@@ -259,12 +260,21 @@ const Milestones = () => {
         formData.append('image', form.image);
       }
 
-      await API.post('milestones/', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      if (editingMilestone) {
+        // Update existing milestone
+        await API.put(`milestones/${editingMilestone.id}/`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+      } else {
+        // Create new milestone
+        await API.post('milestones/', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+      }
 
       await fetchChildAndMilestones(selectedChildId);
       setShowAddModal(false);
+      setEditingMilestone(null);
       setForm({
         title: '',
         description: '',
@@ -273,11 +283,24 @@ const Milestones = () => {
         imagePreview: null
       });
     } catch (err) {
-      console.error('Error adding milestone:', err);
-      setError('Failed to add milestone. Please try again.');
+      console.error('Error saving milestone:', err);
+      setError('Failed to save milestone. Please try again.');
     } finally {
       setUploading(false);
     }
+  };
+
+  const handleEditMilestone = (milestone) => {
+    setEditingMilestone(milestone);
+    setSelectedCategory(milestone.category);
+    setForm({
+      title: milestone.title,
+      description: milestone.description,
+      date_achieved: milestone.date_achieved || '',
+      image: null,
+      imagePreview: milestone.image || null
+    });
+    setShowAddModal(true);
   };
 
   const handleDeleteMilestone = async (milestoneId) => {
@@ -644,21 +667,36 @@ const Milestones = () => {
                           }}>
                             {milestone.title}
                           </h3>
-                          <button
-                            onClick={() => handleDeleteMilestone(milestone.id)}
-                            style={{
-                              background: '#fee2e2',
-                              color: '#dc2626',
-                              border: 'none',
-                              padding: '4px 8px',
-                              borderRadius: '4px',
-                              cursor: 'pointer',
-                              fontSize: '12px',
-                              marginLeft: '8px'
-                            }}
-                          >
-                            Delete
-                          </button>
+                          <div style={{ display: 'flex', gap: '6px', marginLeft: '8px' }}>
+                            <button
+                              onClick={() => handleEditMilestone(milestone)}
+                              style={{
+                                background: '#dbeafe',
+                                color: '#1d4ed8',
+                                border: 'none',
+                                padding: '4px 8px',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                fontSize: '12px'
+                              }}
+                            >
+                              Update
+                            </button>
+                            <button
+                              onClick={() => handleDeleteMilestone(milestone.id)}
+                              style={{
+                                background: '#fee2e2',
+                                color: '#dc2626',
+                                border: 'none',
+                                padding: '4px 8px',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                fontSize: '12px'
+                              }}
+                            >
+                              Delete
+                            </button>
+                          </div>
                         </div>
 
                         {milestone.description && (
@@ -749,7 +787,7 @@ const Milestones = () => {
               overflowY: 'auto'
             }}>
               <h2 style={{ margin: '0 0 20px 0', fontSize: '20px', color: '#333' }}>
-                Add New Milestone
+                {editingMilestone ? 'Update Milestone' : 'Add New Milestone'}
               </h2>
 
               <form onSubmit={handleAddMilestone}>
@@ -767,13 +805,16 @@ const Milestones = () => {
                   <select
                     value={selectedCategory}
                     onChange={handleCategoryChange}
+                    disabled={editingMilestone !== null}
                     style={{
                       width: '100%',
                       padding: '8px 12px',
                       border: '1px solid #d1d5db',
                       borderRadius: '6px',
                       fontSize: '14px',
-                      fontFamily: 'inherit'
+                      fontFamily: 'inherit',
+                      background: editingMilestone ? '#f9fafb' : 'white',
+                      cursor: editingMilestone ? 'not-allowed' : 'pointer'
                     }}
                   >
                     {Object.entries(categoryConfig).map(([key, config]) => (
@@ -1060,6 +1101,7 @@ const Milestones = () => {
                     type="button"
                     onClick={() => {
                       setShowAddModal(false);
+                      setEditingMilestone(null);
                       setForm({
                         title: '',
                         description: '',
@@ -1096,7 +1138,7 @@ const Milestones = () => {
                       fontWeight: '500'
                     }}
                   >
-                    {uploading ? 'Adding...' : 'Add Milestone'}
+                    {uploading ? (editingMilestone ? 'Updating...' : 'Adding...') : (editingMilestone ? 'Update Milestone' : 'Add Milestone')}
                   </button>
                 </div>
               </form>
