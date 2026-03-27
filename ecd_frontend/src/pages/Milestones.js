@@ -83,6 +83,20 @@ const languageMilestones = [
   }
 ];
 
+const milestoneOptionsByCategory = {
+  'social-emotional': socialEmotionalMilestones,
+  cognitive: cognitiveMilestones,
+  physical: physicalMilestones,
+  language: languageMilestones
+};
+
+const getCategoryMilestoneOptions = (category) => milestoneOptionsByCategory[category] || [];
+
+const getMilestoneDescription = (category, title) => {
+  const matchedMilestone = getCategoryMilestoneOptions(category).find((m) => m.title === title);
+  return matchedMilestone?.description || '';
+};
+
 const Milestones = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -107,6 +121,7 @@ const Milestones = () => {
   const [completedSort, setCompletedSort] = useState('recent'); // 'recent', 'rating', 'category'
   const [completedMilestones, setCompletedMilestones] = useState([]);
   const [quickViewMilestone, setQuickViewMilestone] = useState(null);
+  const [selectedTitles, setSelectedTitles] = useState([]);
   const [form, setForm] = useState({
     title: '',
     description: '',
@@ -114,6 +129,7 @@ const Milestones = () => {
     image: null,
     imagePreview: null
   });
+  const categoryMilestoneOptions = getCategoryMilestoneOptions(selectedCategory);
 
   useEffect(() => {
     // First, fetch all children
@@ -217,6 +233,7 @@ const Milestones = () => {
   const handleCategoryChange = (e) => {
     const newCategory = e.target.value;
     setSelectedCategory(newCategory);
+    setSelectedTitles([]);
     // Reset form when category changes
     setForm({
       title: '',
@@ -230,63 +247,91 @@ const Milestones = () => {
 
   const handleTitleChange = (e) => {
     const selectedTitle = e.target.value;
-    setForm((prev) => ({ ...prev, title: selectedTitle }));
-    
-    // Auto-populate description based on category
-    let selectedMilestone = null;
-    
-    if (selectedCategory === 'cognitive') {
-      selectedMilestone = cognitiveMilestones.find(m => m.title === selectedTitle);
-    } else if (selectedCategory === 'physical') {
-      selectedMilestone = physicalMilestones.find(m => m.title === selectedTitle);
-    } else if (selectedCategory === 'social-emotional') {
-      selectedMilestone = socialEmotionalMilestones.find(m => m.title === selectedTitle);
-    } else if (selectedCategory === 'language') {
-      selectedMilestone = languageMilestones.find(m => m.title === selectedTitle);
-    }
-    
-    if (selectedMilestone) {
-      setForm((prev) => ({ ...prev, description: selectedMilestone.description }));
-    }
+    setForm((prev) => ({
+      ...prev,
+      title: selectedTitle,
+      description: getMilestoneDescription(selectedCategory, selectedTitle)
+    }));
+    setSelectedTitles(selectedTitle ? [selectedTitle] : []);
+    setError('');
+  };
+
+  const handleMultiTitleChange = (e) => {
+    const titles = Array.from(e.target.selectedOptions)
+      .map((option) => option.value)
+      .filter(Boolean);
+
+    setSelectedTitles(titles);
+    setForm((prev) => ({
+      ...prev,
+      title: titles[0] || '',
+      description:
+        titles.length === 1
+          ? getMilestoneDescription(selectedCategory, titles[0])
+          : titles.length > 1
+            ? 'Descriptions will be auto-filled individually for each selected milestone.'
+            : ''
+    }));
     setError('');
   };
 
   const handleAddMilestone = async (e) => {
     e.preventDefault();
-    if (!form.title.trim()) {
+
+    if (editingMilestone && !form.title.trim()) {
       setError('Please enter a milestone title');
+      return;
+    }
+
+    if (!editingMilestone && selectedTitles.length === 0) {
+      setError('Please select at least one milestone title');
       return;
     }
 
     setUploading(true);
     try {
-      const formData = new FormData();
-      formData.append('child', selectedChildId);
-      formData.append('category', selectedCategory);
-      formData.append('title', form.title);
-      formData.append('description', form.description);
-      if (form.date_achieved) {
-        formData.append('date_achieved', form.date_achieved);
-      }
-      if (form.image) {
-        formData.append('image', form.image);
-      }
-
       if (editingMilestone) {
-        // Update existing milestone
+        const formData = new FormData();
+        formData.append('child', selectedChildId);
+        formData.append('category', selectedCategory);
+        formData.append('title', form.title);
+        formData.append('description', form.description);
+        if (form.date_achieved) {
+          formData.append('date_achieved', form.date_achieved);
+        }
+        if (form.image) {
+          formData.append('image', form.image);
+        }
+
         await API.put(`milestones/${editingMilestone.id}/`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' }
         });
       } else {
-        // Create new milestone
-        await API.post('milestones/', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        });
+        await Promise.all(
+          selectedTitles.map(async (title) => {
+            const formData = new FormData();
+            formData.append('child', selectedChildId);
+            formData.append('category', selectedCategory);
+            formData.append('title', title);
+            formData.append('description', getMilestoneDescription(selectedCategory, title));
+            if (form.date_achieved) {
+              formData.append('date_achieved', form.date_achieved);
+            }
+            if (form.image) {
+              formData.append('image', form.image);
+            }
+
+            return API.post('milestones/', formData, {
+              headers: { 'Content-Type': 'multipart/form-data' }
+            });
+          })
+        );
       }
 
       await fetchChildAndMilestones(selectedChildId);
       setShowAddModal(false);
       setEditingMilestone(null);
+      setSelectedTitles([]);
       setForm({
         title: '',
         description: '',
@@ -305,6 +350,7 @@ const Milestones = () => {
   const handleEditMilestone = (milestone) => {
     setEditingMilestone(milestone);
     setSelectedCategory(milestone.category);
+    setSelectedTitles([milestone.title]);
     setForm({
       title: milestone.title,
       description: milestone.description,
@@ -576,7 +622,19 @@ const Milestones = () => {
 
         {/* Add Milestone Button */}
         <button
-          onClick={() => setShowAddModal(true)}
+          onClick={() => {
+            setShowAddModal(true);
+            setEditingMilestone(null);
+            setSelectedTitles([]);
+            setForm({
+              title: '',
+              description: '',
+              date_achieved: '',
+              image: null,
+              imagePreview: null
+            });
+            setError('');
+          }}
           style={{
             padding: '10px 20px',
             background: '#8b5cf6',
@@ -1436,111 +1494,35 @@ const Milestones = () => {
                   }}>
                     Milestone Title *
                   </label>
-                  {selectedCategory === 'cognitive' ? (
-                    <select
-                      name="title"
-                      value={form.title}
-                      onChange={handleTitleChange}
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '6px',
-                        fontSize: '14px',
-                        fontFamily: 'inherit',
-                        boxSizing: 'border-box'
-                      }}
-                    >
-                      <option value="">-- Select a Cognitive Milestone --</option>
-                      {cognitiveMilestones.map((milestone, idx) => (
-                        <option key={idx} value={milestone.title}>
-                          {milestone.title}
-                        </option>
-                      ))}
-                    </select>
-                  ) : selectedCategory === 'physical' ? (
-                    <select
-                      name="title"
-                      value={form.title}
-                      onChange={handleTitleChange}
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '6px',
-                        fontSize: '14px',
-                        fontFamily: 'inherit',
-                        boxSizing: 'border-box'
-                      }}
-                    >
-                      <option value="">-- Select a Physical Milestone --</option>
-                      {physicalMilestones.map((milestone, idx) => (
-                        <option key={idx} value={milestone.title}>
-                          {milestone.title}
-                        </option>
-                      ))}
-                    </select>
-                  ) : selectedCategory === 'social-emotional' ? (
-                    <select
-                      name="title"
-                      value={form.title}
-                      onChange={handleTitleChange}
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '6px',
-                        fontSize: '14px',
-                        fontFamily: 'inherit',
-                        boxSizing: 'border-box'
-                      }}
-                    >
-                      <option value="">-- Select a Social-Emotional Milestone --</option>
-                      {socialEmotionalMilestones.map((milestone, idx) => (
-                        <option key={idx} value={milestone.title}>
-                          {milestone.title}
-                        </option>
-                      ))}
-                    </select>
-                  ) : selectedCategory === 'language' ? (
-                    <select
-                      name="title"
-                      value={form.title}
-                      onChange={handleTitleChange}
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '6px',
-                        fontSize: '14px',
-                        fontFamily: 'inherit',
-                        boxSizing: 'border-box'
-                      }}
-                    >
-                      <option value="">-- Select a Language Milestone --</option>
-                      {languageMilestones.map((milestone, idx) => (
-                        <option key={idx} value={milestone.title}>
-                          {milestone.title}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <input
-                      type="text"
-                      name="title"
-                      value={form.title}
-                      onChange={handleFormChange}
-                      placeholder="e.g., Speaks in complete sentences"
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '6px',
-                        fontSize: '14px',
-                        fontFamily: 'inherit',
-                        boxSizing: 'border-box'
-                      }}
-                    />
+                  <select
+                    name="title"
+                    value={editingMilestone ? form.title : selectedTitles}
+                    onChange={editingMilestone ? handleTitleChange : handleMultiTitleChange}
+                    multiple={!editingMilestone}
+                    size={!editingMilestone ? 6 : undefined}
+                    style={{
+                      width: '100%',
+                      padding: editingMilestone ? '10px 12px' : '8px 12px',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '6px',
+                      fontSize: '14px',
+                      fontFamily: 'inherit',
+                      boxSizing: 'border-box'
+                    }}
+                  >
+                    {editingMilestone && (
+                      <option value="">-- Select Milestone --</option>
+                    )}
+                    {categoryMilestoneOptions.map((milestone, idx) => (
+                      <option key={idx} value={milestone.title}>
+                        {milestone.title}
+                      </option>
+                    ))}
+                  </select>
+                  {!editingMilestone && (
+                    <p style={{ margin: '8px 0 0 0', fontSize: '12px', color: '#6b7280' }}>
+                      Hold Ctrl (or Cmd on Mac) to select multiple titles.
+                    </p>
                   )}
                 </div>
 
@@ -1577,7 +1559,7 @@ const Milestones = () => {
                   />
                 </div>
 
-                {/* Date */}
+                {/* Target Date */}
                 <div style={{ marginBottom: '16px' }}>
                   <label style={{
                     display: 'block',
@@ -1586,7 +1568,7 @@ const Milestones = () => {
                     marginBottom: '8px',
                     color: '#333'
                   }}>
-                    Date Achieved
+                    Target Date
                   </label>
                   <input
                     type="date"
@@ -1702,6 +1684,7 @@ const Milestones = () => {
                     onClick={() => {
                       setShowAddModal(false);
                       setEditingMilestone(null);
+                      setSelectedTitles([]);
                       setForm({
                         title: '',
                         description: '',
