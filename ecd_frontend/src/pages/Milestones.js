@@ -122,6 +122,7 @@ const Milestones = () => {
   const [completedMilestones, setCompletedMilestones] = useState([]);
   const [quickViewMilestone, setQuickViewMilestone] = useState(null);
   const [selectedTitles, setSelectedTitles] = useState([]);
+  const [multiDateByTitle, setMultiDateByTitle] = useState({});
   const [form, setForm] = useState({
     title: '',
     description: '',
@@ -234,6 +235,7 @@ const Milestones = () => {
     const newCategory = e.target.value;
     setSelectedCategory(newCategory);
     setSelectedTitles([]);
+    setMultiDateByTitle({});
     // Reset form when category changes
     setForm({
       title: '',
@@ -262,6 +264,13 @@ const Milestones = () => {
       .filter(Boolean);
 
     setSelectedTitles(titles);
+    setMultiDateByTitle((prev) => {
+      const next = {};
+      titles.forEach((title) => {
+        next[title] = prev[title] || '';
+      });
+      return next;
+    });
     setForm((prev) => ({
       ...prev,
       title: titles[0] || '',
@@ -314,8 +323,11 @@ const Milestones = () => {
             formData.append('category', selectedCategory);
             formData.append('title', title);
             formData.append('description', getMilestoneDescription(selectedCategory, title));
-            if (form.date_achieved) {
-              formData.append('date_achieved', form.date_achieved);
+            const perTitleDate = selectedTitles.length > 1
+              ? multiDateByTitle[title]
+              : form.date_achieved;
+            if (perTitleDate) {
+              formData.append('date_achieved', perTitleDate);
             }
             if (form.image) {
               formData.append('image', form.image);
@@ -332,6 +344,7 @@ const Milestones = () => {
       setShowAddModal(false);
       setEditingMilestone(null);
       setSelectedTitles([]);
+      setMultiDateByTitle({});
       setForm({
         title: '',
         description: '',
@@ -351,6 +364,7 @@ const Milestones = () => {
     setEditingMilestone(milestone);
     setSelectedCategory(milestone.category);
     setSelectedTitles([milestone.title]);
+    setMultiDateByTitle({});
     setForm({
       title: milestone.title,
       description: milestone.description,
@@ -533,6 +547,21 @@ const Milestones = () => {
     role: parsedUser.role || 'Parent'
   };
 
+  const getTargetDateStatus = (targetDate) => {
+    if (!targetDate) return null;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const dueDate = new Date(targetDate);
+    dueDate.setHours(0, 0, 0, 0);
+
+    return {
+      isMissed: dueDate < today,
+      formattedDate: dueDate.toLocaleDateString()
+    };
+  };
+
   return (
     <div style={layout}>
       <aside style={sidebar}>
@@ -626,6 +655,7 @@ const Milestones = () => {
             setShowAddModal(true);
             setEditingMilestone(null);
             setSelectedTitles([]);
+            setMultiDateByTitle({});
             setForm({
               title: '',
               description: '',
@@ -963,15 +993,30 @@ const Milestones = () => {
                           </div>
                         )}
 
-                        {milestone.date_achieved && (
-                          <p style={{
-                            fontSize: '11px',
-                            color: '#999',
-                            margin: '8px 0 0 0'
-                          }}>
-                            📅 {new Date(milestone.date_achieved).toLocaleDateString()}
-                          </p>
-                        )}
+                        {milestone.date_achieved && (() => {
+                          const targetStatus = getTargetDateStatus(milestone.date_achieved);
+                          return targetStatus?.isMissed ? (
+                            <p style={{
+                              fontSize: '11px',
+                              color: '#b91c1c',
+                              margin: '8px 0 0 0',
+                              background: '#fee2e2',
+                              padding: '4px 8px',
+                              borderRadius: '4px',
+                              borderLeft: '3px solid #dc2626'
+                            }}>
+                              ⚠ Deadline missed (Target: {targetStatus.formattedDate})
+                            </p>
+                          ) : (
+                            <p style={{
+                              fontSize: '11px',
+                              color: '#999',
+                              margin: '8px 0 0 0'
+                            }}>
+                              🎯 Target: {targetStatus?.formattedDate}
+                            </p>
+                          );
+                        })()}
                       </div>
                     ))}
                   </div>
@@ -1570,21 +1615,60 @@ const Milestones = () => {
                   }}>
                     Target Date
                   </label>
-                  <input
-                    type="date"
-                    name="date_achieved"
-                    value={form.date_achieved}
-                    onChange={handleFormChange}
-                    style={{
-                      width: '100%',
-                      padding: '10px 12px',
-                      border: '1px solid #d1d5db',
-                      borderRadius: '6px',
-                      fontSize: '14px',
-                      fontFamily: 'inherit',
-                      boxSizing: 'border-box'
-                    }}
-                  />
+                  {!editingMilestone && selectedTitles.length > 1 ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {selectedTitles.map((title) => (
+                        <div key={title} style={{
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '6px',
+                          padding: '8px 10px',
+                          background: '#f9fafb'
+                        }}>
+                          <div style={{
+                            fontSize: '12px',
+                            fontWeight: '600',
+                            color: '#4b5563',
+                            marginBottom: '6px'
+                          }}>
+                            {title}
+                          </div>
+                          <input
+                            type="date"
+                            value={multiDateByTitle[title] || ''}
+                            onChange={(e) => setMultiDateByTitle((prev) => ({
+                              ...prev,
+                              [title]: e.target.value
+                            }))}
+                            style={{
+                              width: '100%',
+                              padding: '8px 10px',
+                              border: '1px solid #d1d5db',
+                              borderRadius: '6px',
+                              fontSize: '13px',
+                              fontFamily: 'inherit',
+                              boxSizing: 'border-box'
+                            }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <input
+                      type="date"
+                      name="date_achieved"
+                      value={form.date_achieved}
+                      onChange={handleFormChange}
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '6px',
+                        fontSize: '14px',
+                        fontFamily: 'inherit',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                  )}
                 </div>
 
                 {/* Image Upload */}
@@ -1685,6 +1769,7 @@ const Milestones = () => {
                       setShowAddModal(false);
                       setEditingMilestone(null);
                       setSelectedTitles([]);
+                      setMultiDateByTitle({});
                       setForm({
                         title: '',
                         description: '',

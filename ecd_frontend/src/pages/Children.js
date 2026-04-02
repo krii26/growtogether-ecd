@@ -171,25 +171,32 @@ const Children = () => {
     return `${ageYears} years ${ageMonths} months`;
   };
 
+  const progressData = [
+    { name: 'Social-Emotional', percent: 85, color: '#6366f1' },
+    { name: 'Cognitive', percent: 78, color: '#2563eb' },
+    { name: 'Physical', percent: 92, color: '#059669' }
+  ];
+
   // Styles
   const layout = {
-    display: 'grid',
-    gridTemplateColumns: '220px 1fr',
+    display: 'flex',
     gap: 0,
     minHeight: '100vh',
-    background: '#f8f9fa'
+    background: '#f3f6fb'
   };
 
   const sidebar = {
-    background: '#f8f9fa',
-    borderRight: '1px solid #e0e0e0',
-    padding: '20px 16px',
+    width: '240px',
+    background: '#ffffff',
+    borderRight: '1px solid #e5e7eb',
+    padding: '24px 16px',
     position: 'sticky',
     top: 0,
     height: '100vh',
     display: 'flex',
     flexDirection: 'column',
-    justifyContent: 'space-between'
+    justifyContent: 'space-between',
+    boxSizing: 'border-box'
   };
 
   const navItem = {
@@ -198,18 +205,18 @@ const Children = () => {
     gap: 12,
     padding: '12px 16px',
     borderRadius: 8,
-    color: '#666',
+    color: '#4b5563',
     cursor: 'pointer',
-    marginBottom: 8,
+    marginBottom: 6,
     fontSize: '15px',
     fontWeight: 500,
-    transition: 'all 0.2s'
+    transition: 'all 0.2s ease'
   };
 
   const navActive = { 
     ...navItem, 
-    background: '#e8d5f2', 
-    color: '#6a11cb',
+    background: '#e8eefc', 
+    color: '#1d4ed8',
     fontWeight: 600
   };
 
@@ -220,7 +227,7 @@ const Children = () => {
   };
 
   const userSection = {
-    borderTop: '1px solid #e0e0e0',
+    borderTop: '1px solid #e5e7eb',
     paddingTop: '16px',
     marginTop: 'auto'
   };
@@ -230,16 +237,17 @@ const Children = () => {
     alignItems: 'center',
     gap: 12,
     padding: '12px 16px',
-    background: '#fff',
+    background: '#f8fafc',
+    border: '1px solid #e5e7eb',
     borderRadius: 10,
-    cursor: 'pointer'
+    cursor: 'default'
   };
 
   const userAvatar = {
     width: 40,
     height: 40,
     borderRadius: '50%',
-    background: 'linear-gradient(135deg, #a855f7 0%, #d946ef 100%)',
+    background: 'linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -261,26 +269,36 @@ const Children = () => {
 
   const userRole = {
     fontSize: '12px',
-    color: '#999',
+    color: '#6b7280',
     marginTop: 2
   };
 
   const logoutIcon = {
     fontSize: '18px',
-    color: '#999',
+    color: '#6b7280',
     cursor: 'pointer'
   };
 
   const mainContent = {
-    padding: '24px 40px',
-    background: '#ffffff'
+    flex: 1,
+    padding: '28px 34px',
+    background: 'transparent'
+  };
+
+  const contentContainer = {
+    maxWidth: '1160px',
+    margin: '0 auto'
   };
 
   const header = {
     display: 'flex',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: '32px'
+    marginBottom: '28px',
+    background: '#ffffff',
+    borderRadius: '14px',
+    border: '1px solid #e5e7eb',
+    padding: '18px 22px'
   };
 
   const headerLeft = {
@@ -288,28 +306,32 @@ const Children = () => {
   };
 
   const pageTitle = {
-    fontSize: '28px',
+    fontSize: '30px',
     fontWeight: 700,
-    color: '#1a1a1a',
-    marginBottom: '8px'
+    color: '#111827',
+    marginBottom: '6px',
+    marginTop: 0
   };
 
   const pageSubtitle = {
     fontSize: '14px',
-    color: '#666'
+    color: '#6b7280',
+    margin: 0
   };
 
   const notificationIcon = {
     position: 'relative',
-    width: '40px',
-    height: '40px',
+    width: '42px',
+    height: '42px',
     borderRadius: '50%',
-    background: '#f5f5f5',
+    background: '#eff6ff',
+    color: '#1d4ed8',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     cursor: 'pointer',
-    fontSize: '18px'
+    fontSize: '18px',
+    border: '1px solid #dbeafe'
   };
 
   const notificationDot = {
@@ -318,7 +340,7 @@ const Children = () => {
     right: '8px',
     width: '8px',
     height: '8px',
-    background: '#ff4444',
+    background: '#ef4444',
     borderRadius: '50%'
   };
 
@@ -370,18 +392,18 @@ const Children = () => {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: '24px'
+    marginBottom: '18px'
   };
 
   const sectionTitle = {
     fontSize: '20px',
     fontWeight: 700,
-    color: '#1a1a1a'
+    color: '#111827'
   };
 
   const addButton = {
-    padding: '10px 20px',
-    background: 'linear-gradient(135deg, #a855f7 0%, #d946ef 100%)',
+    padding: '10px 18px',
+    background: '#2563eb',
     color: 'white',
     border: 'none',
     borderRadius: '8px',
@@ -390,21 +412,22 @@ const Children = () => {
     cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
-    gap: '8px'
+    gap: '8px',
+    boxShadow: '0 8px 18px rgba(37, 99, 235, 0.22)'
   };
 
   const childrenGrid = {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-    gap: '24px'
+    gridTemplateColumns: 'repeat(auto-fill, minmax(330px, 1fr))',
+    gap: '20px'
   };
 
   const childCard = {
     background: '#ffffff',
     border: '1px solid #e5e7eb',
-    borderRadius: '12px',
+    borderRadius: '16px',
     padding: '24px',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+    boxShadow: '0 8px 22px rgba(15, 23, 42, 0.06)'
   };
 
   const childHeader = {
@@ -429,21 +452,21 @@ const Children = () => {
   const childName = {
     fontSize: '18px',
     fontWeight: 700,
-    color: '#1a1a1a',
+    color: '#111827',
     marginBottom: '4px'
   };
 
   const childAge = {
     fontSize: '13px',
-    color: '#666',
+    color: '#6b7280',
     marginBottom: '8px'
   };
 
   const activeBadge = {
     display: 'inline-block',
-    padding: '4px 12px',
-    background: '#d1fae5',
-    color: '#065f46',
+    padding: '5px 12px',
+    background: '#dcfce7',
+    color: '#166534',
     borderRadius: '12px',
     fontSize: '11px',
     fontWeight: 600
@@ -454,7 +477,7 @@ const Children = () => {
   };
 
   const progressItem = {
-    marginBottom: '12px'
+    marginBottom: '14px'
   };
 
   const progressLabel = {
@@ -466,7 +489,7 @@ const Children = () => {
 
   const progressName = {
     fontSize: '13px',
-    color: '#666',
+    color: '#374151',
     fontWeight: 500
   };
 
@@ -477,9 +500,9 @@ const Children = () => {
 
   const progressBar = {
     width: '100%',
-    height: '6px',
+    height: '7px',
     background: '#e5e7eb',
-    borderRadius: '3px',
+    borderRadius: '999px',
     overflow: 'hidden'
   };
 
@@ -487,20 +510,38 @@ const Children = () => {
     width: `${percent}%`,
     height: '100%',
     background: color,
-    borderRadius: '3px',
+    borderRadius: '999px',
     transition: 'width 0.3s ease'
   });
 
-  const viewButton = {
+  const actionsRow = {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr 1fr',
+    gap: '8px',
+    marginTop: '8px'
+  };
+
+  const actionButton = {
     width: '100%',
     padding: '10px',
-    background: '#f3e8ff',
-    color: '#6a11cb',
+    background: '#eff6ff',
+    color: '#1d4ed8',
     border: 'none',
     borderRadius: '8px',
-    fontSize: '14px',
+    fontSize: '13px',
     fontWeight: 600,
-    cursor: 'pointer'
+    cursor: 'pointer',
+    whiteSpace: 'nowrap'
+  };
+
+  const emptyState = {
+    gridColumn: '1 / -1',
+    background: '#ffffff',
+    border: '1px dashed #cbd5e1',
+    borderRadius: '14px',
+    padding: '42px 24px',
+    textAlign: 'center',
+    color: '#6b7280'
   };
 
   return (
@@ -548,6 +589,7 @@ const Children = () => {
         </div>
       </aside>
       <main style={mainContent}>
+        <div style={contentContainer}>
         <div style={header}>
           <div style={headerLeft}>
             <h1 style={pageTitle}>My Children</h1>
@@ -580,66 +622,50 @@ const Children = () => {
                 </div>
               </div>
               <div style={progressSection}>
-                <div style={progressItem}>
-                  <div style={progressLabel}>
-                    <span style={progressName}>Social-Emotional</span>
-                    <span style={{ ...progressValue, color: '#8b5cf6' }}>85%</span>
+                {progressData.map((progress) => (
+                  <div key={progress.name} style={progressItem}>
+                    <div style={progressLabel}>
+                      <span style={progressName}>{progress.name}</span>
+                      <span style={{ ...progressValue, color: progress.color }}>{progress.percent}%</span>
+                    </div>
+                    <div style={progressBar}>
+                      <div style={progressFill(progress.percent, progress.color)}></div>
+                    </div>
                   </div>
-                  <div style={progressBar}>
-                    <div style={progressFill(85, '#8b5cf6')}></div>
-                  </div>
-                </div>
-                <div style={progressItem}>
-                  <div style={progressLabel}>
-                    <span style={progressName}>Cognitive</span>
-                    <span style={{ ...progressValue, color: '#3b82f6' }}>78%</span>
-                  </div>
-                  <div style={progressBar}>
-                    <div style={progressFill(78, '#3b82f6')}></div>
-                  </div>
-                </div>
-                <div style={progressItem}>
-                  <div style={progressLabel}>
-                    <span style={progressName}>Physical</span>
-                    <span style={{ ...progressValue, color: '#10b981' }}>92%</span>
-                  </div>
-                  <div style={progressBar}>
-                    <div style={progressFill(92, '#10b981')}></div>
-                  </div>
-                </div>
+                ))}
               </div>
-              <button 
-                onClick={() => navigate(`/milestones?childId=${child.id}`)}
-                style={viewButton}
-              >
-                View Milestones
-              </button>
-              <button 
-                onClick={() => handleEditChild(child)}
-                style={{
-                  ...viewButton,
-                  background: '#fef3c7',
-                  color: '#d97706',
-                  marginLeft: '8px'
-                }}
-              >
-                Edit
-              </button>
-              <button 
-                onClick={() => handleDeleteChild(child.id)}
-                style={{
-                  ...viewButton,
-                  background: '#fee2e2',
-                  color: '#dc2626',
-                  marginLeft: '8px'
-                }}
-              >
-                Delete
-              </button>
+              <div style={actionsRow}>
+                <button 
+                  onClick={() => navigate(`/milestones?childId=${child.id}`)}
+                  style={actionButton}
+                >
+                  Milestones
+                </button>
+                <button 
+                  onClick={() => handleEditChild(child)}
+                  style={{
+                    ...actionButton,
+                    background: '#fef3c7',
+                    color: '#b45309'
+                  }}
+                >
+                  Edit
+                </button>
+                <button 
+                  onClick={() => handleDeleteChild(child.id)}
+                  style={{
+                    ...actionButton,
+                    background: '#fee2e2',
+                    color: '#b91c1c'
+                  }}
+                >
+                  Delete
+                </button>
+              </div>
             </div>
           ))}
           {children.length === 0 && (
-            <div style={{ padding: '40px', textAlign: 'center', color: '#999' }}>
+            <div style={emptyState}>
               No children profiles yet. Click "Add Child" to get started.
             </div>
           )}
@@ -698,7 +724,7 @@ const Children = () => {
                           height: '80px',
                           borderRadius: '8px',
                           objectFit: 'cover',
-                          border: '2px solid #a855f7'
+                          border: '2px solid #2563eb'
                         }}
                       />
                       <p style={{ fontSize: '12px', color: '#666', marginTop: '6px' }}>Preview</p>
@@ -723,7 +749,7 @@ const Children = () => {
                   <button
                     type="submit"
                     disabled={saving}
-                    style={{ padding: '10px 14px', borderRadius: '8px', border: 'none', background: '#a855f7', color: 'white', fontWeight: 600, cursor: 'pointer', opacity: saving ? 0.7 : 1 }}
+                    style={{ padding: '10px 14px', borderRadius: '8px', border: 'none', background: '#2563eb', color: 'white', fontWeight: 600, cursor: 'pointer', opacity: saving ? 0.7 : 1 }}
                   >
                     {saving ? 'Saving...' : 'Save'}
                   </button>
@@ -732,6 +758,7 @@ const Children = () => {
             </div>
           </div>
         )}
+        </div>
       </main>
     </div>
   );

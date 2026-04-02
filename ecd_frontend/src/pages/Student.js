@@ -18,6 +18,11 @@ const Student = () => {
   const [reviewingMilestone, setReviewingMilestone] = useState(null);
   const [rating, setRating] = useState(0);
   const [suggestions, setSuggestions] = useState('');
+  const [showFollowUpModal, setShowFollowUpModal] = useState(false);
+  const [followUpMessage, setFollowUpMessage] = useState('');
+  const [followUpSending, setFollowUpSending] = useState(false);
+  const [followUpError, setFollowUpError] = useState('');
+  const [followUpSuccess, setFollowUpSuccess] = useState('');
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -74,12 +79,63 @@ const Student = () => {
 
   const handleCloseProfile = () => {
     setSelectedStudent(null);
+    setShowFollowUpModal(false);
+    setFollowUpMessage('');
+    setFollowUpError('');
+    setFollowUpSuccess('');
     setStudentMilestones({
       'social-emotional': [],
       'cognitive': [],
       'physical': [],
       'language': []
     });
+  };
+
+  const handleOpenFollowUp = () => {
+    setShowFollowUpModal(true);
+    setFollowUpMessage('');
+    setFollowUpError('');
+    setFollowUpSuccess('');
+  };
+
+  const handleCloseFollowUp = () => {
+    if (followUpSending) return;
+    setShowFollowUpModal(false);
+    setFollowUpMessage('');
+    setFollowUpError('');
+    setFollowUpSuccess('');
+  };
+
+  const handleSendFollowUp = async () => {
+    const trimmed = followUpMessage.trim();
+    if (!trimmed) {
+      setFollowUpError('Please enter a message before sending.');
+      return;
+    }
+    if (!selectedStudent?.id) {
+      setFollowUpError('Student context is missing. Please reopen the profile.');
+      return;
+    }
+
+    try {
+      setFollowUpSending(true);
+      setFollowUpError('');
+      setFollowUpSuccess('');
+
+      await API.post('follow_up_messages/', {
+        child: selectedStudent.id,
+        parent_name: selectedStudent.parent_name || 'Parent',
+        message: trimmed
+      });
+
+      setFollowUpSuccess('Follow-up message sent to parent successfully.');
+      setFollowUpMessage('');
+    } catch (err) {
+      console.error('Failed to send follow-up message', err);
+      setFollowUpError('Failed to send follow-up message. Please try again.');
+    } finally {
+      setFollowUpSending(false);
+    }
   };
 
   const handleReviewMilestone = (milestone) => {
@@ -92,6 +148,27 @@ const Student = () => {
     setReviewingMilestone(null);
     setRating(0);
     setSuggestions('');
+  };
+
+  const getTargetDateStatus = (targetDate) => {
+    if (!targetDate) return null;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const dueDate = new Date(targetDate);
+    dueDate.setHours(0, 0, 0, 0);
+
+    return {
+      isMissed: dueDate < today,
+      formattedDate: dueDate.toLocaleDateString(),
+      longFormattedDate: dueDate.toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      })
+    };
   };
 
   const layout = {
@@ -467,9 +544,33 @@ const Student = () => {
                   borderRadius: '12px',
                   marginBottom: '24px'
                 }}>
-                  <h3 style={{ margin: '0 0 16px 0', fontSize: '18px', fontWeight: '600', color: '#111827' }}>
-                    Student Details
-                  </h3>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    marginBottom: '16px',
+                    gap: '12px',
+                    flexWrap: 'wrap'
+                  }}>
+                    <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600', color: '#111827' }}>
+                      Student Details
+                    </h3>
+                    <button
+                      onClick={handleOpenFollowUp}
+                      style={{
+                        background: '#8b5cf6',
+                        color: 'white',
+                        border: 'none',
+                        padding: '8px 14px',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontSize: '13px',
+                        fontWeight: '600'
+                      }}
+                    >
+                      Follow Up
+                    </button>
+                  </div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
                     <div>
                       <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px' }}>Age</div>
@@ -620,17 +721,33 @@ const Student = () => {
                                         />
                                       </div>
                                     )}
-                                    {milestone.date_achieved && (
-                                      <div style={{
-                                        fontSize: '11px',
-                                        color: '#6b7280',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '4px'
-                                      }}>
-                                        📅 {new Date(milestone.date_achieved).toLocaleDateString()}
-                                      </div>
-                                    )}
+                                    {milestone.date_achieved && (() => {
+                                      const targetStatus = getTargetDateStatus(milestone.date_achieved);
+                                      return targetStatus?.isMissed ? (
+                                        <div style={{
+                                          fontSize: '11px',
+                                          color: '#b91c1c',
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          gap: '4px',
+                                          background: '#fee2e2',
+                                          padding: '4px 6px',
+                                          borderRadius: '4px'
+                                        }}>
+                                          ⚠ Deadline missed ({targetStatus.formattedDate})
+                                        </div>
+                                      ) : (
+                                        <div style={{
+                                          fontSize: '11px',
+                                          color: '#6b7280',
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          gap: '4px'
+                                        }}>
+                                          🎯 Target: {targetStatus?.formattedDate}
+                                        </div>
+                                      );
+                                    })()}
                                   </div>
                                 ))}
                               </div>
@@ -656,6 +773,150 @@ const Student = () => {
                   <div style={{ fontSize: '32px', fontWeight: '700', color: '#7c3aed' }}>
                     {Object.values(studentMilestones).reduce((sum, arr) => sum + arr.length, 0)}
                   </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Follow Up Modal */}
+        {selectedStudent && showFollowUpModal && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0,0,0,0.45)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1002,
+            padding: '20px'
+          }}>
+            <div style={{
+              background: 'white',
+              borderRadius: '14px',
+              width: '100%',
+              maxWidth: '560px',
+              boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)',
+              overflow: 'hidden'
+            }}>
+              <div style={{
+                background: 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)',
+                color: 'white',
+                padding: '16px 20px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between'
+              }}>
+                <div style={{ fontSize: '18px', fontWeight: '700' }}>Follow Up</div>
+                <button
+                  onClick={handleCloseFollowUp}
+                  style={{
+                    background: 'rgba(255,255,255,0.2)',
+                    border: 'none',
+                    color: 'white',
+                    width: '30px',
+                    height: '30px',
+                    borderRadius: '50%',
+                    cursor: followUpSending ? 'not-allowed' : 'pointer',
+                    fontSize: '16px'
+                  }}
+                  disabled={followUpSending}
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div style={{ padding: '18px 20px' }}>
+                <div style={{ fontSize: '13px', color: '#6b7280', marginBottom: '12px' }}>
+                  Send follow-up message to: <strong>{selectedStudent.parent_name || 'Parent'}</strong>
+                </div>
+                <textarea
+                  value={followUpMessage}
+                  onChange={(e) => {
+                    setFollowUpMessage(e.target.value);
+                    if (followUpError) setFollowUpError('');
+                  }}
+                  placeholder="Write a follow-up message for the parent..."
+                  style={{
+                    width: '100%',
+                    minHeight: '130px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '10px',
+                    padding: '12px',
+                    fontSize: '14px',
+                    fontFamily: 'inherit',
+                    resize: 'vertical',
+                    boxSizing: 'border-box'
+                  }}
+                />
+
+                {followUpError && (
+                  <div style={{
+                    marginTop: '10px',
+                    fontSize: '13px',
+                    color: '#b91c1c',
+                    background: '#fee2e2',
+                    padding: '8px 10px',
+                    borderRadius: '8px'
+                  }}>
+                    {followUpError}
+                  </div>
+                )}
+
+                {followUpSuccess && (
+                  <div style={{
+                    marginTop: '10px',
+                    fontSize: '13px',
+                    color: '#065f46',
+                    background: '#d1fae5',
+                    padding: '8px 10px',
+                    borderRadius: '8px'
+                  }}>
+                    {followUpSuccess}
+                  </div>
+                )}
+
+                <div style={{
+                  marginTop: '14px',
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  gap: '10px'
+                }}>
+                  <button
+                    type="button"
+                    onClick={handleCloseFollowUp}
+                    disabled={followUpSending}
+                    style={{
+                      padding: '8px 14px',
+                      border: 'none',
+                      borderRadius: '8px',
+                      background: '#e5e7eb',
+                      color: '#1f2937',
+                      fontWeight: '600',
+                      cursor: followUpSending ? 'not-allowed' : 'pointer'
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSendFollowUp}
+                    disabled={followUpSending}
+                    style={{
+                      padding: '8px 14px',
+                      border: 'none',
+                      borderRadius: '8px',
+                      background: followUpSending ? '#c4b5fd' : '#7c3aed',
+                      color: 'white',
+                      fontWeight: '600',
+                      cursor: followUpSending ? 'not-allowed' : 'pointer'
+                    }}
+                  >
+                    {followUpSending ? 'Sending...' : 'Send Message'}
+                  </button>
                 </div>
               </div>
             </div>
@@ -758,31 +1019,39 @@ const Student = () => {
                   </div>
                 )}
 
-                {/* Date Achieved */}
-                {reviewingMilestone.date_achieved && (
-                  <div style={{
-                    background: '#f3f4f6',
-                    padding: '12px 16px',
-                    borderRadius: '8px',
-                    marginBottom: '20px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px'
-                  }}>
-                    <span style={{ fontSize: '18px' }}>📅</span>
-                    <div>
-                      <div style={{ fontSize: '12px', color: '#6b7280' }}>Date Achieved</div>
-                      <div style={{ fontSize: '14px', fontWeight: '600', color: '#111827' }}>
-                        {new Date(reviewingMilestone.date_achieved).toLocaleDateString('en-US', {
-                          weekday: 'long',
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric'
-                        })}
+                {/* Target Date */}
+                {reviewingMilestone.date_achieved && (() => {
+                  const targetStatus = getTargetDateStatus(reviewingMilestone.date_achieved);
+                  return (
+                    <div style={{
+                      background: targetStatus?.isMissed ? '#fee2e2' : '#f3f4f6',
+                      padding: '12px 16px',
+                      borderRadius: '8px',
+                      marginBottom: '20px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      borderLeft: targetStatus?.isMissed ? '3px solid #dc2626' : '3px solid #8b5cf6'
+                    }}>
+                      <span style={{ fontSize: '18px' }}>{targetStatus?.isMissed ? '⚠' : '🎯'}</span>
+                      <div>
+                        <div style={{ fontSize: '12px', color: '#6b7280' }}>Target Date</div>
+                        <div style={{
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          color: targetStatus?.isMissed ? '#b91c1c' : '#111827'
+                        }}>
+                          {targetStatus?.longFormattedDate}
+                        </div>
+                        {targetStatus?.isMissed && (
+                          <div style={{ fontSize: '12px', color: '#b91c1c', marginTop: '2px' }}>
+                            Deadline missed
+                          </div>
+                        )}
                       </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
 
                 {/* Description */}
                 {reviewingMilestone.description && (

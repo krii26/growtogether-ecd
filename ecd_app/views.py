@@ -10,10 +10,11 @@ from google.auth.transport import requests as grequests
 
 # Create your views here.
 from rest_framework import viewsets
-from .models import Child, Milestone, ELibrary, Activity, ProgressReport, UserProfile
+from .models import Child, Milestone, ELibrary, Activity, ProgressReport, UserProfile, FollowUpMessage
 from .serializers import (
     ChildSerializer, MilestoneSerializer, ELibrarySerializer,
-    ActivitySerializer, ProgressReportSerializer, UserProfileSerializer
+    ActivitySerializer, ProgressReportSerializer, UserProfileSerializer,
+    FollowUpMessageSerializer
 )
 
 class ChildViewSet(viewsets.ModelViewSet):
@@ -44,6 +45,11 @@ class ProgressReportViewSet(viewsets.ModelViewSet):
 class UserProfileViewSet(viewsets.ModelViewSet):
     queryset = UserProfile.objects.all()
     serializer_class = UserProfileSerializer
+
+
+class FollowUpMessageViewSet(viewsets.ModelViewSet):
+    queryset = FollowUpMessage.objects.all()
+    serializer_class = FollowUpMessageSerializer
 
 @api_view(['POST'])
 @permission_classes([AllowAny])

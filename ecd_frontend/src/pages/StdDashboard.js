@@ -14,7 +14,7 @@ const StdDashboard = () => {
   const [upcomingMilestones, setUpcomingMilestones] = useState([]);
   const [progressReports, setProgressReports] = useState([]);
   const [children, setChildren] = useState([]);
-  const [completedMilestones, setCompletedMilestones] = useState([]);
+  const [followMessages, setFollowMessages] = useState([]);
   const [userInfo, setUserInfo] = useState({
     first_name: '',
     last_name: '',
@@ -26,8 +26,10 @@ const StdDashboard = () => {
       try {
         // Load user info from localStorage or API
         const storedUser = localStorage.getItem('user');
+        let parentFullName = '';
         if (storedUser) {
           const user = JSON.parse(storedUser);
+          parentFullName = `${user.first_name || ''} ${user.last_name || ''}`.trim();
           setUserInfo({
             first_name: user.first_name || 'John',
             last_name: user.last_name || 'Doe',
@@ -35,11 +37,12 @@ const StdDashboard = () => {
           });
         }
 
-        const [childrenRes, activitiesRes, milestonesRes, reportsRes] = await Promise.all([
+        const [childrenRes, activitiesRes, milestonesRes, reportsRes, followMessagesRes] = await Promise.all([
           API.get('children/'),
           API.get('activities/'),
           API.get('milestones/'),
           API.get('progress_reports/'),
+          API.get('follow_up_messages/'),
         ]);
         setCounts({
           children: childrenRes.data?.length || 0,
@@ -51,23 +54,12 @@ const StdDashboard = () => {
         setRecentActivities((activitiesRes.data || []).slice(0, 3));
         setUpcomingMilestones((milestonesRes.data || []).slice(0, 3));
         setProgressReports((reportsRes.data || []).slice(-5).reverse());
-        
-        // Load completed milestones from localStorage for all children
-        const allCompleted = [];
-        (childrenRes.data || []).forEach(child => {
-          const stored = localStorage.getItem(`completedMilestones_${child.id}`);
-          if (stored) {
-            const childCompleted = JSON.parse(stored).map(m => ({
-              ...m,
-              childId: child.id,
-              childName: child.name
-            }));
-            allCompleted.push(...childCompleted);
-          }
-        });
-        // Sort by most recent
-        allCompleted.sort((a, b) => new Date(b.completedDate) - new Date(a.completedDate));
-        setCompletedMilestones(allCompleted.slice(0, 6)); // Show only latest 6
+
+        const allMessages = followMessagesRes.data || [];
+        const filteredByParent = parentFullName
+          ? allMessages.filter((msg) => (msg.parent_name || '').trim().toLowerCase() === parentFullName.toLowerCase())
+          : allMessages;
+        setFollowMessages(filteredByParent.slice(0, 6));
       } catch (err) {
         console.error('Failed to load dashboard data', err);
       }
@@ -362,178 +354,56 @@ const StdDashboard = () => {
             </div>
           </div>
 
-          {/* Completed Milestones Section */}
-          {completedMilestones.length > 0 && (
-            <div style={{
-              background: 'white',
-              padding: '20px 24px',
-              borderRadius: 16,
-              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-              marginBottom: 20
-            }}>
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: 16
-              }}>
-                <div style={{ fontWeight: 700, fontSize: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span>✅</span> Recent Achievements
-                </div>
-                <div style={{
-                  fontSize: 13,
-                  color: '#6b7280',
-                  background: '#f3f4f6',
-                  padding: '4px 12px',
-                  borderRadius: 12,
-                  fontWeight: 600
-                }}>
-                  {completedMilestones.length} completed
-                </div>
-              </div>
-              
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-                gap: 16
-              }}>
-                {completedMilestones.map((milestone, idx) => {
-                  const categoryColors = {
-                    'social-emotional': '#a78bfa',
-                    'cognitive': '#60a5fa',
-                    'physical': '#34d399',
-                    'language': '#f472b6'
-                  };
-                  const categoryIcons = {
-                    'social-emotional': '👥',
-                    'cognitive': '🧠',
-                    'physical': '💪',
-                    'language': '🗣️'
-                  };
-                  
-                  return (
-                    <div
-                      key={idx}
-                      style={{
-                        border: '1px solid #e5e7eb',
-                        borderRadius: 12,
-                        padding: 14,
-                        background: '#fafafa',
-                        transition: 'transform 0.2s, box-shadow 0.2s',
-                        cursor: 'pointer'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-2px)';
-                        e.currentTarget.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = 'none';
-                      }}
-                    >
-                      {/* Child Name & Category */}
-                      <div style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'start',
-                        marginBottom: 10
-                      }}>
-                        <div style={{
-                          fontSize: 12,
-                          fontWeight: 600,
-                          color: '#6b7280',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 6
-                        }}>
-                          👶 {milestone.childName}
-                        </div>
-                        <div style={{
-                          background: categoryColors[milestone.category] || '#8b5cf6',
-                          color: 'white',
-                          padding: '2px 8px',
-                          borderRadius: 6,
-                          fontSize: 11,
-                          fontWeight: 600,
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 4
-                        }}>
-                          {categoryIcons[milestone.category]} {milestone.category?.replace('-', ' ')}
-                        </div>
-                      </div>
-
-                      {/* Milestone Title */}
-                      <div style={{
-                        fontWeight: 600,
-                        fontSize: 14,
-                        color: '#111827',
-                        marginBottom: 8,
-                        lineHeight: 1.4
-                      }}>
-                        {milestone.title}
-                      </div>
-
-                      {/* Rating */}
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 6,
-                        marginBottom: 8
-                      }}>
-                        <div style={{ display: 'flex', gap: 2 }}>
-                          {[...Array(5)].map((_, i) => (
-                            <span key={i} style={{
-                              fontSize: 14,
-                              color: i < Math.floor((milestone.rating || 0) / 2) ? '#fbbf24' : '#e5e7eb'
-                            }}>
-                              ⭐
-                            </span>
-                          ))}
-                        </div>
-                        <span style={{
-                          fontSize: 13,
-                          fontWeight: 700,
-                          color: '#059669'
-                        }}>
-                          {milestone.rating || 0}/10
-                        </span>
-                      </div>
-
-                      {/* Suggestions Preview */}
-                      {milestone.suggestions && (
-                        <div style={{
-                          fontSize: 12,
-                          color: '#6b7280',
-                          fontStyle: 'italic',
-                          marginBottom: 8,
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap'
-                        }}>
-                          💬 "{milestone.suggestions}"
-                        </div>
-                      )}
-
-                      {/* Completion Date */}
-                      <div style={{
-                        fontSize: 11,
-                        color: '#9ca3af',
-                        paddingTop: 8,
-                        borderTop: '1px solid #e5e7eb'
-                      }}>
-                        ✓ Completed {new Date(milestone.completedDate).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric'
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+          {/* Follow Messages */}
+          <div style={{ ...listCard, marginTop: 16 }}>
+            <div style={{ fontWeight: 700, marginBottom: 12, fontSize: 16 }}>
+              🔔 Follow Messages
             </div>
-          )}
+            {followMessages.length === 0 ? (
+              <div style={{ color: '#777', fontSize: 13, padding: '8px 0' }}>
+                No follow messages yet.
+              </div>
+            ) : (
+              followMessages.map((msg) => (
+                <div
+                  key={msg.id}
+                  style={{
+                    border: '1px solid #e5e7eb',
+                    borderRadius: 12,
+                    padding: '12px 14px',
+                    marginBottom: 10,
+                    background: '#f9fafb'
+                  }}
+                >
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: 6,
+                    gap: 10,
+                    flexWrap: 'wrap'
+                  }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#4338ca' }}>
+                      Follow Message
+                    </div>
+                    <div style={{ fontSize: 12, color: '#9ca3af' }}>
+                      {new Date(msg.created_at).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric'
+                      })}
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>
+                    For: {msg.child_name || 'Child'}
+                  </div>
+                  <div style={{ fontSize: 14, color: '#1f2937', lineHeight: 1.6 }}>
+                    {msg.message}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
 
           {/* Progress Reports Section */}
           <div style={listCard}>

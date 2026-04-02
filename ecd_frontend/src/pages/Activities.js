@@ -13,51 +13,163 @@ const Activities = () => {
   const activities = [
     {
       id: 1,
-      age: 'Age 3-4',
-      title: 'Color Sorting Game',
-      description: 'Help your child learn colors by sorting objects into color-coded containers.',
-      duration: '15 min',
-      domain: 'Cognitive'
-    },
-    {
-      id: 2,
-      age: 'Age 4-5',
-      title: 'Obstacle Course',
-      description: 'Create a fun indoor obstacle course to develop gross motor skills and coordination.',
-      duration: '30 min',
-      domain: 'Physical'
-    },
-    {
-      id: 3,
       age: 'Age 2-3',
       title: 'Story Time Circle',
-      description: 'Interactive storytelling session to enhance language and listening skills.',
+      description: 'Read a short picture book and ask your child to point to familiar objects and animals.',
       duration: '20 min',
       domain: 'Language'
     },
     {
+      id: 2,
+      age: 'Age 2-3',
+      title: 'Shape Hunt',
+      description: 'Find circles, squares, and triangles around the house to build early recognition skills.',
+      duration: '15 min',
+      domain: 'Cognitive'
+    },
+    {
+      id: 3,
+      age: 'Age 2-3',
+      title: 'Ball Roll and Catch',
+      description: 'Sit facing each other and roll a soft ball back and forth to improve coordination.',
+      duration: '15 min',
+      domain: 'Physical'
+    },
+    {
       id: 4,
-      age: 'Age 5-6',
-      title: 'Science Experiment',
-      description: 'Simple experiments like mixing colors or making bubbles to spark curiosity.',
-      duration: '25 min',
-      domain: 'Science'
+      age: 'Age 2-3',
+      title: 'Finger Painting Fun',
+      description: 'Use safe paints to make hand and finger prints while naming colors and shapes.',
+      duration: '20 min',
+      domain: 'Creative'
     },
     {
       id: 5,
-      age: 'Age 3-4',
-      title: 'Playdough Creations',
-      description: 'Encourage creativity and fine motor skills through playdough modeling.',
-      duration: '20 min',
+      age: 'Age 2-3',
+      title: 'Stack and Build',
+      description: 'Stack cups or blocks and encourage your child to copy simple tower patterns.',
+      duration: '15 min',
       domain: 'Fine Motor'
     },
     {
       id: 6,
+      age: 'Age 3-4',
+      title: 'Color Sorting Game',
+      description: 'Help your child sort objects into matching colors to strengthen attention and logic.',
+      duration: '15 min',
+      domain: 'Cognitive'
+    },
+    {
+      id: 7,
+      age: 'Age 3-4',
+      title: 'Playdough Creations',
+      description: 'Encourage creativity and fine motor skills by shaping animals, fruits, and letters.',
+      duration: '20 min',
+      domain: 'Fine Motor'
+    },
+    {
+      id: 8,
+      age: 'Age 3-4',
+      title: 'Action Song Time',
+      description: 'Sing action songs with movements like clap, jump, and spin to build motor planning.',
+      duration: '15 min',
+      domain: 'Physical'
+    },
+    {
+      id: 9,
+      age: 'Age 3-4',
+      title: 'Pretend Kitchen Play',
+      description: 'Role-play cooking and serving to improve social interaction and expressive language.',
+      duration: '25 min',
+      domain: 'Social-Emotional'
+    },
+    {
+      id: 10,
+      age: 'Age 3-4',
+      title: 'Puzzle Match',
+      description: 'Solve simple 4-8 piece puzzles to develop visual memory and problem-solving skills.',
+      duration: '20 min',
+      domain: 'Cognitive'
+    },
+    {
+      id: 11,
+      age: 'Age 4-5',
+      title: 'Obstacle Course',
+      description: 'Create a fun indoor obstacle path with cushions and cones for balance and coordination.',
+      duration: '30 min',
+      domain: 'Physical'
+    },
+    {
+      id: 12,
       age: 'Age 4-5',
       title: 'Music and Movement',
-      description: 'Dance and sing along to music to develop rhythm and coordination.',
+      description: 'Dance and sing with rhythm patterns to improve listening and body control.',
       duration: '15 min',
       domain: 'Creative'
+    },
+    {
+      id: 13,
+      age: 'Age 4-5',
+      title: 'Rhyming Word Basket',
+      description: 'Pick picture cards and find rhyming pairs to build phonological awareness.',
+      duration: '20 min',
+      domain: 'Language'
+    },
+    {
+      id: 14,
+      age: 'Age 4-5',
+      title: 'Pattern Bead Stringing',
+      description: 'Create repeating color patterns with beads to support sequencing and fine motor control.',
+      duration: '20 min',
+      domain: 'Fine Motor'
+    },
+    {
+      id: 15,
+      age: 'Age 4-5',
+      title: 'Emotion Faces Game',
+      description: 'Use mirror play to identify happy, sad, angry, and surprised expressions.',
+      duration: '15 min',
+      domain: 'Social-Emotional'
+    },
+    {
+      id: 16,
+      age: 'Age 5-6',
+      title: 'Science Experiment',
+      description: 'Try simple science activities like color mixing or sink-and-float with predictions.',
+      duration: '25 min',
+      domain: 'Science'
+    },
+    {
+      id: 17,
+      age: 'Age 5-6',
+      title: 'Story Retell Challenge',
+      description: 'After reading a short story, ask your child to retell beginning, middle, and end.',
+      duration: '20 min',
+      domain: 'Language'
+    },
+    {
+      id: 18,
+      age: 'Age 5-6',
+      title: 'Number Hopscotch',
+      description: 'Play hopscotch with number calls to strengthen counting and body coordination.',
+      duration: '20 min',
+      domain: 'Math + Physical'
+    },
+    {
+      id: 19,
+      age: 'Age 5-6',
+      title: 'Team Cleanup Mission',
+      description: 'Turn cleanup into a timed mission to build responsibility and teamwork habits.',
+      duration: '15 min',
+      domain: 'Social-Emotional'
+    },
+    {
+      id: 20,
+      age: 'Age 5-6',
+      title: 'Build a Bridge',
+      description: 'Use straws or blocks to build a bridge that can hold a toy, encouraging engineering thinking.',
+      duration: '30 min',
+      domain: 'Cognitive'
     }
   ];
 

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Child, Milestone, ELibrary, Activity, ProgressReport, UserProfile
+from .models import Child, Milestone, ELibrary, Activity, ProgressReport, UserProfile, FollowUpMessage
 from django.contrib.auth.models import User
 
 # -----------------------------
@@ -75,6 +75,14 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = UserProfile
+        fields = '__all__'
+
+
+class FollowUpMessageSerializer(serializers.ModelSerializer):
+    child_name = serializers.CharField(source='child.name', read_only=True)
+
+    class Meta:
+        model = FollowUpMessage
         fields = '__all__'
 
 
