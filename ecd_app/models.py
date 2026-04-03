@@ -81,13 +81,38 @@ class ELibrary(models.Model):
 # Activity Suggestions
 # -----------------------------
 class Activity(models.Model):
-    name = models.CharField(max_length=200)
+    DOMAIN_CHOICES = (
+        ('Language', 'Language'),
+        ('Cognitive', 'Cognitive'),
+        ('Physical', 'Physical'),
+        ('Creative', 'Creative'),
+        ('Fine Motor', 'Fine Motor'),
+        ('Social-Emotional', 'Social-Emotional'),
+        ('Science', 'Science'),
+        ('Math + Physical', 'Math + Physical'),
+    )
+    
+    AGE_CHOICES = (
+        ('Age 2-3', 'Age 2-3'),
+        ('Age 3-4', 'Age 3-4'),
+        ('Age 4-5', 'Age 4-5'),
+        ('Age 5-6', 'Age 5-6'),
+    )
+    
+    title = models.CharField(max_length=200)
     description = models.TextField()
-    recommended_age = models.IntegerField(help_text="Suggested age in years")
+    age = models.CharField(max_length=20, choices=AGE_CHOICES)
+    duration = models.CharField(max_length=20, help_text="e.g., '15 min', '20 min'")
+    domain = models.CharField(max_length=50, choices=DOMAIN_CHOICES)
     milestone = models.ForeignKey(Milestone, on_delete=models.SET_NULL, null=True, blank=True, related_name='activities')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.name
+        return f"{self.title} ({self.age})"
+    
+    class Meta:
+        ordering = ['-created_at']
 
 
 # -----------------------------

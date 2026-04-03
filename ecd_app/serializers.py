@@ -43,11 +43,10 @@ class ELibrarySerializer(serializers.ModelSerializer):
 # Activity Serializer
 # -----------------------------
 class ActivitySerializer(serializers.ModelSerializer):
-    milestone = MilestoneSerializer(read_only=True)
-
     class Meta:
         model = Activity
-        fields = '__all__'
+        fields = ['id', 'title', 'description', 'age', 'duration', 'domain', 'milestone', 'created_at', 'updated_at']
+        read_only_fields = ['created_at', 'updated_at']
 
 
 # -----------------------------
