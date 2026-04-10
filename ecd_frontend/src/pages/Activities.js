@@ -31,6 +31,18 @@ const Activities = () => {
     { id: 'drop', label: 'Water Drop', color: 'blue', emoji: '💧' }
   ];
 
+  const fingerPaintingPlan = {
+    theme: 'Rainbow Garden',
+    materials: ['Washable finger paints', 'Large sheet of paper', 'Apron or old shirt', 'Wipes or water for cleanup'],
+    steps: [
+      'Help your child choose 3 to 4 paint colors.',
+      'Press handprints on the paper to make flowers, trees, or butterflies.',
+      'Add fingerprints for petals, raindrops, ladybugs, or balloon dots.',
+      'Talk during painting by naming colors, counting prints, and pointing out circles, lines, and dots.'
+    ],
+    skills: ['Creativity', 'Fine motor control', 'Color recognition', 'Shape recognition', 'Language development']
+  };
+
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -870,6 +882,53 @@ const Activities = () => {
                       Final Score: {gameScore}/6 - {getPerformanceLabel(gameScore)}
                     </div>
                   )}
+                </>
+              ) : selectedActivity.title === 'Finger Painting Fun' ? (
+                <>
+                  <div style={{ marginTop: '14px', padding: '14px', borderRadius: '16px', background: 'linear-gradient(135deg, #fff7ed 0%, #fef3c7 100%)', border: '1px solid #fdba74' }}>
+                    <div style={{ fontSize: '15px', fontWeight: 700, color: '#9a3412' }}>
+                      Creative Theme: {fingerPaintingPlan.theme}
+                    </div>
+                    <div style={{ marginTop: '6px', fontSize: '13px', color: '#7c2d12', lineHeight: 1.6 }}>
+                      Let children turn messy painting time into a simple picture story using handprints and fingerprint dots.
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: '16px', display: 'grid', gap: '14px' }}>
+                    <div style={{ padding: '14px', borderRadius: '14px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                      <div style={{ fontSize: '14px', fontWeight: 700, color: '#1f2937', marginBottom: '8px' }}>Materials</div>
+                      <div style={{ display: 'grid', gap: '8px' }}>
+                        {fingerPaintingPlan.materials.map((item) => (
+                          <div key={item} style={{ fontSize: '13px', color: '#475569' }}>• {item}</div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div style={{ padding: '14px', borderRadius: '14px', background: '#fefce8', border: '1px solid #fde68a' }}>
+                      <div style={{ fontSize: '14px', fontWeight: 700, color: '#854d0e', marginBottom: '8px' }}>How To Do It</div>
+                      <div style={{ display: 'grid', gap: '10px' }}>
+                        {fingerPaintingPlan.steps.map((step, index) => (
+                          <div key={step} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                            <div style={{ minWidth: '24px', height: '24px', borderRadius: '999px', background: '#f59e0b', color: '#fff', fontSize: '12px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              {index + 1}
+                            </div>
+                            <div style={{ fontSize: '13px', color: '#713f12', lineHeight: 1.6 }}>{step}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div style={{ padding: '14px', borderRadius: '14px', background: '#f0fdf4', border: '1px solid #86efac' }}>
+                      <div style={{ fontSize: '14px', fontWeight: 700, color: '#166534', marginBottom: '8px' }}>Skills Built</div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                        {fingerPaintingPlan.skills.map((skill) => (
+                          <span key={skill} style={{ padding: '6px 10px', borderRadius: '999px', background: '#dcfce7', color: '#166534', fontSize: '12px', fontWeight: 600 }}>
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
                 </>
               ) : (
                 <div style={{ marginTop: '14px', fontSize: '14px', color: '#6b7280' }}>

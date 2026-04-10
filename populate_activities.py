@@ -31,7 +31,7 @@ activities_data = [
     },
     {
         'title': 'Finger Painting Fun',
-        'description': 'Use safe paints to make hand and finger prints while naming colors and shapes.',
+        'description': 'Create a rainbow garden with handprints and fingerprints while naming colors, counting dots, and spotting shapes.',
         'age': 'Age 2-3',
         'duration': '20 min',
         'domain': 'Creative'
