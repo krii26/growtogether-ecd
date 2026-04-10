@@ -22,6 +22,25 @@ const Children = () => {
   const [editingChildId, setEditingChildId] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
 
+  const getApiErrorMessage = (err, fallback) => {
+    if (!err?.response) {
+      return 'Cannot connect to backend server (http://127.0.0.1:8000). Start Django server and try again.';
+    }
+
+    const data = err.response.data;
+    if (typeof data === 'string') return data;
+    if (data?.detail) return data.detail;
+
+    if (data && typeof data === 'object') {
+      const firstKey = Object.keys(data)[0];
+      const firstValue = data[firstKey];
+      if (Array.isArray(firstValue)) return `${firstKey}: ${firstValue[0]}`;
+      if (typeof firstValue === 'string') return `${firstKey}: ${firstValue}`;
+    }
+
+    return fallback;
+  };
+
   useEffect(() => {
     fetchChildren();
     loadUserInfo();
@@ -45,6 +64,7 @@ const Children = () => {
       setChildren(response.data);
     } catch (error) {
       console.error('Error fetching children:', error);
+      setError(getApiErrorMessage(error, 'Failed to load children.'));
     }
   };
 
@@ -88,7 +108,7 @@ const Children = () => {
       setPhotoPreview('');
     } catch (err) {
       console.error('Error adding child:', err);
-      setError('Failed to add child. Please try again.');
+      setError(getApiErrorMessage(err, 'Failed to add child. Please try again.'));
     } finally {
       setSaving(false);
     }
@@ -153,7 +173,7 @@ const Children = () => {
       setPhotoPreview('');
     } catch (err) {
       console.error('Error updating child:', err);
-      setError('Failed to update child. Please try again.');
+      setError(getApiErrorMessage(err, 'Failed to update child. Please try again.'));
     } finally {
       setSaving(false);
     }

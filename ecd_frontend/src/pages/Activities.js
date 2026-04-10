@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const Activities = () => {
@@ -18,6 +18,9 @@ const Activities = () => {
     last_name: '',
     role: ''
   });
+  const [activities, setActivities] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const colorSortingItems = [
     { id: 'apple', label: 'Apple', color: 'red', emoji: '🍎' },
@@ -28,174 +31,6 @@ const Activities = () => {
     { id: 'drop', label: 'Water Drop', color: 'blue', emoji: '💧' }
   ];
 
-  const activityPool = [
-    {
-      id: 1,
-      age: 'Age 2-3',
-      title: 'Story Time Circle',
-      description: 'Read a short picture book and ask your child to point to familiar objects and animals.',
-      duration: '20 min',
-      domain: 'Language'
-    },
-    {
-      id: 2,
-      age: 'Age 2-3',
-      title: 'Shape Hunt',
-      description: 'Find circles, squares, and triangles around the house to build early recognition skills.',
-      duration: '15 min',
-      domain: 'Cognitive'
-    },
-    {
-      id: 3,
-      age: 'Age 2-3',
-      title: 'Ball Roll and Catch',
-      description: 'Sit facing each other and roll a soft ball back and forth to improve coordination.',
-      duration: '15 min',
-      domain: 'Physical'
-    },
-    {
-      id: 4,
-      age: 'Age 2-3',
-      title: 'Finger Painting Fun',
-      description: 'Use safe paints to make hand and finger prints while naming colors and shapes.',
-      duration: '20 min',
-      domain: 'Creative'
-    },
-    {
-      id: 5,
-      age: 'Age 2-3',
-      title: 'Stack and Build',
-      description: 'Stack cups or blocks and encourage your child to copy simple tower patterns.',
-      duration: '15 min',
-      domain: 'Fine Motor'
-    },
-    {
-      id: 6,
-      age: 'Age 3-4',
-      title: 'Color Sorting Game',
-      description: 'Help your child sort objects into matching colors to strengthen attention and logic.',
-      duration: '15 min',
-      domain: 'Cognitive'
-    },
-    {
-      id: 7,
-      age: 'Age 3-4',
-      title: 'Playdough Creations',
-      description: 'Encourage creativity and fine motor skills by shaping animals, fruits, and letters.',
-      duration: '20 min',
-      domain: 'Fine Motor'
-    },
-    {
-      id: 8,
-      age: 'Age 3-4',
-      title: 'Action Song Time',
-      description: 'Sing action songs with movements like clap, jump, and spin to build motor planning.',
-      duration: '15 min',
-      domain: 'Physical'
-    },
-    {
-      id: 9,
-      age: 'Age 3-4',
-      title: 'Pretend Kitchen Play',
-      description: 'Role-play cooking and serving to improve social interaction and expressive language.',
-      duration: '25 min',
-      domain: 'Social-Emotional'
-    },
-    {
-      id: 10,
-      age: 'Age 3-4',
-      title: 'Puzzle Match',
-      description: 'Solve simple 4-8 piece puzzles to develop visual memory and problem-solving skills.',
-      duration: '20 min',
-      domain: 'Cognitive'
-    },
-    {
-      id: 11,
-      age: 'Age 4-5',
-      title: 'Obstacle Course',
-      description: 'Create a fun indoor obstacle path with cushions and cones for balance and coordination.',
-      duration: '30 min',
-      domain: 'Physical'
-    },
-    {
-      id: 12,
-      age: 'Age 4-5',
-      title: 'Music and Movement',
-      description: 'Dance and sing with rhythm patterns to improve listening and body control.',
-      duration: '15 min',
-      domain: 'Creative'
-    },
-    {
-      id: 13,
-      age: 'Age 4-5',
-      title: 'Rhyming Word Basket',
-      description: 'Pick picture cards and find rhyming pairs to build phonological awareness.',
-      duration: '20 min',
-      domain: 'Language'
-    },
-    {
-      id: 14,
-      age: 'Age 4-5',
-      title: 'Pattern Bead Stringing',
-      description: 'Create repeating color patterns with beads to support sequencing and fine motor control.',
-      duration: '20 min',
-      domain: 'Fine Motor'
-    },
-    {
-      id: 15,
-      age: 'Age 4-5',
-      title: 'Emotion Faces Game',
-      description: 'Use mirror play to identify happy, sad, angry, and surprised expressions.',
-      duration: '15 min',
-      domain: 'Social-Emotional'
-    },
-    {
-      id: 16,
-      age: 'Age 5-6',
-      title: 'Science Experiment',
-      description: 'Try simple science activities like color mixing or sink-and-float with predictions.',
-      duration: '25 min',
-      domain: 'Science'
-    },
-    {
-      id: 17,
-      age: 'Age 5-6',
-      title: 'Story Retell Challenge',
-      description: 'After reading a short story, ask your child to retell beginning, middle, and end.',
-      duration: '20 min',
-      domain: 'Language'
-    },
-    {
-      id: 18,
-      age: 'Age 5-6',
-      title: 'Number Hopscotch',
-      description: 'Play hopscotch with number calls to strengthen counting and body coordination.',
-      duration: '20 min',
-      domain: 'Math + Physical'
-    },
-    {
-      id: 19,
-      age: 'Age 5-6',
-      title: 'Team Cleanup Mission',
-      description: 'Turn cleanup into a timed mission to build responsibility and teamwork habits.',
-      duration: '15 min',
-      domain: 'Social-Emotional'
-    },
-    {
-      id: 20,
-      age: 'Age 5-6',
-      title: 'Build a Bridge',
-      description: 'Use straws or blocks to build a bridge that can hold a toy, encouraging engineering thinking.',
-      duration: '30 min',
-      domain: 'Cognitive'
-    }
-  ];
-
-  // Keep a mixed, non-sequential age order while remaining stable across renders.
-  const randomOrder = [6, 16, 2, 12, 19, 1, 14, 9, 18, 4, 11, 7, 20, 5, 15, 10, 17, 3, 13, 8];
-  const activities = randomOrder
-    .map((id) => activityPool.find((activity) => activity.id === id))
-    .filter(Boolean);
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -207,6 +42,30 @@ const Activities = () => {
         role: user.role || 'Parent'
       });
     }
+  }, []);
+
+  // Fetch activities from the API
+  useEffect(() => {
+    const fetchActivities = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('http://127.0.0.1:8000/api/activities/');
+        if (!response.ok) {
+          throw new Error('Failed to fetch activities');
+        }
+        const data = await response.json();
+        setActivities(data);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching activities:', err);
+        setError(err.message);
+        setActivities([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchActivities();
   }, []);
 
   useEffect(() => {
@@ -228,13 +87,29 @@ const Activities = () => {
   };
 
   const ages = ['All Ages', 'Age 2-3', 'Age 3-4', 'Age 4-5', 'Age 5-6'];
-  const filteredActivities = selectedAge === 'All Ages'
-    ? activities
-    : activities.filter((a) => a.age === selectedAge);
+
+  const shuffleItems = (items) => {
+    const shuffled = [...items];
+    for (let i = shuffled.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  };
+
+  const displayedActivities = useMemo(() => {
+    if (selectedAge === 'All Ages') {
+      return ages
+        .filter((age) => age !== 'All Ages')
+        .flatMap((age) => shuffleItems(activities.filter((activity) => activity.age === age)));
+    }
+
+    return shuffleItems(activities.filter((activity) => activity.age === selectedAge));
+  }, [activities, selectedAge]);
 
   const openDetails = (activity) => {
     setSelectedActivity(activity);
-    if (activity.id === 6) {
+    if (activity.title === 'Color Sorting Game') {
       setSortTargets({ red: 0, yellow: 0, blue: 0 });
       setSortComplete(false);
       setCurrentItemIndex(0);
@@ -251,7 +126,7 @@ const Activities = () => {
   };
 
   const handleSort = (color) => {
-    if (!selectedActivity || selectedActivity.id !== 6) {
+    if (!selectedActivity || selectedActivity.title !== 'Color Sorting Game') {
       return;
     }
 
@@ -844,7 +719,10 @@ const Activities = () => {
         </div>
 
         <div style={cardsGrid}>
-          {filteredActivities.map((activity) => (
+                    {loading && <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '20px' }}>Loading activities...</div>}
+                    {error && <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '20px', color: '#dc2626' }}>Error loading activities: {error}</div>}
+                    {!loading && displayedActivities.length === 0 && <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '20px', color: '#666' }}>No activities found</div>}
+          {displayedActivities.map((activity) => (
             <div key={activity.id} style={card}>
               <div style={cardHeader}>
                 <span style={ageBadge(activity.age)}>{activity.age}</span>
@@ -882,7 +760,7 @@ const Activities = () => {
                 {selectedActivity.description}
               </div>
 
-              {selectedActivity.id === 6 ? (
+              {selectedActivity.title === 'Color Sorting Game' ? (
                 <>
                   <div style={{ marginTop: '14px', fontSize: '14px', fontWeight: 700, color: '#1f2937' }}>
                     Playable Game: sort each shown item into the correct bucket.

@@ -37,22 +37,21 @@ const Login = () => {
         role: form.role,
       };
 
-      // Attempt login; backend endpoint can be added later
       const response = await API.post('login/', payload);
-      
-      // Store user info including role
-      if (response.data && response.data.user) {
-        localStorage.setItem('user', JSON.stringify(response.data.user));
-      } else {
-        // Fallback if backend doesn't return user data
-        localStorage.setItem('user', JSON.stringify({ role: form.role }));
-      }
+
+      const userData = response.data?.user || response.data || { role: form.role };
+      localStorage.setItem('user', JSON.stringify(userData));
       
       setSuccess('Login successful. Redirecting...');
       setError('');
       
-      // Route based on role
-      const dashboardPath = form.role === 'TEACHER' ? '/teacher_dashboard' : '/std_dashboard';
+      const resolvedRole = (userData.role || form.role || 'PARENT').toUpperCase();
+      const dashboardPath =
+        resolvedRole === 'TEACHER'
+          ? '/teacher_dashboard'
+          : resolvedRole === 'ADMIN' || resolvedRole === 'SUPER_ADMIN'
+            ? '/admin_dashboard'
+            : '/std_dashboard';
       setTimeout(() => navigate(dashboardPath), 800);
     } catch (err) {
       console.error(err);
@@ -73,18 +72,20 @@ const Login = () => {
         callback: async (response) => {
           try {
             const res = await API.post('google-login/', { credential: response.credential });
-            
-            // Store user info including role
-            if (res.data && res.data.user) {
-              localStorage.setItem('user', JSON.stringify(res.data.user));
-            }
+
+            const userData = res.data?.user || res.data || { role: 'PARENT' };
+            localStorage.setItem('user', JSON.stringify(userData));
             
             setSuccess('Login successful. Redirecting...');
             setError('');
             
-            // Route based on role from response or default to parent dashboard
-            const userRole = res.data?.user?.role || 'PARENT';
-            const dashboardPath = userRole === 'TEACHER' ? '/teacher_dashboard' : '/std_dashboard';
+            const userRole = (userData.role || 'PARENT').toUpperCase();
+            const dashboardPath =
+              userRole === 'TEACHER'
+                ? '/teacher_dashboard'
+                : userRole === 'ADMIN' || userRole === 'SUPER_ADMIN'
+                  ? '/admin_dashboard'
+                  : '/std_dashboard';
             setTimeout(() => navigate(dashboardPath), 800);
           } catch (err) {
             console.error(err);

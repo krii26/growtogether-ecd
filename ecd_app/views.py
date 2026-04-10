@@ -26,6 +26,13 @@ class MilestoneViewSet(viewsets.ModelViewSet):
     queryset = Milestone.objects.all()
     serializer_class = MilestoneSerializer
 
+    def get_queryset(self):
+        queryset = Milestone.objects.all()
+        child_id = self.request.query_params.get('child')
+        if child_id:
+            queryset = queryset.filter(child_id=child_id)
+        return queryset
+
 
 class ELibraryViewSet(viewsets.ModelViewSet):
     queryset = ELibrary.objects.all()
@@ -70,6 +77,7 @@ def login(request):
     if serializer.is_valid():
         user = serializer.validated_data['user']
         profile = getattr(user, 'profile', None)
+        role = 'SUPER_ADMIN' if user.is_superuser else getattr(profile, 'role', None)
         return Response(
             {
                 'id': user.id,
@@ -77,7 +85,7 @@ def login(request):
                 'email': user.email,
                 'first_name': user.first_name,
                 'last_name': user.last_name,
-                'role': getattr(profile, 'role', None),
+                'role': role,
             },
             status=status.HTTP_200_OK
         )

@@ -99,14 +99,14 @@ class Activity(models.Model):
         ('Age 5-6', 'Age 5-6'),
     )
     
-    title = models.CharField(max_length=200)
-    description = models.TextField()
-    age = models.CharField(max_length=20, choices=AGE_CHOICES)
-    duration = models.CharField(max_length=20, help_text="e.g., '15 min', '20 min'")
-    domain = models.CharField(max_length=50, choices=DOMAIN_CHOICES)
+    title = models.CharField(max_length=200, null=True, blank=True)
+    description = models.TextField(null=True, blank=True)
+    age = models.CharField(max_length=20, choices=AGE_CHOICES, null=True, blank=True)
+    duration = models.CharField(max_length=20, help_text="e.g., '15 min', '20 min'", null=True, blank=True)
+    domain = models.CharField(max_length=50, choices=DOMAIN_CHOICES, null=True, blank=True)
     milestone = models.ForeignKey(Milestone, on_delete=models.SET_NULL, null=True, blank=True, related_name='activities')
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True)
 
     def __str__(self):
         return f"{self.title} ({self.age})"

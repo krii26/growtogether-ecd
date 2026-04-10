@@ -66,15 +66,33 @@ class ProgressReportSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'username', 'email']
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'is_active', 'last_login', 'date_joined']
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True)
+    user = UserSerializer(required=False)
 
     class Meta:
         model = UserProfile
         fields = '__all__'
+
+    def update(self, instance, validated_data):
+        user_data = validated_data.pop('user', None)
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        if user_data:
+            user = instance.user
+            # Restrict writable user fields from this endpoint.
+            allowed_user_fields = {'is_active', 'first_name', 'last_name'}
+            for attr, value in user_data.items():
+                if attr in allowed_user_fields:
+                    setattr(user, attr, value)
+            user.save()
+
+        return instance
 
 
 class FollowUpMessageSerializer(serializers.ModelSerializer):

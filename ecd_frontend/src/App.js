@@ -11,6 +11,7 @@ import ELibrary from './pages/ELibrary';
 import Student from './pages/Student';
 import PublishResults from './pages/PublishResults';
 import Activities from './pages/Activities';
+import AdminDashboard from './pages/AdminDashboard';
 import Header from './components/Header';
 import Footer from './components/Footer';
 
@@ -27,6 +28,7 @@ const App = () => {
           <Route path="/login" element={<Login />} />
           <Route path="/std_dashboard" element={<StdDashboard />} />
           <Route path="/teacher_dashboard" element={<TeacherDash />} />
+          <Route path="/admin_dashboard" element={<AdminDashboard />} />
           <Route path="/students" element={<Student />} />
           <Route path="/publish-results" element={<PublishResults />} />
           <Route path="/e-library" element={<ELibrary />} />
