@@ -97,9 +97,19 @@ def google_login(request):
     credential = request.data.get('credential')
     if not credential:
         return Response({'detail': 'Missing credential'}, status=status.HTTP_400_BAD_REQUEST)
+    if not settings.GOOGLE_CLIENT_ID:
+        return Response({'detail': 'Google login is not configured on server'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     try:
-        idinfo = id_token.verify_oauth2_token(credential, grequests.Request(), settings.GOOGLE_CLIENT_ID)
+        # Allow limited clock skew so minor local time drift does not reject valid tokens.
+        idinfo = id_token.verify_oauth2_token(
+            credential,
+            grequests.Request(),
+            settings.GOOGLE_CLIENT_ID,
+            clock_skew_in_seconds=120,
+        )
         email = idinfo.get('email')
+        if not email:
+            return Response({'detail': 'Google account email is missing'}, status=status.HTTP_400_BAD_REQUEST)
         first_name = idinfo.get('given_name', '')
         last_name = idinfo.get('family_name', '')
 
@@ -123,6 +133,8 @@ def google_login(request):
             'role': getattr(profile, 'role', None),
         }, status=status.HTTP_200_OK)
     except Exception as e:
+        if settings.DEBUG:
+            return Response({'detail': f'Invalid Google token: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
         return Response({'detail': 'Invalid Google token'}, status=status.HTTP_400_BAD_REQUEST)
 
 def home(request):

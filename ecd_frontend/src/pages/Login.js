@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import API from '../api/api';
 import { useNavigate, Link } from 'react-router-dom';
 
@@ -11,6 +11,7 @@ const Login = () => {
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const googleButtonRef = useRef(null);
 
   const handleChange = (e) => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -59,46 +60,71 @@ const Login = () => {
     }
   };
 
-  const loginWithGoogle = async () => {
+  const handleGoogleLogin = async (credentialResponse) => {
     try {
-      const clientId = process.env.REACT_APP_GOOGLE_CLIENT_ID;
-      if (!window.google || !clientId) {
-        setError('Google login is not configured.');
+      const res = await API.post('google-login/', { credential: credentialResponse.credential });
+
+      const userData = res.data?.user || res.data || { role: 'PARENT' };
+      localStorage.setItem('user', JSON.stringify(userData));
+
+      setSuccess('Login successful. Redirecting...');
+      setError('');
+
+      const userRole = (userData.role || 'PARENT').toUpperCase();
+      const dashboardPath =
+        userRole === 'TEACHER'
+          ? '/teacher_dashboard'
+          : userRole === 'ADMIN' || userRole === 'SUPER_ADMIN'
+            ? '/admin_dashboard'
+            : '/std_dashboard';
+      setTimeout(() => navigate(dashboardPath), 800);
+    } catch (err) {
+      console.error(err);
+      setError(err.response?.data?.detail || 'Google login failed.');
+    }
+  };
+
+  useEffect(() => {
+    const clientId = process.env.REACT_APP_GOOGLE_CLIENT_ID;
+    if (!clientId) {
+      setError('Google login is not configured.');
+      return undefined;
+    }
+
+    let attempts = 0;
+    const intervalId = window.setInterval(() => {
+      if (!googleButtonRef.current) {
+        return;
+      }
+
+      if (!window.google?.accounts?.id) {
+        attempts += 1;
+        if (attempts >= 20) {
+          setError('Google login is unavailable right now. Please refresh and try again.');
+          window.clearInterval(intervalId);
+        }
         return;
       }
 
       window.google.accounts.id.initialize({
         client_id: clientId,
-        callback: async (response) => {
-          try {
-            const res = await API.post('google-login/', { credential: response.credential });
-
-            const userData = res.data?.user || res.data || { role: 'PARENT' };
-            localStorage.setItem('user', JSON.stringify(userData));
-            
-            setSuccess('Login successful. Redirecting...');
-            setError('');
-            
-            const userRole = (userData.role || 'PARENT').toUpperCase();
-            const dashboardPath =
-              userRole === 'TEACHER'
-                ? '/teacher_dashboard'
-                : userRole === 'ADMIN' || userRole === 'SUPER_ADMIN'
-                  ? '/admin_dashboard'
-                  : '/std_dashboard';
-            setTimeout(() => navigate(dashboardPath), 800);
-          } catch (err) {
-            console.error(err);
-            setError('Google login failed.');
-          }
-        },
+        callback: handleGoogleLogin,
       });
-      window.google.accounts.id.prompt();
-    } catch (err) {
-      console.error(err);
-      setError('Google login failed to start.');
-    }
-  };
+
+      googleButtonRef.current.innerHTML = '';
+      window.google.accounts.id.renderButton(googleButtonRef.current, {
+        theme: 'outline',
+        size: 'large',
+        shape: 'pill',
+        text: 'signin_with',
+        width: googleButtonRef.current.offsetWidth || 340,
+      });
+
+      window.clearInterval(intervalId);
+    }, 300);
+
+    return () => window.clearInterval(intervalId);
+  }, []);
 
   const containerStyle = {
     display: 'flex',
@@ -222,6 +248,13 @@ const Login = () => {
     marginLeft: 4
   };
 
+  const googleButtonWrapperStyle = {
+    width: '100%',
+    marginTop: 12,
+    display: 'flex',
+    justifyContent: 'center'
+  };
+
   const imageStyle = {
     width: 'auto',
     height: '156%',
@@ -285,13 +318,9 @@ const Login = () => {
             </div>
 
             <button type="submit" style={buttonStyle}>Login</button>
-            <button type="button" onClick={loginWithGoogle} style={{
-              width: '100%', padding: '12px 20px', marginTop: 12, borderRadius: 24, border: '1px solid #dadce0',
-              background: '#fff', color: '#3c4043', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 14
-            }}>
-              <img alt="Google" src="https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png" style={{ width: 18, height: 18 }} />
-              Sign in with Google
-            </button>
+            <div style={googleButtonWrapperStyle}>
+              <div ref={googleButtonRef} />
+            </div>
             <div style={belowTextStyle}>
               Don't have an account?
               <Link to="/register" style={loginLinkStyle}>Register</Link>
