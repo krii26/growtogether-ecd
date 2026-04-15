@@ -101,20 +101,29 @@ const ELibrary = () => {
     try {
       const response = await API.get('/elibrary/');
       let apiResources = response.data;
-      
+
       // Map API response to match frontend format
       apiResources = apiResources.map(resource => ({
         ...resource,
-        link: resource.file_url  // Map file_url to link
+        link: resource.file_url || '#',
       }));
-      
-      // Use API data if available, otherwise fallback to mock data
-      const dataToUse = apiResources.length > 0 ? apiResources : mockResources;
+
+      // Keep built-in resources visible and merge DB resources on top.
+      // This prevents the page from looking empty when DB has only a few rows.
+      const uniqueByTitle = new Map();
+      mockResources.forEach((resource) => {
+        uniqueByTitle.set((resource.title || '').trim().toLowerCase(), resource);
+      });
+      apiResources.forEach((resource) => {
+        uniqueByTitle.set((resource.title || '').trim().toLowerCase(), resource);
+      });
+
+      const dataToUse = Array.from(uniqueByTitle.values());
       setResources(dataToUse);
       filterResources(dataToUse, 'All Categories', '');
     } catch (error) {
       console.error('Error fetching E-Library resources:', error);
-      // Fallback to mock data if API fails
+      // Fallback to built-in resources if API fails
       setResources(mockResources);
       filterResources(mockResources, 'All Categories', '');
     }

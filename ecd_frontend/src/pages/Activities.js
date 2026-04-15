@@ -13,6 +13,17 @@ const Activities = () => {
   const [feedbackMessage, setFeedbackMessage] = useState('');
   const [feedbackTone, setFeedbackTone] = useState('neutral');
   const [reactionEmoji, setReactionEmoji] = useState('');
+  const [stackMode, setStackMode] = useState('easy');
+  const [stackStep, setStackStep] = useState(0);
+  const [stackStars, setStackStars] = useState(0);
+  const [stackMood, setStackMood] = useState('');
+  const [stackShowConfetti, setStackShowConfetti] = useState(false);
+  const [ballMode, setBallMode] = useState('easy');
+  const [ballRound, setBallRound] = useState(0);
+  const [ballCatches, setBallCatches] = useState(0);
+  const [ballDrops, setBallDrops] = useState(0);
+  const [ballMood, setBallMood] = useState('');
+  const [ballShowConfetti, setBallShowConfetti] = useState(false);
   const [userInfo, setUserInfo] = useState({
     first_name: '',
     last_name: '',
@@ -41,6 +52,54 @@ const Activities = () => {
       'Talk during painting by naming colors, counting prints, and pointing out circles, lines, and dots.'
     ],
     skills: ['Creativity', 'Fine motor control', 'Color recognition', 'Shape recognition', 'Language development']
+  };
+
+  const stackAndBuildPlans = {
+    easy: {
+      label: 'Easy',
+      targetStacks: 3,
+      pattern: ['Big', 'Small', 'Big'],
+      badge: 'First Tower',
+      coaching: 'Try saying: big block first, small block second, now copy me.'
+    },
+    medium: {
+      label: 'Medium',
+      targetStacks: 5,
+      pattern: ['Red', 'Blue', 'Red', 'Blue'],
+      badge: 'Pattern Builder',
+      coaching: 'Encourage taking turns: your turn, my turn, then repeat the colors.'
+    },
+    challenge: {
+      label: 'Challenge',
+      targetStacks: 6,
+      pattern: ['Yellow', 'Green', 'Blue', 'Yellow'],
+      badge: 'Steady Hands Pro',
+      coaching: 'Show the pattern once, hide it, and ask your child to rebuild from memory.'
+    }
+  };
+
+  const ballRollPlans = {
+    easy: {
+      label: 'Easy',
+      rounds: 6,
+      distance: 'Short distance (about 1 meter)',
+      coaching: 'Use two hands and roll slowly. Celebrate every successful catch.',
+      badge: 'Gentle Roller'
+    },
+    medium: {
+      label: 'Medium',
+      rounds: 10,
+      distance: 'Medium distance (about 1.5 meters)',
+      coaching: 'Ask your child to watch the ball and clap once after each catch.',
+      badge: 'Steady Catcher'
+    },
+    challenge: {
+      label: 'Challenge',
+      rounds: 12,
+      distance: 'Longer distance (about 2 meters)',
+      coaching: 'Alternate fast and slow rolls so your child reacts and adjusts body movement.',
+      badge: 'Coordination Star'
+    }
   };
 
 
@@ -92,6 +151,30 @@ const Activities = () => {
     return () => clearTimeout(timer);
   }, [reactionEmoji]);
 
+  useEffect(() => {
+    if (!stackShowConfetti) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setStackShowConfetti(false);
+    }, 1800);
+
+    return () => clearTimeout(timer);
+  }, [stackShowConfetti]);
+
+  useEffect(() => {
+    if (!ballShowConfetti) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setBallShowConfetti(false);
+    }, 1800);
+
+    return () => clearTimeout(timer);
+  }, [ballShowConfetti]);
+
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -130,6 +213,20 @@ const Activities = () => {
       setFeedbackMessage('Sort the shown item into the correct color bucket.');
       setFeedbackTone('neutral');
       setReactionEmoji('');
+    }
+    if (activity.title === 'Stack and Build') {
+      setStackMode('easy');
+      setStackStep(0);
+      setStackMood('');
+      setStackShowConfetti(false);
+    }
+    if (activity.title === 'Ball Roll and Catch') {
+      setBallMode('easy');
+      setBallRound(0);
+      setBallCatches(0);
+      setBallDrops(0);
+      setBallMood('');
+      setBallShowConfetti(false);
     }
   };
 
@@ -203,6 +300,53 @@ const Activities = () => {
       return 'Good';
     }
     return 'Need more practice';
+  };
+
+  const completeStackStep = () => {
+    setStackStep((prev) => {
+      const next = Math.min(prev + 1, 3);
+      if (next === 3 && prev < 3) {
+        setStackStars((current) => current + 1);
+        setStackShowConfetti(true);
+      }
+      return next;
+    });
+  };
+
+  const resetStackMission = () => {
+    setStackStep(0);
+    setStackMood('');
+    setStackShowConfetti(false);
+  };
+
+  const markBallRound = (caught) => {
+    const plan = ballRollPlans[ballMode];
+
+    if (ballRound >= plan.rounds) {
+      return;
+    }
+
+    setBallRound((prev) => {
+      const next = Math.min(prev + 1, plan.rounds);
+      if (next === plan.rounds && prev < plan.rounds) {
+        setBallShowConfetti(true);
+      }
+      return next;
+    });
+
+    if (caught) {
+      setBallCatches((prev) => prev + 1);
+    } else {
+      setBallDrops((prev) => prev + 1);
+    }
+  };
+
+  const resetBallSession = () => {
+    setBallRound(0);
+    setBallCatches(0);
+    setBallDrops(0);
+    setBallMood('');
+    setBallShowConfetti(false);
   };
 
   const layout = {
@@ -659,6 +803,17 @@ const Activities = () => {
     animation: 'popIn 0.25s ease-out'
   };
 
+  const stackPlan = stackAndBuildPlans[stackMode];
+  const stackSteps = [
+    `Build a ${stackPlan.targetStacks}-block tower`,
+    `Copy pattern: ${stackPlan.pattern.join(' - ')}`,
+    'Celebrate with claps and name the colors used'
+  ];
+  const stackProgress = Math.round((stackStep / stackSteps.length) * 100);
+  const ballPlan = ballRollPlans[ballMode];
+  const ballAccuracy = ballRound > 0 ? Math.round((ballCatches / ballRound) * 100) : 0;
+  const ballDone = ballRound >= ballPlan.rounds;
+
   return (
     <div style={layout}>
       <aside style={sidebar}>
@@ -883,6 +1038,302 @@ const Activities = () => {
                     </div>
                   )}
                 </>
+              ) : selectedActivity.title === 'Stack and Build' ? (
+                <>
+                  <div style={{ marginTop: '14px', padding: '14px', borderRadius: '16px', background: 'linear-gradient(135deg, #eff6ff 0%, #ecfeff 100%)', border: '1px solid #7dd3fc' }}>
+                    <div style={{ fontSize: '15px', fontWeight: 700, color: '#075985' }}>
+                      Mini Mission: Stack and Build
+                    </div>
+                    <div style={{ marginTop: '6px', fontSize: '13px', color: '#0c4a6e', lineHeight: 1.6 }}>
+                      Complete 3 playful steps. Your child earns a badge when all steps are done.
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: '16px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    {Object.entries(stackAndBuildPlans).map(([key, plan]) => (
+                      <button
+                        key={key}
+                        onClick={() => {
+                          setStackMode(key);
+                          resetStackMission();
+                        }}
+                        style={{
+                          border: key === stackMode ? '2px solid #0369a1' : '1px solid #cbd5e1',
+                          background: key === stackMode ? '#e0f2fe' : '#ffffff',
+                          color: '#0f172a',
+                          borderRadius: '999px',
+                          padding: '8px 12px',
+                          fontSize: '12px',
+                          fontWeight: 700,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {plan.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div style={{ marginTop: '14px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <div style={{ fontSize: '13px', fontWeight: 700, color: '#334155' }}>Mission Progress</div>
+                      <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 700 }}>{stackStep}/{stackSteps.length}</div>
+                    </div>
+                    <div style={{ height: '10px', borderRadius: '999px', background: '#e2e8f0', overflow: 'hidden' }}>
+                      <div style={{ width: `${stackProgress}%`, height: '100%', background: 'linear-gradient(90deg, #38bdf8 0%, #22d3ee 100%)' }}></div>
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: '14px', display: 'grid', gap: '10px' }}>
+                    {stackSteps.map((stepLabel, index) => {
+                      const done = index < stackStep;
+                      const current = index === stackStep;
+                      return (
+                        <div
+                          key={stepLabel}
+                          style={{
+                            borderRadius: '12px',
+                            border: done ? '1px solid #86efac' : current ? '1px solid #38bdf8' : '1px solid #e5e7eb',
+                            background: done ? '#f0fdf4' : current ? '#ecfeff' : '#ffffff',
+                            padding: '12px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '10px'
+                          }}
+                        >
+                          <div style={{ width: '24px', height: '24px', borderRadius: '999px', background: done ? '#16a34a' : current ? '#0891b2' : '#cbd5e1', color: '#fff', fontWeight: 700, fontSize: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            {done ? '✓' : index + 1}
+                          </div>
+                          <div style={{ fontSize: '13px', color: '#1f2937', fontWeight: current ? 700 : 500 }}>{stepLabel}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div style={{ marginTop: '14px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    <button
+                      onClick={completeStackStep}
+                      disabled={stackStep >= stackSteps.length}
+                      style={{
+                        border: 'none',
+                        background: stackStep >= stackSteps.length ? '#94a3b8' : '#0284c7',
+                        color: '#ffffff',
+                        borderRadius: '10px',
+                        padding: '10px 14px',
+                        fontSize: '13px',
+                        fontWeight: 700,
+                        cursor: stackStep >= stackSteps.length ? 'not-allowed' : 'pointer'
+                      }}
+                    >
+                      Mark Step Complete
+                    </button>
+                    <button
+                      onClick={resetStackMission}
+                      style={{
+                        border: '1px solid #cbd5e1',
+                        background: '#ffffff',
+                        color: '#334155',
+                        borderRadius: '10px',
+                        padding: '10px 14px',
+                        fontSize: '13px',
+                        fontWeight: 700,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Start Over
+                    </button>
+                  </div>
+
+                  <div style={{ marginTop: '14px', padding: '12px', borderRadius: '12px', background: '#fff7ed', border: '1px solid #fdba74' }}>
+                    <div style={{ fontSize: '13px', fontWeight: 700, color: '#9a3412' }}>Parent Coaching Tip</div>
+                    <div style={{ marginTop: '4px', fontSize: '13px', color: '#7c2d12', lineHeight: 1.6 }}>
+                      {stackPlan.coaching}
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: '14px', padding: '12px', borderRadius: '12px', background: '#fefce8', border: '1px solid #fde047' }}>
+                    <div style={{ fontSize: '13px', fontWeight: 700, color: '#854d0e' }}>How did your child feel?</div>
+                    <div style={{ marginTop: '8px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      {['Happy', 'Excited', 'Frustrated'].map((mood) => (
+                        <button
+                          key={mood}
+                          onClick={() => setStackMood(mood)}
+                          style={{
+                            border: mood === stackMood ? '2px solid #f59e0b' : '1px solid #fcd34d',
+                            background: mood === stackMood ? '#fef3c7' : '#fffbeb',
+                            color: '#78350f',
+                            borderRadius: '999px',
+                            padding: '6px 10px',
+                            fontSize: '12px',
+                            fontWeight: 700,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          {mood}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {stackStep >= stackSteps.length && (
+                    <div style={{ marginTop: '14px', borderRadius: '12px', background: '#ecfdf5', border: '1px solid #86efac', color: '#166534', padding: '12px', fontWeight: 700, fontSize: '13px' }}>
+                      Badge Unlocked: {stackPlan.badge} | Stars Earned: {stackStars}
+                    </div>
+                  )}
+                </>
+              ) : selectedActivity.title === 'Ball Roll and Catch' ? (
+                <>
+                  <div style={{ marginTop: '14px', padding: '14px', borderRadius: '16px', background: 'linear-gradient(135deg, #ecfccb 0%, #dcfce7 100%)', border: '1px solid #86efac' }}>
+                    <div style={{ fontSize: '15px', fontWeight: 700, color: '#166534' }}>
+                      Play Plan: Ball Roll and Catch
+                    </div>
+                    <div style={{ marginTop: '6px', fontSize: '13px', color: '#14532d', lineHeight: 1.6 }}>
+                      Sit facing your child and complete rounds together. Mark each round as caught or dropped.
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: '16px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    {Object.entries(ballRollPlans).map(([key, plan]) => (
+                      <button
+                        key={key}
+                        onClick={() => {
+                          setBallMode(key);
+                          resetBallSession();
+                        }}
+                        style={{
+                          border: key === ballMode ? '2px solid #16a34a' : '1px solid #bbf7d0',
+                          background: key === ballMode ? '#dcfce7' : '#ffffff',
+                          color: '#14532d',
+                          borderRadius: '999px',
+                          padding: '8px 12px',
+                          fontSize: '12px',
+                          fontWeight: 700,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {plan.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div style={{ marginTop: '14px', display: 'grid', gap: '10px' }}>
+                    <div style={{ borderRadius: '12px', border: '1px solid #bbf7d0', background: '#f0fdf4', padding: '12px' }}>
+                      <div style={{ fontSize: '13px', color: '#166534', fontWeight: 700 }}>Distance</div>
+                      <div style={{ fontSize: '13px', color: '#14532d', marginTop: '4px' }}>{ballPlan.distance}</div>
+                    </div>
+                    <div style={{ borderRadius: '12px', border: '1px solid #d9f99d', background: '#fefce8', padding: '12px' }}>
+                      <div style={{ fontSize: '13px', color: '#854d0e', fontWeight: 700 }}>How To Play (Step by Step)</div>
+                      <div style={{ marginTop: '6px', fontSize: '13px', color: '#713f12', lineHeight: 1.7 }}>
+                        1. Sit on the floor facing each other.
+                        <br />2. Say Ready, steady, roll and roll the ball softly.
+                        <br />3. Child catches or stops the ball with both hands.
+                        <br />4. Child rolls it back to you.
+                        <br />5. Mark each round using the buttons below.
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: '14px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <div style={{ fontSize: '13px', fontWeight: 700, color: '#334155' }}>Rounds Progress</div>
+                      <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 700 }}>{ballRound}/{ballPlan.rounds}</div>
+                    </div>
+                    <div style={{ height: '10px', borderRadius: '999px', background: '#e2e8f0', overflow: 'hidden' }}>
+                      <div style={{ width: `${Math.round((ballRound / ballPlan.rounds) * 100)}%`, height: '100%', background: 'linear-gradient(90deg, #22c55e 0%, #84cc16 100%)' }}></div>
+                    </div>
+                    <div style={{ marginTop: '8px', display: 'flex', gap: '12px', fontSize: '12px', color: '#334155', fontWeight: 700, flexWrap: 'wrap' }}>
+                      <span>Successful catches: {ballCatches}</span>
+                      <span>Drops: {ballDrops}</span>
+                      <span>Accuracy: {ballAccuracy}%</span>
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: '14px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    <button
+                      onClick={() => markBallRound(true)}
+                      disabled={ballDone}
+                      style={{
+                        border: 'none',
+                        background: ballDone ? '#94a3b8' : '#16a34a',
+                        color: '#ffffff',
+                        borderRadius: '10px',
+                        padding: '10px 14px',
+                        fontSize: '13px',
+                        fontWeight: 700,
+                        cursor: ballDone ? 'not-allowed' : 'pointer'
+                      }}
+                    >
+                      Mark Catch
+                    </button>
+                    <button
+                      onClick={() => markBallRound(false)}
+                      disabled={ballDone}
+                      style={{
+                        border: 'none',
+                        background: ballDone ? '#94a3b8' : '#f59e0b',
+                        color: '#ffffff',
+                        borderRadius: '10px',
+                        padding: '10px 14px',
+                        fontSize: '13px',
+                        fontWeight: 700,
+                        cursor: ballDone ? 'not-allowed' : 'pointer'
+                      }}
+                    >
+                      Mark Drop
+                    </button>
+                    <button
+                      onClick={resetBallSession}
+                      style={{
+                        border: '1px solid #cbd5e1',
+                        background: '#ffffff',
+                        color: '#334155',
+                        borderRadius: '10px',
+                        padding: '10px 14px',
+                        fontSize: '13px',
+                        fontWeight: 700,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Reset Session
+                    </button>
+                  </div>
+
+                  <div style={{ marginTop: '14px', padding: '12px', borderRadius: '12px', background: '#eff6ff', border: '1px solid #93c5fd' }}>
+                    <div style={{ fontSize: '13px', fontWeight: 700, color: '#1e3a8a' }}>Parent Coaching Tip</div>
+                    <div style={{ marginTop: '4px', fontSize: '13px', color: '#1e40af', lineHeight: 1.6 }}>
+                      {ballPlan.coaching}
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: '14px', padding: '12px', borderRadius: '12px', background: '#fff7ed', border: '1px solid #fdba74' }}>
+                    <div style={{ fontSize: '13px', fontWeight: 700, color: '#9a3412' }}>How did your child feel?</div>
+                    <div style={{ marginTop: '8px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      {['Happy', 'Excited', 'Tired'].map((mood) => (
+                        <button
+                          key={mood}
+                          onClick={() => setBallMood(mood)}
+                          style={{
+                            border: mood === ballMood ? '2px solid #f59e0b' : '1px solid #fcd34d',
+                            background: mood === ballMood ? '#fef3c7' : '#fffbeb',
+                            color: '#78350f',
+                            borderRadius: '999px',
+                            padding: '6px 10px',
+                            fontSize: '12px',
+                            fontWeight: 700,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          {mood}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {ballDone && (
+                    <div style={{ marginTop: '14px', borderRadius: '12px', background: '#ecfdf5', border: '1px solid #86efac', color: '#166534', padding: '12px', fontWeight: 700, fontSize: '13px' }}>
+                      Badge Unlocked: {ballPlan.badge} | Final Accuracy: {ballAccuracy}%
+                    </div>
+                  )}
+                </>
               ) : selectedActivity.title === 'Finger Painting Fun' ? (
                 <>
                   <div style={{ marginTop: '14px', padding: '14px', borderRadius: '16px', background: 'linear-gradient(135deg, #fff7ed 0%, #fef3c7 100%)', border: '1px solid #fdba74' }}>
@@ -943,6 +1394,18 @@ const Activities = () => {
       {reactionEmoji && (
         <div style={reactionOverlay}>
           <div style={reactionEmojiStyle}>{reactionEmoji}</div>
+        </div>
+      )}
+
+      {stackShowConfetti && (
+        <div style={reactionOverlay}>
+          <div style={reactionEmojiStyle}>🎉</div>
+        </div>
+      )}
+
+      {ballShowConfetti && (
+        <div style={reactionOverlay}>
+          <div style={reactionEmojiStyle}>🏅</div>
         </div>
       )}
 
