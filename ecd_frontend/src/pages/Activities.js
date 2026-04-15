@@ -24,6 +24,21 @@ const Activities = () => {
   const [ballDrops, setBallDrops] = useState(0);
   const [ballMood, setBallMood] = useState('');
   const [ballShowConfetti, setBallShowConfetti] = useState(false);
+  const [selectedStoryId, setSelectedStoryId] = useState('little-seed');
+  const [storyPageIndex, setStoryPageIndex] = useState(0);
+  const [storyWordsLearned, setStoryWordsLearned] = useState(0);
+  const [storyMood, setStoryMood] = useState('');
+  const [storyShowConfetti, setStoryShowConfetti] = useState(false);
+  const [kitchenMode, setKitchenMode] = useState('quick');
+  const [kitchenRole, setKitchenRole] = useState('Chef');
+  const [kitchenMissionStep, setKitchenMissionStep] = useState(0);
+  const [kitchenPromptIndex, setKitchenPromptIndex] = useState(0);
+  const [kitchenOrdersServed, setKitchenOrdersServed] = useState(0);
+  const [kitchenPoliteWords, setKitchenPoliteWords] = useState(0);
+  const [kitchenQuestionsAsked, setKitchenQuestionsAsked] = useState(0);
+  const [kitchenFeelingWordUsed, setKitchenFeelingWordUsed] = useState(false);
+  const [kitchenMood, setKitchenMood] = useState('');
+  const [kitchenShowConfetti, setKitchenShowConfetti] = useState(false);
   const [userInfo, setUserInfo] = useState({
     first_name: '',
     last_name: '',
@@ -102,6 +117,119 @@ const Activities = () => {
     }
   };
 
+  const storyBooks = [
+    {
+      id: 'little-seed',
+      title: 'The Little Seed',
+      duration: '5-7 min',
+      wordGoal: 3,
+      pages: [
+        {
+          scene: 'A tiny seed sleeps in soft soil.',
+          text: 'This is a tiny seed. It is sleeping under the warm soil. Good night, little seed.',
+          parentPrompt: 'Can you point to the seed?'
+        },
+        {
+          scene: 'Rain drops fall and the sun shines.',
+          text: 'Raindrops fall. The sun shines. The seed drinks water and wakes up slowly.',
+          parentPrompt: 'Can you find rain and sun?'
+        },
+        {
+          scene: 'A small green sprout appears.',
+          text: 'Pop. A small sprout comes out. It stretches up and says hello to the sky.',
+          parentPrompt: 'Show me the green sprout.'
+        },
+        {
+          scene: 'The sprout becomes a flower.',
+          text: 'The sprout grows into a pretty flower. A butterfly visits and says wow.',
+          parentPrompt: 'Where is the flower?'
+        }
+      ]
+    },
+    {
+      id: 'bunny-ball',
+      title: 'Bunny and the Red Ball',
+      duration: '6-8 min',
+      wordGoal: 4,
+      pages: [
+        {
+          scene: 'Bunny finds a red ball.',
+          text: 'Bunny sees a red ball near the tree. Bunny smiles and hops closer.',
+          parentPrompt: 'Can you point to the red ball?'
+        },
+        {
+          scene: 'Ball rolls down a hill.',
+          text: 'Oh no. The ball rolls down the hill. Bunny says stop, stop, little ball.',
+          parentPrompt: 'Can you show rolling with your hand?'
+        },
+        {
+          scene: 'Bird helps Bunny.',
+          text: 'A bird friend helps Bunny. Together they stop the ball beside a rock.',
+          parentPrompt: 'Who helped Bunny?'
+        },
+        {
+          scene: 'Friends play together.',
+          text: 'Now Bunny and Bird play catch with the red ball. They laugh and laugh.',
+          parentPrompt: 'Can you say ball and catch?'
+        }
+      ]
+    },
+    {
+      id: 'morning-cat',
+      title: 'Milo Morning Cat',
+      duration: '5-6 min',
+      wordGoal: 3,
+      pages: [
+        {
+          scene: 'Milo wakes up and stretches.',
+          text: 'Milo the cat wakes up. He stretches his paws and opens his sleepy eyes.',
+          parentPrompt: 'Can you stretch like Milo?'
+        },
+        {
+          scene: 'Milo drinks milk.',
+          text: 'Milo drinks warm milk from a blue bowl. Yum, says Milo.',
+          parentPrompt: 'Where is the blue bowl?'
+        },
+        {
+          scene: 'Milo greets neighbors.',
+          text: 'Milo walks outside and says meow to dog, bird, and butterfly.',
+          parentPrompt: 'Can you say meow?'
+        },
+        {
+          scene: 'Milo returns home to nap.',
+          text: 'After a happy morning, Milo comes home and curls up for a nap.',
+          parentPrompt: 'Is Milo sleepy or excited?'
+        }
+      ]
+    }
+  ];
+
+  const kitchenPlayModes = {
+    quick: {
+      label: 'Quick 10 Min',
+      ordersGoal: 2,
+      politeGoal: 2,
+      questionGoal: 1,
+      badge: 'Little Chef'
+    },
+    full: {
+      label: 'Full 25 Min',
+      ordersGoal: 4,
+      politeGoal: 3,
+      questionGoal: 2,
+      badge: 'Kind Server'
+    }
+  };
+
+  const kitchenMenu = ['Tea', 'Soup', 'Fruit Salad', 'Sandwich'];
+  const kitchenPrompts = [
+    'What would you like to order today?',
+    'Please wait, your food is coming soon.',
+    'Would you like tea or soup?',
+    'How does your food taste?',
+    'Thank you for visiting our kitchen.'
+  ];
+
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -175,6 +303,30 @@ const Activities = () => {
     return () => clearTimeout(timer);
   }, [ballShowConfetti]);
 
+  useEffect(() => {
+    if (!storyShowConfetti) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setStoryShowConfetti(false);
+    }, 1800);
+
+    return () => clearTimeout(timer);
+  }, [storyShowConfetti]);
+
+  useEffect(() => {
+    if (!kitchenShowConfetti) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setKitchenShowConfetti(false);
+    }, 1800);
+
+    return () => clearTimeout(timer);
+  }, [kitchenShowConfetti]);
+
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -228,9 +380,31 @@ const Activities = () => {
       setBallMood('');
       setBallShowConfetti(false);
     }
+    if (activity.title === 'Story Time Circle') {
+      setSelectedStoryId('little-seed');
+      setStoryPageIndex(0);
+      setStoryWordsLearned(0);
+      setStoryMood('');
+      setStoryShowConfetti(false);
+    }
+    if (activity.title === 'Pretend Kitchen Play') {
+      setKitchenMode('quick');
+      setKitchenRole('Chef');
+      setKitchenMissionStep(0);
+      setKitchenPromptIndex(0);
+      setKitchenOrdersServed(0);
+      setKitchenPoliteWords(0);
+      setKitchenQuestionsAsked(0);
+      setKitchenFeelingWordUsed(false);
+      setKitchenMood('');
+      setKitchenShowConfetti(false);
+    }
   };
 
   const closeDetails = () => {
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
     setSelectedActivity(null);
   };
 
@@ -347,6 +521,131 @@ const Activities = () => {
     setBallDrops(0);
     setBallMood('');
     setBallShowConfetti(false);
+  };
+
+  const selectStoryBook = (storyId) => {
+    setSelectedStoryId(storyId);
+    setStoryPageIndex(0);
+    setStoryWordsLearned(0);
+    setStoryMood('');
+    setStoryShowConfetti(false);
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+  };
+
+  const readPageAloud = () => {
+    if (!selectedStory || !currentStoryPage || typeof window === 'undefined' || !window.speechSynthesis) {
+      return;
+    }
+
+    const buildExpressiveNarration = (text) => {
+      const sentenceParts = text.match(/[^.!?]+[.!?]*/g) || [text];
+      const withPauses = sentenceParts
+        .map((part) => part.trim())
+        .filter(Boolean)
+        .map((part, index, arr) => {
+          let expressive = part
+            .replace(/\b(oh no)\b/gi, 'oh no...')
+            .replace(/\b(wow)\b/gi, 'wow...')
+            .replace(/\b(hello)\b/gi, 'hello...')
+            .replace(/\b(good night)\b/gi, 'good night...')
+            .replace(/\b(yum)\b/gi, 'yum...');
+
+          if (index < arr.length - 1 && !/[.!?]$/.test(expressive)) {
+            expressive = `${expressive}...`;
+          }
+
+          return expressive;
+        });
+
+      return withPauses.join(' ');
+    };
+
+    window.speechSynthesis.cancel();
+    const expressiveText = buildExpressiveNarration(currentStoryPage.text);
+    const utterance = new SpeechSynthesisUtterance(expressiveText);
+    const voices = window.speechSynthesis.getVoices();
+    const preferredVoiceKeywords = [
+      'female',
+      'girl',
+      'child',
+      'kids',
+      'neural',
+      'samantha',
+      'zira',
+      'aria',
+      'jenny',
+      'serena',
+      'google us english'
+    ];
+    const matchedVoice = voices.find((voice) =>
+      preferredVoiceKeywords.some((keyword) => voice.name.toLowerCase().includes(keyword))
+    );
+
+    if (matchedVoice) {
+      utterance.voice = matchedVoice;
+      utterance.lang = matchedVoice.lang;
+    }
+
+    utterance.rate = 0.64;
+    utterance.pitch = 1.05;
+    utterance.volume = 0.72;
+    utterance.lang = utterance.lang || 'en-US';
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const goToNextStoryPage = () => {
+    if (!selectedStory) {
+      return;
+    }
+
+    if (storyPageIndex < selectedStory.pages.length - 1) {
+      setStoryPageIndex((prev) => prev + 1);
+      return;
+    }
+
+    setStoryShowConfetti(true);
+  };
+
+  const goToPreviousStoryPage = () => {
+    setStoryPageIndex((prev) => Math.max(prev - 1, 0));
+  };
+
+  const resetStorySession = () => {
+    setStoryPageIndex(0);
+    setStoryWordsLearned(0);
+    setStoryMood('');
+    setStoryShowConfetti(false);
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+  };
+
+  const resetKitchenSession = () => {
+    setKitchenRole('Chef');
+    setKitchenMissionStep(0);
+    setKitchenPromptIndex(0);
+    setKitchenOrdersServed(0);
+    setKitchenPoliteWords(0);
+    setKitchenQuestionsAsked(0);
+    setKitchenFeelingWordUsed(false);
+    setKitchenMood('');
+    setKitchenShowConfetti(false);
+  };
+
+  const completeKitchenStep = () => {
+    setKitchenMissionStep((prev) => {
+      const next = Math.min(prev + 1, 3);
+      if (next === 3 && prev < 3) {
+        setKitchenShowConfetti(true);
+      }
+      return next;
+    });
+  };
+
+  const nextKitchenPrompt = () => {
+    setKitchenPromptIndex((prev) => prev + 1);
   };
 
   const layout = {
@@ -813,6 +1112,20 @@ const Activities = () => {
   const ballPlan = ballRollPlans[ballMode];
   const ballAccuracy = ballRound > 0 ? Math.round((ballCatches / ballRound) * 100) : 0;
   const ballDone = ballRound >= ballPlan.rounds;
+  const selectedStory = storyBooks.find((book) => book.id === selectedStoryId) || storyBooks[0];
+  const currentStoryPage = selectedStory.pages[storyPageIndex];
+  const storyProgress = Math.round(((storyPageIndex + 1) / selectedStory.pages.length) * 100);
+  const storyDone = storyPageIndex === selectedStory.pages.length - 1;
+  const kitchenPlan = kitchenPlayModes[kitchenMode];
+  const kitchenSteps = ['Choose menu and roles', 'Cook and serve', 'Thank customer and clean up'];
+  const kitchenProgress = Math.round((kitchenMissionStep / kitchenSteps.length) * 100);
+  const currentKitchenPrompt = kitchenPrompts[kitchenPromptIndex % kitchenPrompts.length];
+  const kitchenDone = kitchenMissionStep >= kitchenSteps.length;
+  const kitchenGoalsMet =
+    kitchenOrdersServed >= kitchenPlan.ordersGoal &&
+    kitchenPoliteWords >= kitchenPlan.politeGoal &&
+    kitchenQuestionsAsked >= kitchenPlan.questionGoal &&
+    kitchenFeelingWordUsed;
 
   return (
     <div style={layout}>
@@ -1334,6 +1647,404 @@ const Activities = () => {
                     </div>
                   )}
                 </>
+              ) : selectedActivity.title === 'Pretend Kitchen Play' ? (
+                <>
+                  <div style={{ marginTop: '14px', padding: '14px', borderRadius: '16px', background: 'linear-gradient(135deg, #fef3c7 0%, #d9f99d 100%)', border: '1px solid #facc15' }}>
+                    <div style={{ fontSize: '15px', fontWeight: 700, color: '#713f12' }}>
+                      Pretend Kitchen Play Guide
+                    </div>
+                    <div style={{ marginTop: '6px', fontSize: '13px', color: '#854d0e', lineHeight: 1.6 }}>
+                      Role-play cooking and serving to build social interaction and expressive language.
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: '16px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    {Object.entries(kitchenPlayModes).map(([key, mode]) => (
+                      <button
+                        key={key}
+                        onClick={() => {
+                          setKitchenMode(key);
+                          resetKitchenSession();
+                        }}
+                        style={{
+                          border: key === kitchenMode ? '2px solid #ca8a04' : '1px solid #fde68a',
+                          background: key === kitchenMode ? '#fef3c7' : '#ffffff',
+                          color: '#78350f',
+                          borderRadius: '999px',
+                          padding: '8px 12px',
+                          fontSize: '12px',
+                          fontWeight: 700,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {mode.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div style={{ marginTop: '14px', display: 'grid', gap: '10px' }}>
+                    <div style={{ borderRadius: '12px', border: '1px solid #fcd34d', background: '#fffbeb', padding: '12px' }}>
+                      <div style={{ fontSize: '13px', fontWeight: 700, color: '#92400e', marginBottom: '8px' }}>Choose Role</div>
+                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                        {['Chef', 'Server', 'Cashier'].map((role) => (
+                          <button
+                            key={role}
+                            onClick={() => setKitchenRole(role)}
+                            style={{
+                              border: role === kitchenRole ? '2px solid #f59e0b' : '1px solid #fcd34d',
+                              background: role === kitchenRole ? '#fef3c7' : '#ffffff',
+                              color: '#78350f',
+                              borderRadius: '999px',
+                              padding: '6px 10px',
+                              fontSize: '12px',
+                              fontWeight: 700,
+                              cursor: 'pointer'
+                            }}
+                          >
+                            {role}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div style={{ borderRadius: '12px', border: '1px solid #d9f99d', background: '#f7fee7', padding: '12px' }}>
+                      <div style={{ fontSize: '13px', fontWeight: 700, color: '#3f6212', marginBottom: '8px' }}>Menu Ideas</div>
+                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                        {kitchenMenu.map((item) => (
+                          <span key={item} style={{ padding: '6px 10px', borderRadius: '999px', background: '#ecfccb', color: '#3f6212', fontSize: '12px', fontWeight: 600 }}>
+                            {item}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: '14px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <div style={{ fontSize: '13px', fontWeight: 700, color: '#334155' }}>Mission Progress</div>
+                      <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 700 }}>{kitchenMissionStep}/{kitchenSteps.length}</div>
+                    </div>
+                    <div style={{ height: '10px', borderRadius: '999px', background: '#e2e8f0', overflow: 'hidden' }}>
+                      <div style={{ width: `${kitchenProgress}%`, height: '100%', background: 'linear-gradient(90deg, #84cc16 0%, #f59e0b 100%)' }}></div>
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: '14px', display: 'grid', gap: '10px' }}>
+                    {kitchenSteps.map((step, index) => {
+                      const done = index < kitchenMissionStep;
+                      const current = index === kitchenMissionStep;
+                      return (
+                        <div
+                          key={step}
+                          style={{
+                            borderRadius: '12px',
+                            border: done ? '1px solid #86efac' : current ? '1px solid #f59e0b' : '1px solid #e5e7eb',
+                            background: done ? '#f0fdf4' : current ? '#fffbeb' : '#ffffff',
+                            padding: '12px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '10px'
+                          }}
+                        >
+                          <div style={{ width: '24px', height: '24px', borderRadius: '999px', background: done ? '#16a34a' : current ? '#f59e0b' : '#cbd5e1', color: '#fff', fontWeight: 700, fontSize: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            {done ? '✓' : index + 1}
+                          </div>
+                          <div style={{ fontSize: '13px', color: '#1f2937', fontWeight: current ? 700 : 500 }}>{step}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div style={{ marginTop: '14px', borderRadius: '12px', border: '1px solid #fed7aa', background: '#fff7ed', padding: '12px' }}>
+                    <div style={{ fontSize: '13px', fontWeight: 700, color: '#9a3412' }}>Talking Prompt</div>
+                    <div style={{ marginTop: '6px', fontSize: '13px', color: '#7c2d12', lineHeight: 1.6 }}>
+                      {currentKitchenPrompt}
+                    </div>
+                    <div style={{ marginTop: '10px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      <button
+                        onClick={nextKitchenPrompt}
+                        style={{ border: 'none', background: '#f97316', color: '#fff', borderRadius: '8px', padding: '8px 10px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}
+                      >
+                        Next Prompt
+                      </button>
+                      <button
+                        onClick={() => setKitchenQuestionsAsked((prev) => prev + 1)}
+                        style={{ border: 'none', background: '#2563eb', color: '#fff', borderRadius: '8px', padding: '8px 10px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}
+                      >
+                        Asked Question
+                      </button>
+                      <button
+                        onClick={() => setKitchenPoliteWords((prev) => prev + 1)}
+                        style={{ border: 'none', background: '#16a34a', color: '#fff', borderRadius: '8px', padding: '8px 10px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}
+                      >
+                        Polite Word Used
+                      </button>
+                      <button
+                        onClick={() => setKitchenOrdersServed((prev) => prev + 1)}
+                        style={{ border: 'none', background: '#7c3aed', color: '#fff', borderRadius: '8px', padding: '8px 10px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}
+                      >
+                        Order Served
+                      </button>
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: '14px', display: 'flex', gap: '12px', flexWrap: 'wrap', fontSize: '12px', fontWeight: 700, color: '#374151' }}>
+                    <span>Orders: {kitchenOrdersServed}/{kitchenPlan.ordersGoal}</span>
+                    <span>Polite words: {kitchenPoliteWords}/{kitchenPlan.politeGoal}</span>
+                    <span>Questions: {kitchenQuestionsAsked}/{kitchenPlan.questionGoal}</span>
+                    <span>Feeling word: {kitchenFeelingWordUsed ? 'Done' : 'Pending'}</span>
+                  </div>
+
+                  <div style={{ marginTop: '14px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    <button
+                      onClick={completeKitchenStep}
+                      disabled={kitchenDone}
+                      style={{
+                        border: 'none',
+                        background: kitchenDone ? '#94a3b8' : '#ea580c',
+                        color: '#ffffff',
+                        borderRadius: '10px',
+                        padding: '10px 14px',
+                        fontSize: '13px',
+                        fontWeight: 700,
+                        cursor: kitchenDone ? 'not-allowed' : 'pointer'
+                      }}
+                    >
+                      Mark Step Complete
+                    </button>
+                    <button
+                      onClick={() => setKitchenFeelingWordUsed(true)}
+                      style={{
+                        border: 'none',
+                        background: '#0891b2',
+                        color: '#ffffff',
+                        borderRadius: '10px',
+                        padding: '10px 14px',
+                        fontSize: '13px',
+                        fontWeight: 700,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Feeling Word Used
+                    </button>
+                    <button
+                      onClick={resetKitchenSession}
+                      style={{
+                        border: '1px solid #cbd5e1',
+                        background: '#ffffff',
+                        color: '#334155',
+                        borderRadius: '10px',
+                        padding: '10px 14px',
+                        fontSize: '13px',
+                        fontWeight: 700,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Reset Session
+                    </button>
+                  </div>
+
+                  <div style={{ marginTop: '14px', padding: '12px', borderRadius: '12px', background: '#eff6ff', border: '1px solid #93c5fd' }}>
+                    <div style={{ fontSize: '13px', fontWeight: 700, color: '#1e3a8a' }}>Parent Coaching Tip</div>
+                    <div style={{ marginTop: '4px', fontSize: '13px', color: '#1e40af', lineHeight: 1.6 }}>
+                      Model one sentence first, then let your child repeat. Praise effort and switch roles if child loses focus.
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: '14px', padding: '12px', borderRadius: '12px', background: '#f0fdf4', border: '1px solid #86efac' }}>
+                    <div style={{ fontSize: '13px', fontWeight: 700, color: '#166534' }}>How did your child feel?</div>
+                    <div style={{ marginTop: '8px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      {['Happy', 'Shy', 'Excited', 'Tired'].map((mood) => (
+                        <button
+                          key={mood}
+                          onClick={() => setKitchenMood(mood)}
+                          style={{
+                            border: mood === kitchenMood ? '2px solid #22c55e' : '1px solid #86efac',
+                            background: mood === kitchenMood ? '#dcfce7' : '#f0fdf4',
+                            color: '#14532d',
+                            borderRadius: '999px',
+                            padding: '6px 10px',
+                            fontSize: '12px',
+                            fontWeight: 700,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          {mood}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {kitchenDone && kitchenGoalsMet && (
+                    <div style={{ marginTop: '14px', borderRadius: '12px', background: '#ecfdf5', border: '1px solid #86efac', color: '#166534', padding: '12px', fontWeight: 700, fontSize: '13px' }}>
+                      Badge Unlocked: {kitchenPlan.badge} | Great social play session completed.
+                    </div>
+                  )}
+                </>
+              ) : selectedActivity.title === 'Story Time Circle' ? (
+                <>
+                  <div style={{ marginTop: '14px', padding: '14px', borderRadius: '16px', background: 'linear-gradient(135deg, #fef9c3 0%, #ffedd5 100%)', border: '1px solid #fcd34d' }}>
+                    <div style={{ fontSize: '15px', fontWeight: 700, color: '#92400e' }}>
+                      In-App Story Book Reader
+                    </div>
+                    <div style={{ marginTop: '6px', fontSize: '13px', color: '#78350f', lineHeight: 1.6 }}>
+                      Parents can read short story books directly here, page by page, with guided prompts.
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: '16px', display: 'grid', gap: '10px' }}>
+                    <label style={{ fontSize: '13px', color: '#7c2d12', fontWeight: 700 }}>Choose Story Book</label>
+                    <select
+                      value={selectedStoryId}
+                      onChange={(e) => selectStoryBook(e.target.value)}
+                      style={{
+                        padding: '10px 12px',
+                        borderRadius: '10px',
+                        border: '1px solid #fcd34d',
+                        fontSize: '13px',
+                        background: '#ffffff',
+                        color: '#7c2d12',
+                        outline: 'none'
+                      }}
+                    >
+                      {storyBooks.map((book) => (
+                        <option key={book.id} value={book.id}>{book.title} ({book.duration})</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div style={{ marginTop: '14px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '12px', padding: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <div style={{ fontSize: '13px', fontWeight: 700, color: '#92400e' }}>
+                        {selectedStory.title} - Page {storyPageIndex + 1}/{selectedStory.pages.length}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#a16207', fontWeight: 700 }}>{storyProgress}%</div>
+                    </div>
+                    <div style={{ height: '10px', borderRadius: '999px', background: '#fef3c7', overflow: 'hidden' }}>
+                      <div style={{ width: `${storyProgress}%`, height: '100%', background: 'linear-gradient(90deg, #f59e0b 0%, #f97316 100%)' }}></div>
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: '14px', borderRadius: '14px', border: '1px solid #fed7aa', background: '#fff7ed', padding: '14px' }}>
+                    <div style={{ fontSize: '13px', fontWeight: 700, color: '#9a3412' }}>Scene</div>
+                    <div style={{ marginTop: '4px', fontSize: '13px', color: '#7c2d12' }}>{currentStoryPage.scene}</div>
+                    <div style={{ marginTop: '10px', fontSize: '15px', lineHeight: 1.7, color: '#431407', background: '#ffffff', border: '1px solid #fdba74', borderRadius: '12px', padding: '12px' }}>
+                      {currentStoryPage.text}
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: '14px', borderRadius: '12px', border: '1px solid #fed7aa', background: '#fff7ed', padding: '12px' }}>
+                    <div style={{ fontSize: '13px', fontWeight: 700, color: '#9a3412' }}>Prompt Card</div>
+                    <div style={{ marginTop: '6px', fontSize: '13px', color: '#7c2d12', lineHeight: 1.6 }}>
+                      {currentStoryPage.parentPrompt}
+                    </div>
+                    <div style={{ marginTop: '10px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      <button
+                        onClick={readPageAloud}
+                        style={{ border: 'none', background: '#f97316', color: '#fff', borderRadius: '8px', padding: '8px 10px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}
+                      >
+                        Read Page Aloud
+                      </button>
+                      <button
+                        onClick={() => setStoryWordsLearned((prev) => prev + 1)}
+                        style={{ border: 'none', background: '#16a34a', color: '#fff', borderRadius: '8px', padding: '8px 10px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}
+                      >
+                        Learned Word
+                      </button>
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: '14px', display: 'flex', gap: '12px', flexWrap: 'wrap', fontSize: '12px', fontWeight: 700, color: '#374151' }}>
+                    <span>Words learned today: {storyWordsLearned}/{selectedStory.wordGoal}</span>
+                    <span>{storyWordsLearned >= selectedStory.wordGoal ? 'Word goal achieved' : 'Keep reading to reach word goal'}</span>
+                  </div>
+
+                  <div style={{ marginTop: '14px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    <button
+                      onClick={goToPreviousStoryPage}
+                      disabled={storyPageIndex === 0}
+                      style={{
+                        border: '1px solid #cbd5e1',
+                        background: storyPageIndex === 0 ? '#e2e8f0' : '#ffffff',
+                        color: '#334155',
+                        borderRadius: '10px',
+                        padding: '10px 14px',
+                        fontSize: '13px',
+                        fontWeight: 700,
+                        cursor: storyPageIndex === 0 ? 'not-allowed' : 'pointer'
+                      }}
+                    >
+                      Previous Page
+                    </button>
+                    <button
+                      onClick={goToNextStoryPage}
+                      style={{
+                        border: 'none',
+                        background: '#ea580c',
+                        color: '#ffffff',
+                        borderRadius: '10px',
+                        padding: '10px 14px',
+                        fontSize: '13px',
+                        fontWeight: 700,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {storyDone ? 'Finish Story' : 'Next Page'}
+                    </button>
+                    <button
+                      onClick={resetStorySession}
+                      style={{
+                        border: '1px solid #cbd5e1',
+                        background: '#ffffff',
+                        color: '#334155',
+                        borderRadius: '10px',
+                        padding: '10px 14px',
+                        fontSize: '13px',
+                        fontWeight: 700,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Reset Session
+                    </button>
+                  </div>
+
+                  <div style={{ marginTop: '14px', padding: '12px', borderRadius: '12px', background: '#eff6ff', border: '1px solid #93c5fd' }}>
+                    <div style={{ fontSize: '13px', fontWeight: 700, color: '#1e3a8a' }}>Parent Coaching Tip</div>
+                    <div style={{ marginTop: '4px', fontSize: '13px', color: '#1e40af', lineHeight: 1.6 }}>
+                      Read slowly, point to one object at a time, and let your child answer before helping.
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: '14px', padding: '12px', borderRadius: '12px', background: '#f0fdf4', border: '1px solid #86efac' }}>
+                    <div style={{ fontSize: '13px', fontWeight: 700, color: '#166534' }}>How did your child feel?</div>
+                    <div style={{ marginTop: '8px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      {['Happy', 'Focused', 'Distracted', 'Tired'].map((mood) => (
+                        <button
+                          key={mood}
+                          onClick={() => setStoryMood(mood)}
+                          style={{
+                            border: mood === storyMood ? '2px solid #22c55e' : '1px solid #86efac',
+                            background: mood === storyMood ? '#dcfce7' : '#f0fdf4',
+                            color: '#14532d',
+                            borderRadius: '999px',
+                            padding: '6px 10px',
+                            fontSize: '12px',
+                            fontWeight: 700,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          {mood}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {storyDone && storyShowConfetti && (
+                    <div style={{ marginTop: '14px', borderRadius: '12px', background: '#ecfdf5', border: '1px solid #86efac', color: '#166534', padding: '12px', fontWeight: 700, fontSize: '13px' }}>
+                      Badge Unlocked: Story Explorer | Word Goal: {storyWordsLearned}/{selectedStory.wordGoal}
+                    </div>
+                  )}
+                </>
               ) : selectedActivity.title === 'Finger Painting Fun' ? (
                 <>
                   <div style={{ marginTop: '14px', padding: '14px', borderRadius: '16px', background: 'linear-gradient(135deg, #fff7ed 0%, #fef3c7 100%)', border: '1px solid #fdba74' }}>
@@ -1406,6 +2117,18 @@ const Activities = () => {
       {ballShowConfetti && (
         <div style={reactionOverlay}>
           <div style={reactionEmojiStyle}>🏅</div>
+        </div>
+      )}
+
+      {storyShowConfetti && (
+        <div style={reactionOverlay}>
+          <div style={reactionEmojiStyle}>📚</div>
+        </div>
+      )}
+
+      {kitchenShowConfetti && (
+        <div style={reactionOverlay}>
+          <div style={reactionEmojiStyle}>👩‍🍳</div>
         </div>
       )}
 
