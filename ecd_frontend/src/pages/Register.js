@@ -68,35 +68,6 @@ const Register = () => {
     }
   };
 
-  const loginWithGoogle = async () => {
-    try {
-      const clientId = process.env.REACT_APP_GOOGLE_CLIENT_ID;
-      if (!window.google || !clientId) {
-        setError('Google login is not configured.');
-        return;
-      }
-
-      window.google.accounts.id.initialize({
-        client_id: clientId,
-        callback: async (response) => {
-          try {
-            const res = await API.post('google-login/', { credential: response.credential });
-            setSuccess('Login successful. Redirecting...');
-            setError('');
-            setTimeout(() => navigate('/std_dashboard'), 800);
-          } catch (err) {
-            console.error(err);
-            setError('Google login failed.');
-          }
-        },
-      });
-      window.google.accounts.id.prompt();
-    } catch (err) {
-      console.error(err);
-      setError('Google login failed to start.');
-    }
-  };
-
   const containerStyle = {
     minHeight: '100vh',
     background: '#f3e8f7'

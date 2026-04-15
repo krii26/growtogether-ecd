@@ -11,7 +11,6 @@ const TeacherDash = () => {
   });
   const [recentActivities, setRecentActivities] = useState([]);
   const [recentAssessments, setRecentAssessments] = useState([]);
-  const [children, setChildren] = useState([]);
   const [userInfo, setUserInfo] = useState({
     first_name: '',
     last_name: '',
@@ -38,7 +37,6 @@ const TeacherDash = () => {
           API.get('progress_reports/'),
         ]);
         
-        setChildren(childrenRes.data || []);
         const reports = reportsRes.data || [];
         setRecentAssessments(reports.slice(-5).reverse());
         

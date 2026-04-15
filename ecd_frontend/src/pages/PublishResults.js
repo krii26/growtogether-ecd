@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API from '../api/api';
 
@@ -105,20 +105,6 @@ const PublishResults = () => {
     if (diffDays < 7) return `${diffDays} days ago`;
     return date.toLocaleDateString();
   };
-
-  const assessments = useMemo(() => [
-    'Social-Emotional Development',
-    'Cognitive',
-    'Language',
-    'Motor Skills',
-    'Behavior'
-  ], []);
-
-  const recent = useMemo(() => [
-    { id: 1, title: 'Emma Johnson - Social-Emotional', score: 85, time: 'Published 2 hours ago' },
-    { id: 2, title: 'Oliver Smith - Cognitive', score: 92, time: 'Published 4 hours ago' },
-    { id: 3, title: 'Sophia Davis - Language', score: 68, time: 'Published yesterday' },
-  ], []);
 
   const layout = {
     display: 'grid',

@@ -277,12 +277,6 @@ const ELibrary = () => {
     cursor: 'pointer'
   };
 
-  const resourceCardHover = {
-    ...resourceCard,
-    transform: 'translateY(-4px)',
-    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.12)'
-  };
-
   const resourceImage = {
     width: '100%',
     height: '200px',
