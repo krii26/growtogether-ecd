@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API from '../api/api';
+import ParentSidebar from '../components/ParentSidebar';
 
 const StdDashboard = () => {
   const navigate = useNavigate();
@@ -253,51 +254,7 @@ const StdDashboard = () => {
 
   return (
     <div style={layout}>
-      {/* Sidebar */}
-      <aside style={sidebar}>
-        <div>
-          <div style={navActive}>
-            <span style={iconStyle}>🏠</span>
-            Student Dashboard
-          </div>
-          <div style={navItem} onClick={() => navigate('/children')}>
-            <span style={iconStyle}>👶</span>
-            My Children
-          </div>
-          <div style={navItem} onClick={() => navigate('/milestones')}>
-            <span style={iconStyle}>📋</span>
-            Milestones
-          </div>
-          <div style={navItem} onClick={() => navigate('/e-library')}>
-            <span style={iconStyle}>📚</span>
-            E-Library
-          </div>
-          <div style={navItem} onClick={() => navigate('/activities')}>
-            <span style={iconStyle}>💡</span>
-            Activities
-          </div>
-        </div>
-
-        {/* User Profile Section */}
-        <div style={userSection}>
-          <div style={userProfile}>
-            <div style={userAvatar}>
-              {userInfo.first_name.charAt(0)}{userInfo.last_name.charAt(0)}
-            </div>
-            <div style={userInfo2}>
-              <div style={userName}>
-                {userInfo.first_name} {userInfo.last_name}
-              </div>
-              <div style={userRole}>
-                {userInfo.role}
-              </div>
-            </div>
-            <div style={logoutIcon} onClick={handleLogout} title="Logout">
-              ⎋
-            </div>
-          </div>
-        </div>
-      </aside>
+      <ParentSidebar activeKey="dashboard" userInfo={userInfo} onLogout={handleLogout} />
 
       {/* Main Content */}
       <main>

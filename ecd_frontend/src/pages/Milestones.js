@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import API from '../api/api';
 import '../styles/Milestones.css';
+import ParentSidebar from '../components/ParentSidebar';
 
 // Cognitive Milestones predefined options
 const cognitiveMilestones = [
@@ -122,7 +123,7 @@ const Milestones = () => {
   const [completedMilestones, setCompletedMilestones] = useState([]);
   const [quickViewMilestone, setQuickViewMilestone] = useState(null);
   const [selectedTitles, setSelectedTitles] = useState([]);
-  const [multiDateByTitle, setMultiDateByTitle] = useState({});
+  const [perTitleData, setPerTitleData] = useState({});
   const [form, setForm] = useState({
     title: '',
     description: '',
@@ -236,7 +237,7 @@ const Milestones = () => {
     const newCategory = e.target.value;
     setSelectedCategory(newCategory);
     setSelectedTitles([]);
-    setMultiDateByTitle({});
+    setPerTitleData({});
     // Reset form when category changes
     setForm({
       title: '',
@@ -265,24 +266,44 @@ const Milestones = () => {
       .filter(Boolean);
 
     setSelectedTitles(titles);
-    setMultiDateByTitle((prev) => {
+    setPerTitleData((prev) => {
       const next = {};
       titles.forEach((title) => {
-        next[title] = prev[title] || '';
+        next[title] = prev[title] || {
+          parent_note: '',
+          date_achieved: '',
+          image: null,
+          imagePreview: null,
+          expanded: true
+        };
       });
       return next;
     });
-    setForm((prev) => ({
-      ...prev,
-      title: titles[0] || '',
-      description:
-        titles.length === 1
-          ? getMilestoneDescription(selectedCategory, titles[0])
-          : titles.length > 1
-            ? 'Descriptions will be auto-filled individually for each selected milestone.'
-            : ''
-    }));
+    setForm((prev) => ({ ...prev, title: titles[0] || '' }));
     setError('');
+  };
+
+  const handlePerTitleChange = (title, field, value) => {
+    setPerTitleData((prev) => ({
+      ...prev,
+      [title]: { ...prev[title], [field]: value }
+    }));
+  };
+
+  const handlePerTitleImage = (title, file) => {
+    if (!file) return;
+    const preview = URL.createObjectURL(file);
+    setPerTitleData((prev) => ({
+      ...prev,
+      [title]: { ...prev[title], image: file, imagePreview: preview }
+    }));
+  };
+
+  const togglePerTitleExpand = (title) => {
+    setPerTitleData((prev) => ({
+      ...prev,
+      [title]: { ...prev[title], expanded: prev[title]?.expanded === false ? true : false }
+    }));
   };
 
   const handleAddMilestone = async (e) => {
@@ -321,19 +342,17 @@ const Milestones = () => {
         await Promise.all(
           selectedTitles.map(async (title) => {
             const formData = new FormData();
+            const titleData = perTitleData[title] || {};
             formData.append('child', selectedChildId);
             formData.append('category', selectedCategory);
             formData.append('title', title);
             formData.append('description', getMilestoneDescription(selectedCategory, title));
-            formData.append('parent_note', form.parent_note || '');
-            const perTitleDate = selectedTitles.length > 1
-              ? multiDateByTitle[title]
-              : form.date_achieved;
-            if (perTitleDate) {
-              formData.append('date_achieved', perTitleDate);
+            formData.append('parent_note', titleData.parent_note || '');
+            if (titleData.date_achieved) {
+              formData.append('date_achieved', titleData.date_achieved);
             }
-            if (form.image) {
-              formData.append('image', form.image);
+            if (titleData.image) {
+              formData.append('image', titleData.image);
             }
 
             return API.post('milestones/', formData, {
@@ -347,7 +366,7 @@ const Milestones = () => {
       setShowAddModal(false);
       setEditingMilestone(null);
       setSelectedTitles([]);
-      setMultiDateByTitle({});
+      setPerTitleData({});
       setForm({
         title: '',
         description: '',
@@ -368,7 +387,7 @@ const Milestones = () => {
     setEditingMilestone(milestone);
     setSelectedCategory(milestone.category);
     setSelectedTitles([milestone.title]);
-    setMultiDateByTitle({});
+    setPerTitleData({});
     setForm({
       title: milestone.title,
       description: milestone.description,
@@ -569,48 +588,7 @@ const Milestones = () => {
 
   return (
     <div style={layout}>
-      <aside style={sidebar}>
-        <div>
-          <div style={navItem} onClick={() => navigate('/std_dashboard')}>
-            <span style={iconStyle}>🏠</span>
-            Dashboard
-          </div>
-          <div style={navItem} onClick={() => navigate('/children')}>
-            <span style={iconStyle}>👶</span>
-            My Children
-          </div>
-          <div style={navActive}>
-            <span style={iconStyle}>📋</span>
-            Milestones
-          </div>
-          <div style={navItem} onClick={() => navigate('/e-library')}>
-            <span style={iconStyle}>📚</span>
-            E-Library
-          </div>
-          <div style={navItem} onClick={() => navigate('/activities')}>
-            <span style={iconStyle}>💡</span>
-            Activities
-          </div>
-        </div>
-        <div style={userSection}>
-          <div style={userProfile}>
-            <div style={userAvatar}>
-              {currentUser.first_name.charAt(0)}{currentUser.last_name.charAt(0)}
-            </div>
-            <div style={userInfo2}>
-              <div style={userName}>
-                {currentUser.first_name} {currentUser.last_name}
-              </div>
-              <div style={userRole}>
-                {currentUser.role}
-              </div>
-            </div>
-            <div style={logoutIcon} onClick={handleLogout} title="Logout">
-              ⎋
-            </div>
-          </div>
-        </div>
-      </aside>
+      <ParentSidebar activeKey="milestones" userInfo={currentUser} onLogout={handleLogout} />
       <main style={mainContent}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         {/* Header */}
@@ -660,7 +638,7 @@ const Milestones = () => {
             setShowAddModal(true);
             setEditingMilestone(null);
             setSelectedTitles([]);
-            setMultiDateByTitle({});
+            setPerTitleData({});
             setForm({
               title: '',
               description: '',
@@ -1606,210 +1584,186 @@ const Milestones = () => {
                   )}
                 </div>
 
-                {/* Description */}
-                <div style={{ marginBottom: '16px' }}>
-                  <label style={{
-                    display: 'block',
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    marginBottom: '8px',
-                    color: '#333'
-                  }}>
-                    Description
-                  </label>
-                  <textarea
-                    name="description"
-                    value={form.description}
-                    onChange={handleFormChange}
-                    placeholder="Add details about this milestone..."
-                    readOnly={form.title !== '' && ['cognitive', 'physical', 'social-emotional', 'language'].includes(selectedCategory)}
-                    style={{
-                      width: '100%',
-                      padding: '10px 12px',
-                      border: '1px solid #d1d5db',
-                      borderRadius: '6px',
-                      fontSize: '14px',
-                      fontFamily: 'inherit',
-                      boxSizing: 'border-box',
-                      minHeight: '120px',
-                      resize: 'vertical',
-                      background: (form.title !== '' && ['cognitive', 'physical', 'social-emotional', 'language'].includes(selectedCategory)) ? '#f9fafb' : 'white',
-                      cursor: (form.title !== '' && ['cognitive', 'physical', 'social-emotional', 'language'].includes(selectedCategory)) ? 'not-allowed' : 'text'
-                    }}
-                  />
-                </div>
-
-                <div style={{ marginBottom: '16px' }}>
-                  <label style={{
-                    display: 'block',
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    marginBottom: '8px',
-                    color: '#333'
-                  }}>
-                    Parent Notes / What is happening?
-                  </label>
-                  <textarea
-                    name="parent_note"
-                    value={form.parent_note}
-                    onChange={handleFormChange}
-                    placeholder="Write what you are noticing at home, any concerns, patterns, or questions for the teacher."
-                    style={{
-                      width: '100%',
-                      padding: '10px 12px',
-                      border: '1px solid #d1d5db',
-                      borderRadius: '6px',
-                      fontSize: '14px',
-                      fontFamily: 'inherit',
-                      boxSizing: 'border-box',
-                      minHeight: '100px',
-                      resize: 'vertical'
-                    }}
-                  />
-                  <p style={{ margin: '8px 0 0 0', fontSize: '12px', color: '#6b7280', lineHeight: '1.5' }}>
-                    Teachers can read this note during review and use it when writing follow-up guidance.
-                  </p>
-                </div>
-
-                {/* Target Date */}
-                <div style={{ marginBottom: '16px' }}>
-                  <label style={{
-                    display: 'block',
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    marginBottom: '8px',
-                    color: '#333'
-                  }}>
-                    Target Date
-                  </label>
-                  {!editingMilestone && selectedTitles.length > 1 ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      {selectedTitles.map((title) => (
-                        <div key={title} style={{
-                          border: '1px solid #e5e7eb',
-                          borderRadius: '6px',
-                          padding: '8px 10px',
-                          background: '#f9fafb'
-                        }}>
-                          <div style={{
-                            fontSize: '12px',
-                            fontWeight: '600',
-                            color: '#4b5563',
-                            marginBottom: '6px'
-                          }}>
-                            {title}
-                          </div>
-                          <input
-                            type="date"
-                            value={multiDateByTitle[title] || ''}
-                            onChange={(e) => setMultiDateByTitle((prev) => ({
-                              ...prev,
-                              [title]: e.target.value
-                            }))}
-                            style={{
-                              width: '100%',
-                              padding: '8px 10px',
-                              border: '1px solid #d1d5db',
-                              borderRadius: '6px',
-                              fontSize: '13px',
-                              fontFamily: 'inherit',
-                              boxSizing: 'border-box'
-                            }}
-                          />
-                        </div>
-                      ))}
+                {editingMilestone ? (
+                  <>
+                    {/* Description — editing mode (shared) */}
+                    <div style={{ marginBottom: '16px' }}>
+                      <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#333' }}>
+                        Description
+                      </label>
+                      <textarea
+                        name="description"
+                        value={form.description}
+                        onChange={handleFormChange}
+                        placeholder="Add details about this milestone..."
+                        style={{ width: '100%', padding: '10px 12px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px', fontFamily: 'inherit', boxSizing: 'border-box', minHeight: '120px', resize: 'vertical' }}
+                      />
                     </div>
-                  ) : (
-                    <input
-                      type="date"
-                      name="date_achieved"
-                      value={form.date_achieved}
-                      onChange={handleFormChange}
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '6px',
-                        fontSize: '14px',
-                        fontFamily: 'inherit',
-                        boxSizing: 'border-box'
-                      }}
-                    />
-                  )}
-                </div>
 
-                {/* Image Upload */}
-                <div style={{ marginBottom: '16px' }}>
-                  <label style={{
-                    display: 'block',
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    marginBottom: '8px',
-                    color: '#333'
-                  }}>
-                    Upload Photo
-                  </label>
-                  <div style={{
-                    border: '2px dashed #d1d5db',
-                    borderRadius: '6px',
-                    padding: '20px',
-                    textAlign: 'center',
-                    cursor: 'pointer',
-                    background: '#f9fafb',
-                    transition: 'all 0.3s'
-                  }}>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageChange}
-                      style={{ display: 'none' }}
-                      id="image-input"
-                    />
-                    <label htmlFor="image-input" style={{
-                      cursor: 'pointer',
-                      display: 'block'
-                    }}>
-                      {form.imagePreview ? (
-                        <div>
-                          <img
-                            src={form.imagePreview}
-                            alt="Preview"
-                            style={{
-                              maxWidth: '100%',
-                              maxHeight: '200px',
-                              borderRadius: '4px',
-                              marginBottom: '10px'
-                            }}
-                          />
-                          <p style={{
-                            margin: '0',
-                            fontSize: '12px',
-                            color: '#666'
-                          }}>
-                            Click to change image
-                          </p>
-                        </div>
-                      ) : (
-                        <div>
-                          <p style={{
-                            margin: '0 0 8px 0',
-                            fontSize: '14px',
-                            color: '#666'
-                          }}>
-                            📸 Click to upload or drag and drop
-                          </p>
-                          <p style={{
-                            margin: 0,
-                            fontSize: '12px',
-                            color: '#999'
-                          }}>
-                            PNG, JPG, GIF up to 10MB
-                          </p>
-                        </div>
-                      )}
-                    </label>
+                    {/* Parent Notes — editing mode */}
+                    <div style={{ marginBottom: '16px' }}>
+                      <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#333' }}>
+                        Parent Notes / What is happening?
+                      </label>
+                      <textarea
+                        name="parent_note"
+                        value={form.parent_note}
+                        onChange={handleFormChange}
+                        placeholder="Write what you are noticing at home, any concerns, patterns, or questions for the teacher."
+                        style={{ width: '100%', padding: '10px 12px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px', fontFamily: 'inherit', boxSizing: 'border-box', minHeight: '100px', resize: 'vertical' }}
+                      />
+                      <p style={{ margin: '8px 0 0 0', fontSize: '12px', color: '#6b7280', lineHeight: '1.5' }}>
+                        Teachers can read this note during review and use it when writing follow-up guidance.
+                      </p>
+                    </div>
+
+                    {/* Target Date — editing mode */}
+                    <div style={{ marginBottom: '16px' }}>
+                      <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#333' }}>
+                        Target Date
+                      </label>
+                      <input
+                        type="date"
+                        name="date_achieved"
+                        value={form.date_achieved}
+                        onChange={handleFormChange}
+                        style={{ width: '100%', padding: '10px 12px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px', fontFamily: 'inherit', boxSizing: 'border-box' }}
+                      />
+                    </div>
+
+                    {/* Image Upload — editing mode */}
+                    <div style={{ marginBottom: '16px' }}>
+                      <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#333' }}>
+                        Upload Photo
+                      </label>
+                      <div style={{ border: '2px dashed #d1d5db', borderRadius: '6px', padding: '20px', textAlign: 'center', background: '#f9fafb' }}>
+                        <input type="file" accept="image/*" onChange={handleImageChange} style={{ display: 'none' }} id="image-input" />
+                        <label htmlFor="image-input" style={{ cursor: 'pointer', display: 'block' }}>
+                          {form.imagePreview ? (
+                            <div>
+                              <img src={form.imagePreview} alt="Preview" style={{ maxWidth: '100%', maxHeight: '200px', borderRadius: '4px', marginBottom: '10px' }} />
+                              <p style={{ margin: 0, fontSize: '12px', color: '#666' }}>Click to change image</p>
+                            </div>
+                          ) : (
+                            <div>
+                              <p style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#666' }}>📸 Click to upload or drag and drop</p>
+                              <p style={{ margin: 0, fontSize: '12px', color: '#999' }}>PNG, JPG, GIF up to 10MB</p>
+                            </div>
+                          )}
+                        </label>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  /* Per-title expandable cards — add mode */
+                  <div style={{ marginBottom: '16px' }}>
+                    {selectedTitles.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: '20px', background: '#f9fafb', borderRadius: '8px', border: '1px dashed #d1d5db' }}>
+                        <p style={{ margin: 0, color: '#9ca3af', fontSize: '13px' }}>
+                          Select one or more milestone titles above to fill in details for each.
+                        </p>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {selectedTitles.map((title) => {
+                          const data = perTitleData[title] || {};
+                          const desc = getMilestoneDescription(selectedCategory, title);
+                          const isExpanded = data.expanded !== false;
+                          return (
+                            <div key={title} style={{ border: '1px solid #e5e7eb', borderRadius: '10px', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                              {/* Card Header */}
+                              <div
+                                onClick={() => togglePerTitleExpand(title)}
+                                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: isExpanded ? '#f0f4ff' : '#f3f4f6', cursor: 'pointer', userSelect: 'none', borderBottom: isExpanded ? '1px solid #e5e7eb' : 'none' }}
+                              >
+                                <span style={{ fontWeight: '600', fontSize: '14px', color: '#1f2937' }}>{title}</span>
+                                <span style={{ fontSize: '11px', color: '#6b7280', marginLeft: '8px' }}>
+                                  {isExpanded ? '▲ collapse' : '▼ expand'}
+                                </span>
+                              </div>
+
+                              {/* Card Body */}
+                              {isExpanded && (
+                                <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px', background: 'white' }}>
+
+                                  {/* Description — read-only */}
+                                  {desc && (
+                                    <div>
+                                      <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', marginBottom: '5px', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                        Description
+                                      </label>
+                                      <textarea
+                                        readOnly
+                                        value={desc}
+                                        style={{ width: '100%', padding: '8px 10px', border: '1px solid #e5e7eb', borderRadius: '6px', fontSize: '12px', fontFamily: 'inherit', minHeight: '72px', resize: 'none', background: '#f9fafb', color: '#6b7280', cursor: 'default', boxSizing: 'border-box', lineHeight: '1.6' }}
+                                      />
+                                    </div>
+                                  )}
+
+                                  {/* Parent Notes */}
+                                  <div>
+                                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', marginBottom: '5px', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                      Parent Notes
+                                    </label>
+                                    <textarea
+                                      value={data.parent_note || ''}
+                                      onChange={(e) => handlePerTitleChange(title, 'parent_note', e.target.value)}
+                                      placeholder="What are you noticing at home for this milestone?"
+                                      style={{ width: '100%', padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '13px', fontFamily: 'inherit', minHeight: '72px', resize: 'vertical', boxSizing: 'border-box' }}
+                                    />
+                                  </div>
+
+                                  {/* Target Date + Photo — side by side */}
+                                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                    <div>
+                                      <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', marginBottom: '5px', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                        Target Date
+                                      </label>
+                                      <input
+                                        type="date"
+                                        value={data.date_achieved || ''}
+                                        onChange={(e) => handlePerTitleChange(title, 'date_achieved', e.target.value)}
+                                        style={{ width: '100%', padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '13px', fontFamily: 'inherit', boxSizing: 'border-box' }}
+                                      />
+                                    </div>
+                                    <div>
+                                      <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', marginBottom: '5px', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                        Upload Photo
+                                      </label>
+                                      <div style={{ border: '2px dashed #d1d5db', borderRadius: '6px', padding: '8px', textAlign: 'center', background: '#f9fafb', minHeight: '66px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <input
+                                          type="file"
+                                          accept="image/*"
+                                          onChange={(e) => handlePerTitleImage(title, e.target.files[0])}
+                                          style={{ display: 'none' }}
+                                          id={`img-${title.replace(/\s+/g, '-')}`}
+                                        />
+                                        <label htmlFor={`img-${title.replace(/\s+/g, '-')}`} style={{ cursor: 'pointer', display: 'block', width: '100%' }}>
+                                          {data.imagePreview ? (
+                                            <div>
+                                              <img src={data.imagePreview} alt="Preview" style={{ maxWidth: '100%', maxHeight: '56px', borderRadius: '4px', marginBottom: '2px' }} />
+                                              <p style={{ margin: 0, fontSize: '10px', color: '#666' }}>Click to change</p>
+                                            </div>
+                                          ) : (
+                                            <div>
+                                              <p style={{ margin: '0 0 2px 0', fontSize: '20px' }}>📸</p>
+                                              <p style={{ margin: 0, fontSize: '11px', color: '#9ca3af' }}>Click to upload</p>
+                                            </div>
+                                          )}
+                                        </label>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
-                </div>
+                )}
 
                 {error && (
                   <div style={{
@@ -1836,7 +1790,7 @@ const Milestones = () => {
                       setShowAddModal(false);
                       setEditingMilestone(null);
                       setSelectedTitles([]);
-                      setMultiDateByTitle({});
+                      setPerTitleData({});
                       setForm({
                         title: '',
                         description: '',

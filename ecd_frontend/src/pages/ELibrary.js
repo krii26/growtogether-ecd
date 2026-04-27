@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API from '../api/api';
+import ParentSidebar from '../components/ParentSidebar';
 
 const ELibrary = () => {
   const navigate = useNavigate();
@@ -391,57 +392,7 @@ const ELibrary = () => {
 
   return (
     <div style={layout}>
-      {/* Sidebar */}
-      <div style={sidebar}>
-        <div>
-          <div
-            style={navItem(activeNav === 'Dashboard')}
-            onClick={() => navigateTo('/std_dashboard', 'Dashboard')}
-          >
-            📊 Dashboard
-          </div>
-          <div
-            style={navItem(activeNav === 'My Children')}
-            onClick={() => navigateTo('/children', 'My Children')}
-          >
-            👶 My Children
-          </div>
-          <div
-            style={navItem(activeNav === 'Checklist')}
-            onClick={() => navigateTo('/children', 'Checklist')}
-          >
-            📋 Milestone
-          </div>
-          <div
-            style={navItem(activeNav === 'E-Library')}
-            onClick={() => navigateTo('/e-library', 'E-Library')}
-          >
-            📚 E-Library
-          </div>
-          <div
-            style={navItem(activeNav === 'Activities')}
-            onClick={() => navigateTo('/activities', 'Activities')}
-          >
-            💡 Activities
-          </div>
-        </div>
-
-        {/* User Profile */}
-        <div style={userProfile}>
-          <div style={profileInfo}>
-            <div style={profileAvatar}>
-              {userInfo.first_name.charAt(0)}
-              {userInfo.last_name.charAt(0)}
-            </div>
-            <div>
-              <div style={profileText}>
-                {userInfo.first_name} {userInfo.last_name}
-              </div>
-              <div style={profileRole}>{userInfo.role}</div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <ParentSidebar activeKey="elibrary" userInfo={userInfo} onLogout={handleLogout} />
 
       {/* Main Content */}
       <div style={mainContent}>
