@@ -39,6 +39,13 @@ const Activities = () => {
   const [kitchenFeelingWordUsed, setKitchenFeelingWordUsed] = useState(false);
   const [kitchenMood, setKitchenMood] = useState('');
   const [kitchenShowConfetti, setKitchenShowConfetti] = useState(false);
+  const [playdoughType, setPlaydoughType] = useState('Animals');
+  const [beadPatternMode, setBeadPatternMode] = useState('easy');
+  const [emotionFace, setEmotionFace] = useState('Happy');
+  const [scienceRoundIndex, setScienceRoundIndex] = useState(0);
+  const [scienceScore, setScienceScore] = useState(0);
+  const [scienceFeedback, setScienceFeedback] = useState('Pick the color you think will appear after mixing.');
+  const [scienceShowConfetti, setScienceShowConfetti] = useState(false);
   const [userInfo, setUserInfo] = useState({
     first_name: '',
     last_name: '',
@@ -56,6 +63,161 @@ const Activities = () => {
     { id: 'fish', label: 'Fish', color: 'blue', emoji: '🐟' },
     { id: 'drop', label: 'Water Drop', color: 'blue', emoji: '💧' }
   ];
+
+  const playdoughCreationsPlans = {
+    Animals: {
+      label: 'Animals 🐢',
+      steps: [
+        { instruction: 'Roll a large ball of playdough for the body.', coaching: 'Say: squeeze and roll, squeeze and roll. Watch your child\'s hands closely.' },
+        { instruction: 'Roll a smaller ball for the head and press it gently onto the body.', coaching: 'Ask: where does the head go? Let them place it all by themselves.' },
+        { instruction: 'Roll tiny sausage shapes for legs and attach them underneath.', coaching: 'Count the legs together out loud: one, two, three, four!' },
+        { instruction: 'Add pinch details — ears, tail, or spots — using fingertips.', coaching: 'Say: use your pinch fingers to make tiny dots. Celebrate every detail they add.' }
+      ]
+    },
+    Fruits: {
+      label: 'Fruits 🍎',
+      steps: [
+        { instruction: 'Choose a fruit to make — apple, banana, or strawberry.', coaching: 'Show a real fruit if available. Ask: what shape is it? Round or long?' },
+        { instruction: 'Roll the right base shape — ball for apple, curved log for banana.', coaching: 'Guide hand-over-hand if needed. Keep encouraging: great job shaping!' },
+        { instruction: 'Add a small blended piece of a different color for texture or blush.', coaching: 'Ask: what color is a ripe banana? Talk about colors and names together.' },
+        { instruction: 'Press a tiny green stem or leaf on top to finish.', coaching: 'Say: every fruit has a stem. Can you find a stem on a real fruit at home?' }
+      ]
+    },
+    Letters: {
+      label: 'Letters 🔤',
+      steps: [
+        { instruction: 'Choose the first letter of your child\'s name to start with.', coaching: 'Say the letter name aloud and its sound. Repeat together two or three times.' },
+        { instruction: 'Roll a long sausage of playdough for the straight lines of the letter.', coaching: 'Ask: is this line long or short? Describe while building together.' },
+        { instruction: 'Curve or bend the sausage into the letter shape on a flat surface.', coaching: 'Trace the letter with a finger first, then guide shaping the playdough.' },
+        { instruction: 'Press lightly to flatten and display the finished letter proudly.', coaching: 'Celebrate together! Ask: what word starts with this letter?' }
+      ]
+    }
+  };
+
+  const playdoughMaterials = [
+    'Playdough in 3 or more colors',
+    'Rolling pin or smooth round bottle',
+    'Cookie cutters or safe plastic knife',
+    'Flat tray or clean table surface',
+    'Wipes or damp cloth for cleanup'
+  ];
+
+  const playdoughSkills = ['Fine Motor Control', 'Creativity', 'Shape Recognition', 'Language Development', 'Concentration'];
+
+  const beadStringingPlans = {
+    easy: {
+      label: 'Easy',
+      pattern: 'Red - Blue - Red - Blue',
+      steps: [
+        'Choose two large bead colors and place them in separate bowls.',
+        'Model the first two beads slowly: red, blue.',
+        'Let your child thread the same two-color pattern along the string.',
+        'Check the finished string together by pointing and naming each color.'
+      ],
+      coaching: 'Say each color aloud before threading it so your child hears the pattern and movement together.'
+    },
+    medium: {
+      label: 'Medium',
+      pattern: 'Red - Yellow - Blue - Red - Yellow - Blue',
+      steps: [
+        'Set out three bead colors in a clear left-to-right order.',
+        'Start the pattern with three beads and pause for your child to continue.',
+        'Encourage your child to look back at the pattern before choosing the next bead.',
+        'Read the completed sequence aloud together from start to finish.'
+      ],
+      coaching: 'If your child loses track, cover the extra beads and guide attention back to the repeating order.'
+    },
+    challenge: {
+      label: 'Challenge',
+      pattern: 'Green - Green - Orange - Green - Green - Orange',
+      steps: [
+        'Show the repeating pattern using two same-color beads and one different bead.',
+        'Ask your child to predict which bead comes next before threading.',
+        'Thread the pattern together in short groups of three beads.',
+        'Review the bracelet or string and ask where the pattern repeats.'
+      ],
+      coaching: 'Use phrases like same, same, different to make the pattern structure easier to notice.'
+    }
+  };
+
+  const beadMaterials = ['Large colorful beads', 'String or shoelace', 'Small bowls for sorting colors'];
+  const beadSkills = ['Sequencing', 'Fine Motor Control', 'Color Recognition', 'Attention'];
+
+  const emotionFacesPlans = {
+    Happy: {
+      emoji: '😊',
+      faceCue: 'Big smile, bright eyes, relaxed cheeks.',
+      prompt: 'What makes you feel happy?',
+      support: 'Smile first and invite your child to copy you in the mirror.'
+    },
+    Sad: {
+      emoji: '😢',
+      faceCue: 'Turn lips down a little and soften the eyes.',
+      prompt: 'What can we do when someone feels sad?',
+      support: 'Keep your voice calm and talk about comforting actions like a hug or kind words.'
+    },
+    Angry: {
+      emoji: '😠',
+      faceCue: 'Tight mouth, strong eyebrows, tense face.',
+      prompt: 'What helps your body calm down when you feel angry?',
+      support: 'Model one slow breath after making the face so the child links emotion with calming.'
+    },
+    Surprised: {
+      emoji: '😮',
+      faceCue: 'Round mouth, wide eyes, lifted eyebrows.',
+      prompt: 'What surprised you today?',
+      support: 'Exaggerate the expression a little so the child can clearly notice eyes and mouth changes.'
+    }
+  };
+
+  const emotionSteps = [
+    'Pick one feeling face below.',
+    'Make the same face together in a mirror.',
+    'Talk about what the eyes, mouth, and eyebrows look like.',
+    'Ask when your child has felt that emotion before.'
+  ];
+
+  const emotionSkills = ['Emotion Recognition', 'Self-Expression', 'Empathy', 'Language Development'];
+
+  const scienceMixingRounds = [
+    {
+      id: 'sunset-orange',
+      colors: ['Red', 'Yellow'],
+      target: 'Orange',
+      options: ['Orange', 'Green', 'Purple', 'Brown']
+    },
+    {
+      id: 'garden-green',
+      colors: ['Blue', 'Yellow'],
+      target: 'Green',
+      options: ['Purple', 'Green', 'Orange', 'Pink']
+    },
+    {
+      id: 'grape-purple',
+      colors: ['Red', 'Blue'],
+      target: 'Purple',
+      options: ['Purple', 'Brown', 'Orange', 'Green']
+    },
+    {
+      id: 'muddy-brown',
+      colors: ['Red', 'Yellow', 'Blue'],
+      target: 'Brown',
+      options: ['Brown', 'Purple', 'Green', 'Orange']
+    }
+  ];
+
+  const scienceMaterials = ['Water cups or clear bowls', 'Food coloring or paint', 'Spoon or dropper', 'Paper towel for cleanup'];
+  const scienceSkills = ['Prediction', 'Observation', 'Color Recognition', 'Scientific Thinking'];
+  const scienceColorMap = {
+    Red: '#ef4444',
+    Yellow: '#facc15',
+    Blue: '#3b82f6',
+    Orange: '#f97316',
+    Green: '#22c55e',
+    Purple: '#8b5cf6',
+    Brown: '#92400e',
+    Pink: '#ec4899'
+  };
 
   const fingerPaintingPlan = {
     theme: 'Rainbow Garden',
@@ -327,6 +489,18 @@ const Activities = () => {
     return () => clearTimeout(timer);
   }, [kitchenShowConfetti]);
 
+  useEffect(() => {
+    if (!scienceShowConfetti) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setScienceShowConfetti(false);
+    }, 1800);
+
+    return () => clearTimeout(timer);
+  }, [scienceShowConfetti]);
+
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -398,6 +572,18 @@ const Activities = () => {
       setKitchenFeelingWordUsed(false);
       setKitchenMood('');
       setKitchenShowConfetti(false);
+    }
+    if (activity.title === 'Pattern Bead Stringing') {
+      setBeadPatternMode('easy');
+    }
+    if (activity.title === 'Emotion Faces Game') {
+      setEmotionFace('Happy');
+    }
+    if (activity.title === 'Science Experiment') {
+      setScienceRoundIndex(0);
+      setScienceScore(0);
+      setScienceFeedback('Pick the color you think will appear after mixing.');
+      setScienceShowConfetti(false);
     }
   };
 
@@ -521,6 +707,44 @@ const Activities = () => {
     setBallDrops(0);
     setBallMood('');
     setBallShowConfetti(false);
+  };
+
+  const currentScienceRound = scienceMixingRounds[scienceRoundIndex] || null;
+  const scienceDone = scienceRoundIndex >= scienceMixingRounds.length;
+
+  const handleScienceGuess = (guess) => {
+    if (!currentScienceRound || scienceDone) {
+      return;
+    }
+
+    if (guess === currentScienceRound.target) {
+      const nextScore = scienceScore + 1;
+      const nextRound = scienceRoundIndex + 1;
+
+      setScienceScore(nextScore);
+      setReactionEmoji('🧪');
+
+      if (nextRound >= scienceMixingRounds.length) {
+        setScienceFeedback(`Correct. ${currentScienceRound.colors.join(' + ')} makes ${currentScienceRound.target}. You finished the experiment.`);
+        setScienceRoundIndex(nextRound);
+        setScienceShowConfetti(true);
+        return;
+      }
+
+      setScienceFeedback(`Correct. ${currentScienceRound.colors.join(' + ')} makes ${currentScienceRound.target}. Ready for the next mix?`);
+      setScienceRoundIndex(nextRound);
+      return;
+    }
+
+    setScienceFeedback(`Not quite. Try again: what do ${currentScienceRound.colors.join(' + ')} make together?`);
+    setReactionEmoji('🤔');
+  };
+
+  const resetScienceGame = () => {
+    setScienceRoundIndex(0);
+    setScienceScore(0);
+    setScienceFeedback('Pick the color you think will appear after mixing.');
+    setScienceShowConfetti(false);
   };
 
   const selectStoryBook = (storyId) => {
@@ -1103,6 +1327,8 @@ const Activities = () => {
   };
 
   const stackPlan = stackAndBuildPlans[stackMode];
+  const beadPlan = beadStringingPlans[beadPatternMode];
+  const selectedEmotionPlan = emotionFacesPlans[emotionFace];
   const stackSteps = [
     `Build a ${stackPlan.targetStacks}-block tower`,
     `Copy pattern: ${stackPlan.pattern.join(' - ')}`,
@@ -2045,6 +2271,387 @@ const Activities = () => {
                     </div>
                   )}
                 </>
+              ) : selectedActivity.title === 'Pattern Bead Stringing' ? (
+                <>
+                  <div style={{ marginTop: '14px', padding: '14px', borderRadius: '16px', background: 'linear-gradient(135deg, #eef2ff 0%, #e0f2fe 100%)', border: '1px solid #93c5fd' }}>
+                    <div style={{ fontSize: '15px', fontWeight: 700, color: '#1d4ed8' }}>
+                      Pattern Bead Stringing Guide
+                    </div>
+                    <div style={{ marginTop: '6px', fontSize: '13px', color: '#1e3a8a', lineHeight: 1.6 }}>
+                      Create repeating color patterns one bead at a time to build sequencing and careful hand control.
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: '16px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    {Object.entries(beadStringingPlans).map(([key, plan]) => (
+                      <button
+                        key={key}
+                        onClick={() => setBeadPatternMode(key)}
+                        style={{
+                          border: key === beadPatternMode ? '2px solid #2563eb' : '1px solid #bfdbfe',
+                          background: key === beadPatternMode ? '#dbeafe' : '#ffffff',
+                          color: '#1e3a8a',
+                          borderRadius: '999px',
+                          padding: '8px 12px',
+                          fontSize: '12px',
+                          fontWeight: 700,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {plan.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div style={{ marginTop: '16px', display: 'grid', gap: '14px' }}>
+                    <div style={{ padding: '14px', borderRadius: '14px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                      <div style={{ fontSize: '14px', fontWeight: 700, color: '#1f2937', marginBottom: '8px' }}>Materials</div>
+                      <div style={{ display: 'grid', gap: '8px' }}>
+                        {beadMaterials.map((item) => (
+                          <div key={item} style={{ fontSize: '13px', color: '#475569' }}>• {item}</div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div style={{ padding: '14px', borderRadius: '14px', background: '#eff6ff', border: '1px solid #93c5fd' }}>
+                      <div style={{ fontSize: '14px', fontWeight: 700, color: '#1d4ed8', marginBottom: '8px' }}>Pattern To Copy</div>
+                      <div style={{ fontSize: '13px', color: '#1e3a8a', fontWeight: 700 }}>{beadPlan.pattern}</div>
+                    </div>
+
+                    <div style={{ padding: '14px', borderRadius: '14px', background: '#fffbeb', border: '1px solid #fde68a' }}>
+                      <div style={{ fontSize: '14px', fontWeight: 700, color: '#92400e', marginBottom: '8px' }}>How To Do It</div>
+                      <div style={{ display: 'grid', gap: '10px' }}>
+                        {beadPlan.steps.map((step, index) => (
+                          <div key={step} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                            <div style={{ minWidth: '24px', height: '24px', borderRadius: '999px', background: '#f59e0b', color: '#fff', fontSize: '12px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              {index + 1}
+                            </div>
+                            <div style={{ fontSize: '13px', color: '#713f12', lineHeight: 1.6 }}>{step}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div style={{ padding: '12px', borderRadius: '12px', background: '#fff7ed', border: '1px solid #fdba74' }}>
+                      <div style={{ fontSize: '13px', fontWeight: 700, color: '#9a3412' }}>Parent Coaching Tip</div>
+                      <div style={{ marginTop: '4px', fontSize: '13px', color: '#7c2d12', lineHeight: 1.6 }}>
+                        {beadPlan.coaching}
+                      </div>
+                    </div>
+
+                    <div style={{ padding: '14px', borderRadius: '14px', background: '#f0fdf4', border: '1px solid #86efac' }}>
+                      <div style={{ fontSize: '14px', fontWeight: 700, color: '#166534', marginBottom: '8px' }}>Skills Built</div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                        {beadSkills.map((skill) => (
+                          <span key={skill} style={{ padding: '6px 10px', borderRadius: '999px', background: '#dcfce7', color: '#166534', fontSize: '12px', fontWeight: 600 }}>
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </>
+              ) : selectedActivity.title === 'Emotion Faces Game' ? (
+                <>
+                  <div style={{ marginTop: '14px', padding: '14px', borderRadius: '16px', background: 'linear-gradient(135deg, #fef2f2 0%, #ffedd5 100%)', border: '1px solid #fdba74' }}>
+                    <div style={{ fontSize: '15px', fontWeight: 700, color: '#c2410c' }}>
+                      Emotion Faces Mirror Play
+                    </div>
+                    <div style={{ marginTop: '6px', fontSize: '13px', color: '#9a3412', lineHeight: 1.6 }}>
+                      Explore happy, sad, angry, and surprised faces with a mirror and simple feeling questions.
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: '16px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    {Object.keys(emotionFacesPlans).map((emotion) => (
+                      <button
+                        key={emotion}
+                        onClick={() => setEmotionFace(emotion)}
+                        style={{
+                          border: emotion === emotionFace ? '2px solid #f97316' : '1px solid #fdba74',
+                          background: emotion === emotionFace ? '#ffedd5' : '#ffffff',
+                          color: '#9a3412',
+                          borderRadius: '999px',
+                          padding: '8px 12px',
+                          fontSize: '12px',
+                          fontWeight: 700,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {emotion} {emotionFacesPlans[emotion].emoji}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div style={{ marginTop: '16px', display: 'grid', gap: '14px' }}>
+                    <div style={{ padding: '14px', borderRadius: '14px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                      <div style={{ fontSize: '14px', fontWeight: 700, color: '#1f2937', marginBottom: '8px' }}>What You Need</div>
+                      <div style={{ display: 'grid', gap: '8px' }}>
+                        {['Mirror', 'Quiet space', 'Adult modeling the face first'].map((item) => (
+                          <div key={item} style={{ fontSize: '13px', color: '#475569' }}>• {item}</div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div style={{ padding: '14px', borderRadius: '14px', background: '#fff7ed', border: '1px solid #fdba74' }}>
+                      <div style={{ fontSize: '14px', fontWeight: 700, color: '#9a3412', marginBottom: '8px' }}>How To Do It</div>
+                      <div style={{ display: 'grid', gap: '10px' }}>
+                        {emotionSteps.map((step, index) => (
+                          <div key={step} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                            <div style={{ minWidth: '24px', height: '24px', borderRadius: '999px', background: '#f97316', color: '#fff', fontSize: '12px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              {index + 1}
+                            </div>
+                            <div style={{ fontSize: '13px', color: '#7c2d12', lineHeight: 1.6 }}>{step}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div style={{ padding: '14px', borderRadius: '14px', background: '#fefce8', border: '1px solid #fde68a' }}>
+                      <div style={{ fontSize: '14px', fontWeight: 700, color: '#854d0e', marginBottom: '8px' }}>Face Clue</div>
+                      <div style={{ fontSize: '13px', color: '#713f12', lineHeight: 1.6 }}>
+                        {selectedEmotionPlan.faceCue}
+                      </div>
+                    </div>
+
+                    <div style={{ padding: '14px', borderRadius: '14px', background: '#eff6ff', border: '1px solid #93c5fd' }}>
+                      <div style={{ fontSize: '14px', fontWeight: 700, color: '#1e3a8a', marginBottom: '8px' }}>Talk Together</div>
+                      <div style={{ fontSize: '13px', color: '#1e40af', lineHeight: 1.6 }}>
+                        {selectedEmotionPlan.prompt}
+                      </div>
+                    </div>
+
+                    <div style={{ padding: '12px', borderRadius: '12px', background: '#f0fdf4', border: '1px solid #86efac' }}>
+                      <div style={{ fontSize: '13px', fontWeight: 700, color: '#166534' }}>Parent Coaching Tip</div>
+                      <div style={{ marginTop: '4px', fontSize: '13px', color: '#166534', lineHeight: 1.6 }}>
+                        {selectedEmotionPlan.support}
+                      </div>
+                    </div>
+
+                    <div style={{ padding: '14px', borderRadius: '14px', background: '#f0fdf4', border: '1px solid #86efac' }}>
+                      <div style={{ fontSize: '14px', fontWeight: 700, color: '#166534', marginBottom: '8px' }}>Skills Built</div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                        {emotionSkills.map((skill) => (
+                          <span key={skill} style={{ padding: '6px 10px', borderRadius: '999px', background: '#dcfce7', color: '#166534', fontSize: '12px', fontWeight: 600 }}>
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </>
+              ) : selectedActivity.title === 'Science Experiment' ? (
+                <>
+                  <div style={{ marginTop: '14px', padding: '14px', borderRadius: '16px', background: 'linear-gradient(135deg, #ecfeff 0%, #dbeafe 100%)', border: '1px solid #7dd3fc' }}>
+                    <div style={{ fontSize: '15px', fontWeight: 700, color: '#0c4a6e' }}>
+                      Color Mixing Lab
+                    </div>
+                    <div style={{ marginTop: '6px', fontSize: '13px', color: '#1e3a8a', lineHeight: 1.6 }}>
+                      Predict what new color appears when 2 or 3 colors mix together, then test your guess like a mini scientist.
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: '16px', display: 'grid', gap: '14px' }}>
+                    <div style={{ padding: '14px', borderRadius: '14px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                      <div style={{ fontSize: '14px', fontWeight: 700, color: '#1f2937', marginBottom: '8px' }}>Materials</div>
+                      <div style={{ display: 'grid', gap: '8px' }}>
+                        {scienceMaterials.map((item) => (
+                          <div key={item} style={{ fontSize: '13px', color: '#475569' }}>• {item}</div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {!scienceDone && currentScienceRound && (
+                      <div style={{ padding: '16px', borderRadius: '16px', background: '#eff6ff', border: '1px solid #93c5fd' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                          <div style={{ fontSize: '14px', fontWeight: 700, color: '#1e3a8a' }}>Mixing Round {scienceRoundIndex + 1}/{scienceMixingRounds.length}</div>
+                          <div style={{ fontSize: '12px', fontWeight: 700, color: '#1d4ed8' }}>Score: {scienceScore}</div>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '14px' }}>
+                          {currentScienceRound.colors.map((color) => (
+                            <span
+                              key={color}
+                              style={{
+                                padding: '10px 14px',
+                                borderRadius: '999px',
+                                background: scienceColorMap[color] || '#d1d5db',
+                                color: color === 'Yellow' ? '#1f2937' : '#ffffff',
+                                fontSize: '13px',
+                                fontWeight: 700
+                              }}
+                            >
+                              {color}
+                            </span>
+                          ))}
+                        </div>
+
+                        <div style={{ fontSize: '14px', fontWeight: 700, color: '#1f2937', marginBottom: '8px' }}>
+                          What color will appear after mixing these together?
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(160px, 1fr))', gap: '10px' }}>
+                          {currentScienceRound.options.map((option) => (
+                            <button
+                              key={option}
+                              onClick={() => handleScienceGuess(option)}
+                              aria-label={`Choose ${option}`}
+                              title={option}
+                              style={{
+                                border: '2px solid #bfdbfe',
+                                background: scienceColorMap[option] || '#e5e7eb',
+                                borderRadius: '12px',
+                                padding: '14px',
+                                minHeight: '56px',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              <span
+                                style={{
+                                  display: 'block',
+                                  width: '100%',
+                                  height: '18px',
+                                  borderRadius: '999px',
+                                  border: '1px solid rgba(255, 255, 255, 0.6)',
+                                  background: 'rgba(255, 255, 255, 0.2)'
+                                }}
+                              ></span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <div style={{
+                      padding: '12px',
+                      borderRadius: '12px',
+                      background: '#fffbeb',
+                      border: '1px solid #fde68a',
+                      color: '#854d0e',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      lineHeight: 1.6
+                    }}>
+                      {scienceFeedback}
+                    </div>
+
+                    <div style={{ padding: '12px', borderRadius: '12px', background: '#fff7ed', border: '1px solid #fdba74' }}>
+                      <div style={{ fontSize: '13px', fontWeight: 700, color: '#9a3412' }}>Parent Coaching Tip</div>
+                      <div style={{ marginTop: '4px', fontSize: '13px', color: '#7c2d12', lineHeight: 1.6 }}>
+                        Ask for a prediction before each mix, then let your child explain why they chose that color.
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                      <button
+                        onClick={resetScienceGame}
+                        style={{
+                          border: '1px solid #cbd5e1',
+                          background: '#ffffff',
+                          color: '#334155',
+                          borderRadius: '10px',
+                          padding: '10px 14px',
+                          fontSize: '13px',
+                          fontWeight: 700,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Restart Experiment
+                      </button>
+                    </div>
+
+                    <div style={{ padding: '14px', borderRadius: '14px', background: '#f0fdf4', border: '1px solid #86efac' }}>
+                      <div style={{ fontSize: '14px', fontWeight: 700, color: '#166534', marginBottom: '8px' }}>Skills Built</div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                        {scienceSkills.map((skill) => (
+                          <span key={skill} style={{ padding: '6px 10px', borderRadius: '999px', background: '#dcfce7', color: '#166534', fontSize: '12px', fontWeight: 600 }}>
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    {scienceDone && (
+                      <div style={{ marginTop: '4px', borderRadius: '12px', background: '#ecfdf5', border: '1px solid #86efac', color: '#166534', padding: '12px', fontWeight: 700, fontSize: '13px' }}>
+                        Experiment Complete: {scienceScore}/{scienceMixingRounds.length} correct predictions.
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : selectedActivity.title === 'Playdough Creations' ? (
+                <>
+                  <div style={{ marginTop: '14px', padding: '14px', borderRadius: '16px', background: 'linear-gradient(135deg, #fdf4ff 0%, #ede9fe 100%)', border: '1px solid #d8b4fe' }}>
+                    <div style={{ fontSize: '15px', fontWeight: 700, color: '#6b21a8' }}>
+                      Creation Theme: Animals, Fruits &amp; Letters
+                    </div>
+                    <div style={{ marginTop: '6px', fontSize: '13px', color: '#581c87', lineHeight: 1.6 }}>
+                      Let children explore shapes and textures by sculpting with playdough. Switch between creation types using the tabs below.
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: '16px', display: 'grid', gap: '14px' }}>
+                    <div style={{ padding: '14px', borderRadius: '14px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                      <div style={{ fontSize: '14px', fontWeight: 700, color: '#1f2937', marginBottom: '8px' }}>Materials</div>
+                      <div style={{ display: 'grid', gap: '8px' }}>
+                        {playdoughMaterials.map((item) => (
+                          <div key={item} style={{ fontSize: '13px', color: '#475569' }}>• {item}</div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div style={{ padding: '14px', borderRadius: '14px', background: '#fdf4ff', border: '1px solid #e9d5ff' }}>
+                      <div style={{ fontSize: '14px', fontWeight: 700, color: '#6b21a8', marginBottom: '10px' }}>Choose Creation Type</div>
+                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' }}>
+                        {Object.entries(playdoughCreationsPlans).map(([key, plan]) => (
+                          <button
+                            key={key}
+                            onClick={() => setPlaydoughType(key)}
+                            style={{
+                              border: key === playdoughType ? '2px solid #7c3aed' : '1px solid #ddd6fe',
+                              background: key === playdoughType ? '#ede9fe' : '#ffffff',
+                              color: key === playdoughType ? '#4c1d95' : '#6b7280',
+                              borderRadius: '999px',
+                              padding: '8px 14px',
+                              fontSize: '13px',
+                              fontWeight: 700,
+                              cursor: 'pointer'
+                            }}
+                          >
+                            {plan.label}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div style={{ display: 'grid', gap: '12px' }}>
+                        {playdoughCreationsPlans[playdoughType].steps.map((step, index) => (
+                          <div key={index} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', padding: '12px', borderRadius: '12px', background: '#ffffff', border: '1px solid #ede9fe' }}>
+                            <div style={{ minWidth: '26px', height: '26px', borderRadius: '999px', background: '#7c3aed', color: '#fff', fontSize: '12px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                              {index + 1}
+                            </div>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: '13px', color: '#1f2937', fontWeight: 600, lineHeight: 1.6 }}>{step.instruction}</div>
+                              <div style={{ marginTop: '6px', display: 'flex', gap: '6px', alignItems: 'flex-start' }}>
+                                <span style={{ fontSize: '13px' }}>💬</span>
+                                <div style={{ fontSize: '12px', color: '#7c3aed', fontStyle: 'italic', lineHeight: 1.5 }}>{step.coaching}</div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div style={{ padding: '14px', borderRadius: '14px', background: '#f0fdf4', border: '1px solid #86efac' }}>
+                      <div style={{ fontSize: '14px', fontWeight: 700, color: '#166534', marginBottom: '8px' }}>Skills Built</div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                        {playdoughSkills.map((skill) => (
+                          <span key={skill} style={{ padding: '6px 10px', borderRadius: '999px', background: '#dcfce7', color: '#166534', fontSize: '12px', fontWeight: 600 }}>
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </>
               ) : selectedActivity.title === 'Finger Painting Fun' ? (
                 <>
                   <div style={{ marginTop: '14px', padding: '14px', borderRadius: '16px', background: 'linear-gradient(135deg, #fff7ed 0%, #fef3c7 100%)', border: '1px solid #fdba74' }}>
@@ -2129,6 +2736,12 @@ const Activities = () => {
       {kitchenShowConfetti && (
         <div style={reactionOverlay}>
           <div style={reactionEmojiStyle}>👩‍🍳</div>
+        </div>
+      )}
+
+      {scienceShowConfetti && (
+        <div style={reactionOverlay}>
+          <div style={reactionEmojiStyle}>🧪</div>
         </div>
       )}
 
