@@ -27,9 +27,13 @@ const StdDashboard = () => {
         // Load user info from localStorage or API
         const storedUser = localStorage.getItem('user');
         let parentFullName = '';
+        let parentFirstName = '';
+        let parentLastName = '';
         if (storedUser) {
           const user = JSON.parse(storedUser);
-          parentFullName = `${user.first_name || ''} ${user.last_name || ''}`.trim();
+          parentFirstName = (user.first_name || '').trim();
+          parentLastName = (user.last_name || '').trim();
+          parentFullName = `${parentFirstName} ${parentLastName}`.trim();
           setUserInfo({
             first_name: user.first_name || 'John',
             last_name: user.last_name || 'Doe',
@@ -56,10 +60,26 @@ const StdDashboard = () => {
         setProgressReports((reportsRes.data || []).slice(-5).reverse());
 
         const allMessages = followMessagesRes.data || [];
-        const filteredByParent = parentFullName
-          ? allMessages.filter((msg) => (msg.parent_name || '').trim().toLowerCase() === parentFullName.toLowerCase())
+        const normalizedFull = parentFullName.toLowerCase();
+        const normalizedFirst = parentFirstName.toLowerCase();
+        const normalizedLast = parentLastName.toLowerCase();
+
+        const filteredByParent = normalizedFull
+          ? allMessages.filter((msg) => {
+              const parentName = (msg.parent_name || '').trim().toLowerCase();
+              if (!parentName) return false;
+              return (
+                parentName === normalizedFull ||
+                parentName.includes(normalizedFull) ||
+                (normalizedFirst && parentName.includes(normalizedFirst)) ||
+                (normalizedLast && parentName.includes(normalizedLast))
+              );
+            })
           : allMessages;
-        setFollowMessages(filteredByParent.slice(0, 6));
+
+        // Fallback so recent follow-up messages are still visible if parent naming is inconsistent.
+        const visibleMessages = filteredByParent.length > 0 ? filteredByParent : allMessages;
+        setFollowMessages(visibleMessages.slice(0, 6));
       } catch (err) {
         console.error('Failed to load dashboard data', err);
       }
@@ -397,6 +417,11 @@ const StdDashboard = () => {
                   <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>
                     For: {msg.child_name || 'Child'}
                   </div>
+                  {msg.milestone_title && (
+                    <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 6 }}>
+                      Milestone: {msg.milestone_title}
+                    </div>
+                  )}
                   <div style={{ fontSize: 14, color: '#1f2937', lineHeight: 1.6 }}>
                     {msg.message}
                   </div>

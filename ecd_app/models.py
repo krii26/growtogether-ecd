@@ -28,6 +28,7 @@ class Milestone(models.Model):
     category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='social-emotional')
     title = models.CharField(max_length=100)
     description = models.TextField()
+    parent_note = models.TextField(blank=True)
     date_achieved = models.DateField(null=True, blank=True)
     image = models.ImageField(upload_to='milestone_images/', null=True, blank=True)
 
@@ -153,12 +154,15 @@ class UserProfile(models.Model):
 # -----------------------------
 class FollowUpMessage(models.Model):
     child = models.ForeignKey(Child, on_delete=models.CASCADE, related_name='follow_up_messages')
+    milestone = models.ForeignKey(Milestone, on_delete=models.SET_NULL, related_name='follow_up_messages', null=True, blank=True)
     parent_name = models.CharField(max_length=100)
     message = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Follow-up for {self.child.name} to {self.parent_name}"
+        if self.milestone_id:
+            return f"Follow-up for {self.child.name} / {self.milestone.title}"
+        return f"Follow-up for {self.child.name}"
 
     class Meta:
         ordering = ['-created_at']

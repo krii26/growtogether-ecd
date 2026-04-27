@@ -58,6 +58,18 @@ class FollowUpMessageViewSet(viewsets.ModelViewSet):
     queryset = FollowUpMessage.objects.all()
     serializer_class = FollowUpMessageSerializer
 
+    def get_queryset(self):
+        queryset = FollowUpMessage.objects.select_related('child', 'milestone').all()
+        child_id = self.request.query_params.get('child')
+        milestone_id = self.request.query_params.get('milestone')
+
+        if child_id:
+            queryset = queryset.filter(child_id=child_id)
+        if milestone_id:
+            queryset = queryset.filter(milestone_id=milestone_id)
+
+        return queryset
+
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def register(request):

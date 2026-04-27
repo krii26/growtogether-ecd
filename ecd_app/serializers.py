@@ -97,10 +97,25 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
 class FollowUpMessageSerializer(serializers.ModelSerializer):
     child_name = serializers.CharField(source='child.name', read_only=True)
+    milestone_title = serializers.CharField(source='milestone.title', read_only=True)
 
     class Meta:
         model = FollowUpMessage
         fields = '__all__'
+
+    def validate(self, attrs):
+        milestone = attrs.get('milestone')
+        child = attrs.get('child')
+
+        if self.instance is None and milestone is None:
+            raise serializers.ValidationError({'milestone': 'This field is required.'})
+
+        if milestone is not None:
+            if child is not None and child != milestone.child:
+                raise serializers.ValidationError({'child': 'Child must match the selected milestone.'})
+            attrs['child'] = milestone.child
+
+        return attrs
 
 
 

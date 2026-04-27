@@ -126,6 +126,7 @@ const Milestones = () => {
   const [form, setForm] = useState({
     title: '',
     description: '',
+    parent_note: '',
     date_achieved: '',
     image: null,
     imagePreview: null
@@ -305,6 +306,7 @@ const Milestones = () => {
         formData.append('category', selectedCategory);
         formData.append('title', form.title);
         formData.append('description', form.description);
+        formData.append('parent_note', form.parent_note || '');
         if (form.date_achieved) {
           formData.append('date_achieved', form.date_achieved);
         }
@@ -323,6 +325,7 @@ const Milestones = () => {
             formData.append('category', selectedCategory);
             formData.append('title', title);
             formData.append('description', getMilestoneDescription(selectedCategory, title));
+            formData.append('parent_note', form.parent_note || '');
             const perTitleDate = selectedTitles.length > 1
               ? multiDateByTitle[title]
               : form.date_achieved;
@@ -348,6 +351,7 @@ const Milestones = () => {
       setForm({
         title: '',
         description: '',
+        parent_note: '',
         date_achieved: '',
         image: null,
         imagePreview: null
@@ -368,6 +372,7 @@ const Milestones = () => {
     setForm({
       title: milestone.title,
       description: milestone.description,
+      parent_note: milestone.parent_note || '',
       date_achieved: milestone.date_achieved || '',
       image: null,
       imagePreview: milestone.image || null
@@ -659,6 +664,7 @@ const Milestones = () => {
             setForm({
               title: '',
               description: '',
+              parent_note: '',
               date_achieved: '',
               image: null,
               imagePreview: null
@@ -972,6 +978,35 @@ const Milestones = () => {
                               }
                               return line ? <p key={idx} style={{ margin: '4px 0' }}>{line}</p> : null;
                             })}
+                          </div>
+                        )}
+
+                        {milestone.parent_note && (
+                          <div style={{
+                            marginTop: '10px',
+                            padding: '10px 12px',
+                            borderRadius: '6px',
+                            background: '#fff7ed',
+                            borderLeft: '3px solid #f59e0b'
+                          }}>
+                            <div style={{
+                              fontSize: '11px',
+                              fontWeight: '700',
+                              color: '#9a3412',
+                              marginBottom: '4px',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.04em'
+                            }}>
+                              Parent Note
+                            </div>
+                            <div style={{
+                              fontSize: '12px',
+                              color: '#7c2d12',
+                              lineHeight: '1.5',
+                              whiteSpace: 'pre-wrap'
+                            }}>
+                              {milestone.parent_note}
+                            </div>
                           </div>
                         )}
 
@@ -1604,6 +1639,38 @@ const Milestones = () => {
                   />
                 </div>
 
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{
+                    display: 'block',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    marginBottom: '8px',
+                    color: '#333'
+                  }}>
+                    Parent Notes / What is happening?
+                  </label>
+                  <textarea
+                    name="parent_note"
+                    value={form.parent_note}
+                    onChange={handleFormChange}
+                    placeholder="Write what you are noticing at home, any concerns, patterns, or questions for the teacher."
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '6px',
+                      fontSize: '14px',
+                      fontFamily: 'inherit',
+                      boxSizing: 'border-box',
+                      minHeight: '100px',
+                      resize: 'vertical'
+                    }}
+                  />
+                  <p style={{ margin: '8px 0 0 0', fontSize: '12px', color: '#6b7280', lineHeight: '1.5' }}>
+                    Teachers can read this note during review and use it when writing follow-up guidance.
+                  </p>
+                </div>
+
                 {/* Target Date */}
                 <div style={{ marginBottom: '16px' }}>
                   <label style={{
@@ -1773,6 +1840,7 @@ const Milestones = () => {
                       setForm({
                         title: '',
                         description: '',
+                        parent_note: '',
                         date_achieved: '',
                         image: null,
                         imagePreview: null

@@ -19,6 +19,7 @@ const Student = () => {
   const [rating, setRating] = useState(0);
   const [suggestions, setSuggestions] = useState('');
   const [showFollowUpModal, setShowFollowUpModal] = useState(false);
+  const [selectedFollowUpMilestone, setSelectedFollowUpMilestone] = useState(null);
   const [followUpMessage, setFollowUpMessage] = useState('');
   const [followUpSending, setFollowUpSending] = useState(false);
   const [followUpError, setFollowUpError] = useState('');
@@ -80,6 +81,7 @@ const Student = () => {
   const handleCloseProfile = () => {
     setSelectedStudent(null);
     setShowFollowUpModal(false);
+    setSelectedFollowUpMilestone(null);
     setFollowUpMessage('');
     setFollowUpError('');
     setFollowUpSuccess('');
@@ -91,7 +93,8 @@ const Student = () => {
     });
   };
 
-  const handleOpenFollowUp = () => {
+  const handleOpenFollowUp = (milestone) => {
+    setSelectedFollowUpMilestone(milestone || null);
     setShowFollowUpModal(true);
     setFollowUpMessage('');
     setFollowUpError('');
@@ -101,6 +104,7 @@ const Student = () => {
   const handleCloseFollowUp = () => {
     if (followUpSending) return;
     setShowFollowUpModal(false);
+    setSelectedFollowUpMilestone(null);
     setFollowUpMessage('');
     setFollowUpError('');
     setFollowUpSuccess('');
@@ -116,6 +120,10 @@ const Student = () => {
       setFollowUpError('Student context is missing. Please reopen the profile.');
       return;
     }
+    if (!selectedFollowUpMilestone?.id) {
+      setFollowUpError('Please select a milestone first.');
+      return;
+    }
 
     try {
       setFollowUpSending(true);
@@ -124,11 +132,12 @@ const Student = () => {
 
       await API.post('follow_up_messages/', {
         child: selectedStudent.id,
+        milestone: selectedFollowUpMilestone.id,
         parent_name: selectedStudent.parent_name || 'Parent',
         message: trimmed
       });
 
-      setFollowUpSuccess('Follow-up message sent to parent successfully.');
+      setFollowUpSuccess('Milestone follow-up message sent to parent successfully.');
       setFollowUpMessage('');
     } catch (err) {
       console.error('Failed to send follow-up message', err);
@@ -555,21 +564,9 @@ const Student = () => {
                     <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600', color: '#111827' }}>
                       Student Details
                     </h3>
-                    <button
-                      onClick={handleOpenFollowUp}
-                      style={{
-                        background: '#8b5cf6',
-                        color: 'white',
-                        border: 'none',
-                        padding: '8px 14px',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        fontSize: '13px',
-                        fontWeight: '600'
-                      }}
-                    >
-                      Follow Up
-                    </button>
+                    <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                      Send follow-up from each milestone card.
+                    </div>
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
                     <div>
@@ -705,7 +702,51 @@ const Student = () => {
                                       >
                                         Review
                                       </button>
+                                      <button
+                                        onClick={() => handleOpenFollowUp(milestone)}
+                                        style={{
+                                          background: '#ede9fe',
+                                          color: '#6d28d9',
+                                          border: 'none',
+                                          padding: '4px 8px',
+                                          borderRadius: '4px',
+                                          cursor: 'pointer',
+                                          fontSize: '11px',
+                                          fontWeight: '600',
+                                          marginLeft: '6px'
+                                        }}
+                                      >
+                                        Follow Up
+                                      </button>
                                     </div>
+                                      {milestone.parent_note && (
+                                        <div style={{
+                                          marginBottom: '8px',
+                                          padding: '8px 10px',
+                                          borderRadius: '8px',
+                                          background: '#fff7ed',
+                                          borderLeft: '3px solid #f59e0b'
+                                        }}>
+                                          <div style={{
+                                            fontSize: '10px',
+                                            fontWeight: '700',
+                                            color: '#9a3412',
+                                            textTransform: 'uppercase',
+                                            letterSpacing: '0.04em',
+                                            marginBottom: '4px'
+                                          }}>
+                                            Parent Note
+                                          </div>
+                                          <div style={{
+                                            fontSize: '12px',
+                                            color: '#7c2d12',
+                                            lineHeight: '1.5',
+                                            whiteSpace: 'pre-wrap'
+                                          }}>
+                                            {milestone.parent_note}
+                                          </div>
+                                        </div>
+                                      )}
                                     {milestone.image && (
                                       <div style={{ marginBottom: '8px' }}>
                                         <img
@@ -833,13 +874,24 @@ const Student = () => {
                 <div style={{ fontSize: '13px', color: '#6b7280', marginBottom: '12px' }}>
                   Send follow-up message to: <strong>{selectedStudent.parent_name || 'Parent'}</strong>
                 </div>
+                <div style={{
+                  fontSize: '13px',
+                  color: '#4b5563',
+                  marginBottom: '12px',
+                  background: '#f5f3ff',
+                  border: '1px solid #ddd6fe',
+                  borderRadius: '8px',
+                  padding: '8px 10px'
+                }}>
+                  Milestone: <strong>{selectedFollowUpMilestone?.title || 'Not selected'}</strong>
+                </div>
                 <textarea
                   value={followUpMessage}
                   onChange={(e) => {
                     setFollowUpMessage(e.target.value);
                     if (followUpError) setFollowUpError('');
                   }}
-                  placeholder="Write a follow-up message for the parent..."
+                  placeholder="Write a follow-up message for this milestone..."
                   style={{
                     width: '100%',
                     minHeight: '130px',
@@ -1092,6 +1144,32 @@ const Student = () => {
                   </div>
                 )}
 
+                {reviewingMilestone.parent_note && (
+                  <div style={{ marginBottom: '20px' }}>
+                    <h3 style={{
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      color: '#111827',
+                      marginBottom: '12px'
+                    }}>
+                      Parent Note
+                    </h3>
+                    <div style={{
+                      background: '#fff7ed',
+                      border: '1px solid #fed7aa',
+                      borderLeft: '4px solid #f59e0b',
+                      padding: '14px 16px',
+                      borderRadius: '10px',
+                      fontSize: '14px',
+                      color: '#7c2d12',
+                      lineHeight: '1.7',
+                      whiteSpace: 'pre-wrap'
+                    }}>
+                      {reviewingMilestone.parent_note}
+                    </div>
+                  </div>
+                )}
+
                 {/* Student Info */}
                 {selectedStudent && (
                   <div style={{
@@ -1212,6 +1290,24 @@ const Student = () => {
                 <div style={{
                   marginTop: '24px'
                 }}>
+                  <button
+                    type="button"
+                    onClick={() => handleOpenFollowUp(reviewingMilestone)}
+                    style={{
+                      width: '100%',
+                      padding: '11px',
+                      background: '#ede9fe',
+                      color: '#6d28d9',
+                      border: 'none',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      marginBottom: '10px'
+                    }}
+                  >
+                    Send Follow-Up For This Milestone
+                  </button>
                   <button
                     onClick={async () => {
                       if (rating === 0) {

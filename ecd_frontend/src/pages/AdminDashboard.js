@@ -905,7 +905,10 @@ const AdminDashboard = () => {
                       background: unresolved ? '#fff7ed' : '#f9fafb'
                     }}
                   >
-                    <div style={{ fontSize: 12, color: '#6b7280' }}>{msg.parent_name} · Child ID {msg.child}</div>
+                    <div style={{ fontSize: 12, color: '#6b7280' }}>
+                      {msg.parent_name} · Child ID {msg.child}
+                      {msg.milestone_title ? ` · Milestone: ${msg.milestone_title}` : ''}
+                    </div>
                     <div style={{ fontSize: 13, color: '#111827', margin: '4px 0' }}>{msg.message}</div>
                     <button style={btnNeutral} onClick={() => toggleFollowUpResolved(msg.id)}>
                       {unresolved ? 'Mark Resolved' : 'Mark Unresolved'}
