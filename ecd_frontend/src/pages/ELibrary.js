@@ -189,24 +189,22 @@ const ELibrary = () => {
         link: resource.file_url || '#',
       }));
 
-      // Keep built-in resources visible and merge DB resources on top.
-      // This prevents the page from looking empty when DB has only a few rows.
+      // Merge: API-only resources are included, but built-in mock resources
+      // always take priority to preserve correct category/image data.
       const uniqueByTitle = new Map();
-      mockResources.forEach((resource) => {
+      apiResources.forEach((resource) => {
         uniqueByTitle.set((resource.title || '').trim().toLowerCase(), resource);
       });
-      apiResources.forEach((resource) => {
+      mockResources.forEach((resource) => {
         uniqueByTitle.set((resource.title || '').trim().toLowerCase(), resource);
       });
 
       const dataToUse = Array.from(uniqueByTitle.values());
       setResources(dataToUse);
-      filterResources(dataToUse, 'All Categories', '');
     } catch (error) {
       console.error('Error fetching E-Library resources:', error);
       // Fallback to built-in resources if API fails
       setResources(mockResources);
-      filterResources(mockResources, 'All Categories', '');
     }
   };
 
