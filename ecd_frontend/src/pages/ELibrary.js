@@ -75,6 +75,86 @@ const ELibrary = () => {
       image: '/safety.jpg',
       link: 'https://www.savethechildren.net/stories/tips-keeping-children-under-12-safe-online'
     },
+    {
+      id: 7,
+      title: 'Understanding Child Anxiety',
+      category: 'Psychology',
+      description: 'How to recognize signs of anxiety in young children and practical ways to support their emotional well-being at home and in school.',
+      image: '/social-emotional.jpg',
+      link: 'https://www.anxietycanada.com/articles/how-to-help-your-anxious-child/'
+    },
+    {
+      id: 8,
+      title: 'Encouraging Positive Behavior',
+      category: 'Behavior',
+      description: 'Evidence-based techniques for reinforcing good behavior and reducing challenging conduct in early childhood.',
+      image: '/traumakid.jpg',
+      link: 'https://www.cdc.gov/parents/essentials/toddlersandpreschoolers/positive/index.html'
+    },
+    {
+      id: 9,
+      title: 'Iron & Calcium for Growing Kids',
+      category: 'Nutrition',
+      description: 'Why iron and calcium are critical for brain development and bone growth, with food sources and meal ideas for toddlers.',
+      image: '/healthyeating.jpg',
+      link: 'https://www.healthychildren.org/English/ages-stages/toddler/nutrition/Pages/Selecting-Snacks-for-Toddlers.aspx'
+    },
+    {
+      id: 10,
+      title: 'Screen Time Guidelines for Under 5s',
+      category: 'Behavior',
+      description: 'WHO and AAP recommendations on healthy screen time limits and how to manage digital exposure in the early years.',
+      image: '/traumakid.jpg',
+      link: 'https://www.who.int/news/item/24-04-2019-to-grow-up-healthy-children-need-to-sit-less-and-play-more'
+    },
+    {
+      id: 11,
+      title: 'Sleep and Brain Development',
+      category: 'Sleep',
+      description: 'How quality sleep during the first 5 years directly impacts memory, learning, emotional regulation and physical growth.',
+      image: '/healthySleep.jpg',
+      link: 'https://www.sleepfoundation.org/children-and-sleep'
+    },
+    {
+      id: 12,
+      title: 'Bilingual Development in Young Children',
+      category: 'Language',
+      description: 'What research says about raising bilingual children, common myths debunked, and strategies to support dual language growth.',
+      image: '/languageDev.png',
+      link: 'https://www.asha.org/public/speech/development/bilingual/'
+    },
+    {
+      id: 13,
+      title: 'Home Safety for Toddlers',
+      category: 'Safety',
+      description: 'Room-by-room safety checklist for parents of toddlers — covering kitchens, bathrooms, stairs, and outdoor spaces.',
+      image: '/safety.jpg',
+      link: 'https://www.healthychildren.org/English/safety-prevention/at-home/Pages/default.aspx'
+    },
+    {
+      id: 14,
+      title: 'Building Resilience in Young Children',
+      category: 'Psychology',
+      description: 'Practical strategies parents and teachers can use to help children bounce back from setbacks, stress, and change.',
+      image: '/social-emotional.jpg',
+      link: 'https://www.zerotothree.org/resource/building-resilience-in-young-children/'
+    },
+    {
+      id: 15,
+      title: 'Introducing Solids and Food Allergies',
+      category: 'Nutrition',
+      description: 'When and how to introduce solid foods safely, spotting allergic reactions, and foods to avoid in the first two years.',
+      image: '/healthyeating.jpg',
+      link: 'https://www.nhs.uk/conditions/baby/weaning-and-feeding/what-to-feed-young-children/'
+    },
+    {
+      id: 16,
+      title: 'Reading Aloud to Young Children',
+      category: 'Language',
+      description: 'Research-backed benefits of reading together daily and tips for making story time engaging from birth to age 5.',
+      image: '/languageDev.png',
+      link: 'https://www.readingrockets.org/article/why-read-aloud'
+    },
   ];
 
   useEffect(() => {
