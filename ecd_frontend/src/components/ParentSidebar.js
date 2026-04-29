@@ -31,30 +31,6 @@ const ParentSidebar = ({ activeKey, userInfo, onLogout }) => {
     boxSizing: 'border-box'
   };
 
-  const brandRow = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 16,
-    padding: '6px 8px'
-  };
-
-  const logo = {
-    width: 56,
-    height: 56,
-    borderRadius: '50%',
-    objectFit: 'cover',
-    border: '2px solid #ffffff',
-    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
-  };
-
-  const brandText = {
-    fontSize: '14px',
-    lineHeight: 1,
-    fontWeight: 700,
-    color: '#111827'
-  };
-
   const navItem = (active) => ({
     display: 'flex',
     alignItems: 'center',
@@ -144,11 +120,6 @@ const ParentSidebar = ({ activeKey, userInfo, onLogout }) => {
   return (
     <aside style={wrapper}>
       <div>
-        <div style={brandRow}>
-          <img src="/logo.png" alt="GrowTogether" style={logo} />
-          <div style={brandText}>GrowTogether</div>
-        </div>
-
         {navItems.map((item) => (
           <div
             key={item.key}
