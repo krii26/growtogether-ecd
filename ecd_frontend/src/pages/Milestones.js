@@ -64,6 +64,46 @@ const socialEmotionalMilestones = [
   }
 ];
 
+// Self-Care and Independence Milestones predefined options
+const selfCareMilestones = [
+  {
+    title: 'Independent Feeding',
+    description: 'The child is able to feed themselves using a spoon, fork, or hands with minimal spilling or assistance. They show awareness of hunger and can complete a meal independently.\n\n👉 Completed when the child consistently self-feeds a full meal using utensils with little or no help.'
+  },
+  {
+    title: 'Dressing and Undressing',
+    description: 'The child attempts to put on or remove clothing items such as shoes, socks, shirts, or trousers. They understand which items go where and may ask for help only with buttons or zips.\n\n👉 Completed when the child independently puts on or removes at least 2–3 clothing items without prompting.'
+  },
+  {
+    title: 'Toilet Readiness',
+    description: 'The child shows awareness of the need to use the toilet, can communicate this need, and can manage basic toilet steps (sitting, flushing, pulling clothes up/down) with minimal support.\n\n👉 Completed when the child initiates toilet use consistently and manages most steps independently.'
+  },
+  {
+    title: 'Handwashing and Hygiene',
+    description: 'The child washes their hands before meals and after using the toilet without constant reminders. They understand the importance of keeping clean and can manage soap and water on their own.\n\n👉 Completed when the child washes hands independently and unprompted in appropriate situations.'
+  }
+];
+
+// Executive Function and Attention Milestones predefined options
+const executiveFunctionMilestones = [
+  {
+    title: 'Focus on Short Tasks',
+    description: 'The child can maintain attention on a single activity — such as a puzzle, drawing, or story — for a meaningful stretch of time without wandering or needing constant redirection.\n\n👉 Completed when the child sustains focus on one task for at least 5–10 minutes appropriate to their age.'
+  },
+  {
+    title: 'Impulse Control',
+    description: 'The child is able to pause before acting, wait for permission, and avoid grabbing or interrupting. They show growing awareness of rules and can stop themselves from impulsive actions.\n\n👉 Completed when the child consistently pauses before acting and responds to verbal reminders to wait.'
+  },
+  {
+    title: 'Waiting and Taking Turns',
+    description: 'The child understands and accepts the concept of waiting for their turn during games, conversations, or group activities. They can tolerate a short wait without significant distress.\n\n👉 Completed when the child waits their turn in at least 2 different contexts without major protests.'
+  },
+  {
+    title: 'Remembers 2-Step Instructions',
+    description: 'The child can listen to and carry out two connected instructions given at once, such as "pick up the toy and put it in the box," without needing each step repeated separately.\n\n👉 Completed when the child successfully follows 2-step instructions correctly most of the time.'
+  }
+];
+
 // Language Milestones predefined options
 const languageMilestones = [
   {
@@ -88,7 +128,9 @@ const milestoneOptionsByCategory = {
   'social-emotional': socialEmotionalMilestones,
   cognitive: cognitiveMilestones,
   physical: physicalMilestones,
-  language: languageMilestones
+  language: languageMilestones,
+  'self-care': selfCareMilestones,
+  'executive-function': executiveFunctionMilestones
 };
 
 const getCategoryMilestoneOptions = (category) => milestoneOptionsByCategory[category] || [];
@@ -109,7 +151,9 @@ const Milestones = () => {
     'social-emotional': [],
     'cognitive': [],
     'physical': [],
-    'language': []
+    'language': [],
+    'self-care': [],
+    'executive-function': []
   });
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -193,7 +237,9 @@ const Milestones = () => {
         'social-emotional': [],
         'cognitive': [],
         'physical': [],
-        'language': []
+        'language': [],
+        'self-care': [],
+        'executive-function': []
       };
 
       milestonesRes.data.forEach((milestone) => {
@@ -461,6 +507,16 @@ const Milestones = () => {
       title: 'Language',
       color: '#f472b6',
       icon: '🗣️'
+    },
+    'self-care': {
+      title: 'Self-Care & Independence',
+      color: '#fb923c',
+      icon: '🧼'
+    },
+    'executive-function': {
+      title: 'Executive Function & Attention',
+      color: '#38bdf8',
+      icon: '🎯'
     }
   };
 
@@ -797,6 +853,8 @@ const Milestones = () => {
                 <option value="cognitive">Cognitive</option>
                 <option value="physical">Physical</option>
                 <option value="language">Language</option>
+                <option value="self-care">Self-Care &amp; Independence</option>
+                <option value="executive-function">Executive Function &amp; Attention</option>
               </select>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
