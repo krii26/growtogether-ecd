@@ -19,6 +19,10 @@ const ParentSidebar = ({ activeKey, userInfo, onLogout }) => {
   };
 
   const wrapper = {
+    width: '220px',
+    minWidth: '220px',
+    maxWidth: '220px',
+    flexShrink: 0,
     background: '#f8f9fa',
     borderRight: '1px solid #e0e0e0',
     padding: '16px 14px',

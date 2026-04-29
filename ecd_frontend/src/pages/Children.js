@@ -203,7 +203,7 @@ const Children = () => {
     display: 'flex',
     gap: 0,
     minHeight: '100vh',
-    background: '#f3f6fb'
+    background: '#ffffff'
   };
 
   const sidebar = {
