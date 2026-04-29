@@ -80,7 +80,7 @@ const ELibrary = () => {
       title: 'Understanding Child Anxiety',
       category: 'Psychology',
       description: 'How to recognize signs of anxiety in young children and practical ways to support their emotional well-being at home and in school.',
-      image: '/social-emotional.jpg',
+      image: 'https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=600&q=80&auto=format&fit=crop',
       link: 'https://www.anxietycanada.com/articles/how-to-help-your-anxious-child/'
     },
     {
@@ -88,7 +88,7 @@ const ELibrary = () => {
       title: 'Encouraging Positive Behavior',
       category: 'Behavior',
       description: 'Evidence-based techniques for reinforcing good behavior and reducing challenging conduct in early childhood.',
-      image: '/traumakid.jpg',
+      image: 'https://images.unsplash.com/photo-1516627145497-ae6968895b74?w=600&q=80&auto=format&fit=crop',
       link: 'https://www.cdc.gov/parents/essentials/toddlersandpreschoolers/positive/index.html'
     },
     {
@@ -96,7 +96,7 @@ const ELibrary = () => {
       title: 'Iron & Calcium for Growing Kids',
       category: 'Nutrition',
       description: 'Why iron and calcium are critical for brain development and bone growth, with food sources and meal ideas for toddlers.',
-      image: '/healthyeating.jpg',
+      image: 'https://images.unsplash.com/photo-1490818387583-1baba5e638af?w=600&q=80&auto=format&fit=crop',
       link: 'https://www.healthychildren.org/English/ages-stages/toddler/nutrition/Pages/Selecting-Snacks-for-Toddlers.aspx'
     },
     {
@@ -104,7 +104,7 @@ const ELibrary = () => {
       title: 'Screen Time Guidelines for Under 5s',
       category: 'Behavior',
       description: 'WHO and AAP recommendations on healthy screen time limits and how to manage digital exposure in the early years.',
-      image: '/traumakid.jpg',
+      image: 'https://images.unsplash.com/photo-1536337005238-94b997371b40?w=600&q=80&auto=format&fit=crop',
       link: 'https://www.who.int/news/item/24-04-2019-to-grow-up-healthy-children-need-to-sit-less-and-play-more'
     },
     {
@@ -112,7 +112,7 @@ const ELibrary = () => {
       title: 'Sleep and Brain Development',
       category: 'Sleep',
       description: 'How quality sleep during the first 5 years directly impacts memory, learning, emotional regulation and physical growth.',
-      image: '/healthySleep.jpg',
+      image: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=600&q=80&auto=format&fit=crop',
       link: 'https://www.sleepfoundation.org/children-and-sleep'
     },
     {
@@ -120,7 +120,7 @@ const ELibrary = () => {
       title: 'Bilingual Development in Young Children',
       category: 'Language',
       description: 'What research says about raising bilingual children, common myths debunked, and strategies to support dual language growth.',
-      image: '/languageDev.png',
+      image: 'https://images.unsplash.com/photo-1489710437720-ebb67ec84dd2?w=600&q=80&auto=format&fit=crop',
       link: 'https://www.asha.org/public/speech/development/bilingual/'
     },
     {
@@ -128,7 +128,7 @@ const ELibrary = () => {
       title: 'Home Safety for Toddlers',
       category: 'Safety',
       description: 'Room-by-room safety checklist for parents of toddlers — covering kitchens, bathrooms, stairs, and outdoor spaces.',
-      image: '/safety.jpg',
+      image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&q=80&auto=format&fit=crop',
       link: 'https://www.healthychildren.org/English/safety-prevention/at-home/Pages/default.aspx'
     },
     {
@@ -136,7 +136,7 @@ const ELibrary = () => {
       title: 'Building Resilience in Young Children',
       category: 'Psychology',
       description: 'Practical strategies parents and teachers can use to help children bounce back from setbacks, stress, and change.',
-      image: '/social-emotional.jpg',
+      image: 'https://images.unsplash.com/photo-1526634332515-d56c5fd16991?w=600&q=80&auto=format&fit=crop',
       link: 'https://www.zerotothree.org/resource/building-resilience-in-young-children/'
     },
     {
@@ -144,7 +144,7 @@ const ELibrary = () => {
       title: 'Introducing Solids and Food Allergies',
       category: 'Nutrition',
       description: 'When and how to introduce solid foods safely, spotting allergic reactions, and foods to avoid in the first two years.',
-      image: '/healthyeating.jpg',
+      image: 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=600&q=80&auto=format&fit=crop',
       link: 'https://www.nhs.uk/conditions/baby/weaning-and-feeding/what-to-feed-young-children/'
     },
     {
@@ -152,7 +152,7 @@ const ELibrary = () => {
       title: 'Reading Aloud to Young Children',
       category: 'Language',
       description: 'Research-backed benefits of reading together daily and tips for making story time engaging from birth to age 5.',
-      image: '/languageDev.png',
+      image: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=600&q=80&auto=format&fit=crop',
       link: 'https://www.readingrockets.org/article/why-read-aloud'
     },
   ];
