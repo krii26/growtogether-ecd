@@ -33,7 +33,9 @@ const ELibrary = () => {
       category: 'Nutrition',
       description: 'Essential nutrition guidelines and meal planning tips for children aged 1-3 years.',
       image: '/healthyeating.jpg',
-      link: 'https://babyfriendlynl.ca/wp-content/uploads/2018/06/Healthy-Eating-for-Your-Toddler-2014-with-vit.-D-update-Feb.-2017.pdf'
+      link: 'https://babyfriendlynl.ca/wp-content/uploads/2018/06/Healthy-Eating-for-Your-Toddler-2014-with-vit.-D-update-Feb.-2017.pdf',
+      source: 'Baby Friendly NL',
+      sourceUrl: 'https://babyfriendlynl.ca'
     },
     {
       id: 2,
@@ -519,6 +521,25 @@ const ELibrary = () => {
                     </div>
                     <h3 style={resourceTitle}>{resource.title}</h3>
                     <p style={resourceDescription}>{resource.description}</p>
+                    {resource.source && (
+                      <>
+                        <div style={{ borderTop: '1px solid #eee', margin: '12px 0' }} />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+                          <span style={{ fontSize: 14, color: '#aaa' }}>🔗</span>
+                          <span style={{ fontSize: 13, color: '#555' }}>
+                            <span style={{ fontWeight: 600 }}>Source: </span>
+                            <a
+                              href={resource.sourceUrl || resource.link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{ color: '#7b2cbf', textDecoration: 'none', fontWeight: 500 }}
+                            >
+                              {resource.source}
+                            </a>
+                          </span>
+                        </div>
+                      </>
+                    )}
                     <a href={resource.link} target="_blank" rel="noopener noreferrer" style={readMoreLink}>
                       Read More →
                     </a>
