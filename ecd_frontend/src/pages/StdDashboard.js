@@ -299,8 +299,12 @@ const StdDashboard = () => {
               {recentActivities.map((a, idx) => (
                 <div key={idx} style={listItem}>
                   <div>
-                    <div style={{ fontWeight: 600 }}>{a.name}</div>
-                    <div style={{ fontSize: 12, color: '#666' }}>Recommended age: {a.recommended_age}</div>
+                    <div style={{ fontWeight: 600 }}>{a.title}</div>
+                    <div style={{ fontSize: 12, color: '#666' }}>
+                      {a.age && <span>Age: {a.age}</span>}
+                      {a.age && a.domain && <span> &middot; </span>}
+                      {a.domain && <span>{a.domain}</span>}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -313,17 +317,27 @@ const StdDashboard = () => {
                 <div style={{ color: '#777', fontSize: 12 }}>No milestones yet.</div>
               )}
               {upcomingMilestones.map((m, idx) => {
-                const pct = [75, 60, 90][idx % 3];
-                const color = ['#8a5cf6', '#2a74ff', '#18b162'][idx % 3];
+                const achieved = !!m.date_achieved;
                 return (
                   <div key={idx} style={{ marginBottom: 12 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div style={{ fontWeight: 600 }}>{m.title}</div>
-                      <div style={{ fontSize: 12, color: '#666' }}>{pct}%</div>
+                      <span style={{
+                        fontSize: 11,
+                        fontWeight: 600,
+                        padding: '2px 8px',
+                        borderRadius: 10,
+                        background: achieved ? '#d1fae5' : '#f3f4f6',
+                        color: achieved ? '#059669' : '#6b7280'
+                      }}>
+                        {achieved ? 'Achieved' : 'In Progress'}
+                      </span>
                     </div>
-                    <div style={progressWrap}>
-                      <div style={progressBar(pct, color)} />
-                    </div>
+                    {achieved && (
+                      <div style={{ fontSize: 11, color: '#059669', marginTop: 2 }}>
+                        {new Date(m.date_achieved).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </div>
+                    )}
                     <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>{m.description?.slice(0, 70) || 'Milestone'}</div>
                   </div>
                 );
