@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../api/api";
 
@@ -341,7 +341,7 @@ const AdminDashboard = () => {
   const logoSection = { display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", marginBottom: 32 };
   const logoIcon = { width: 40, height: 40, borderRadius: 10, background: "linear-gradient(135deg,#a855f7,#d946ef)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 20 };
   const logoText = { fontWeight: 700, fontSize: 18, color: "#111827" };
-  const navItem = (active) => ({ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderRadius: 10, cursor: "pointer", color: active ? "#7c3aed" : "#374151", background: active ? "#f3e8ff" : "transparent", fontWeight: active ? 700 : 500, transition: "all 0.2s", marginBottom: 4 });
+  const navItem = (active, disabled = false) => ({ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderRadius: 10, cursor: disabled ? "not-allowed" : "pointer", color: active ? "#7c3aed" : disabled ? "#9ca3af" : "#374151", background: active ? "#f3e8ff" : "transparent", fontWeight: active ? 700 : 500, transition: "all 0.2s", marginBottom: 4 });
   const iconStyle = { width: 20, textAlign: "center" };
   const userSection = { borderTop: "1px solid #e5e7eb", paddingTop: 16, marginTop: "auto" };
   const userProfile = { display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", background: "#f9fafb", borderRadius: 12 };
@@ -384,10 +384,10 @@ const AdminDashboard = () => {
             <div style={logoText}>GrowTogether</div>
           </div>
           <div style={navItem(true)}><span style={iconStyle}>🛡️</span> Admin Dashboard</div>
-          <div style={navItem(false)} onClick={() => navigate("/teacher_dashboard")}><span style={iconStyle}>🏫</span> Teacher View</div>
-          <div style={navItem(false)} onClick={() => navigate("/std_dashboard")}><span style={iconStyle}>👨‍👩‍👧</span> Parent View</div>
-          <div style={navItem(false)} onClick={() => navigate("/students")}><span style={iconStyle}>👥</span> Students</div>
-          <div style={navItem(false)} onClick={() => navigate("/e-library")}><span style={iconStyle}>📚</span> E-Library</div>
+          <div style={navItem(false, true)} title="Logout and sign in as a teacher to access this view"><span style={iconStyle}>🏫</span> Teacher View</div>
+          <div style={navItem(false, true)} title="Logout and sign in as a parent to access this view"><span style={iconStyle}>👨‍👩‍👧</span> Parent View</div>
+          <div style={navItem(false, true)} title="Teacher-only view"><span style={iconStyle}>👥</span> Students</div>
+          <div style={navItem(false, true)} title="Parent/Teacher library view"><span style={iconStyle}>📚</span> E-Library</div>
         </div>
         <div style={userSection}>
           <div style={userProfile}>
@@ -562,16 +562,18 @@ const AdminDashboard = () => {
             <div style={sectionTitle}>Learning Content Management</div>
             <div style={{ display: "grid", gap: 10 }}>
               {[
-                ["📝 Activities", `${activities.length} total`, "/activities"],
-                ["📋 Milestones", `${milestones.length} total`, "/milestones"],
-                ["📚 E-Library", `${resources.length} total resources`, "/e-library"],
-              ].map(([label, desc, path]) => (
+                ["📝 Activities", `${activities.length} total`],
+                ["📋 Milestones", `${milestones.length} total`],
+                ["📚 E-Library", `${resources.length} total resources`],
+              ].map(([label, desc]) => (
                 <div key={label} style={{ border: "1px solid #e5e7eb", borderRadius: 10, padding: 14, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div>
                     <div style={{ fontWeight: 700 }}>{label}</div>
                     <div style={{ color: "#6b7280", fontSize: 13, marginTop: 2 }}>{desc}</div>
                   </div>
-                  <button style={btnPrimary} onClick={() => navigate(path)}>Manage</button>
+                  <button style={{ ...btnPrimary, opacity: 0.6, cursor: "not-allowed" }} disabled title="Admin stays in admin dashboard session">
+                    Locked
+                  </button>
                 </div>
               ))}
             </div>

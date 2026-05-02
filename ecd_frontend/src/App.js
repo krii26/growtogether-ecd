@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Home from './pages/Home';
 import Children from './pages/Children';
 import Milestones from './pages/Milestones';
@@ -16,6 +16,56 @@ import ChatRoom from './pages/ChatRoom';
 import Header from './components/Header';
 import Footer from './components/Footer';
 
+const normalizeRole = (role) => {
+  const normalized = (role || '').toString().trim().toUpperCase();
+  if (normalized === 'SUPER_ADMIN') {
+    return 'ADMIN';
+  }
+  return normalized;
+};
+
+const getCurrentRole = () => {
+  const rawUser = localStorage.getItem('user');
+  if (!rawUser) {
+    return '';
+  }
+  try {
+    const user = JSON.parse(rawUser);
+    return normalizeRole(user?.role);
+  } catch (_) {
+    return '';
+  }
+};
+
+const getDefaultPathByRole = (role) => {
+  if (role === 'ADMIN') {
+    return '/admin_dashboard';
+  }
+  if (role === 'TEACHER') {
+    return '/teacher_dashboard';
+  }
+  if (role === 'PARENT') {
+    return '/std_dashboard';
+  }
+  return '/login';
+};
+
+const ProtectedRoleRoute = ({ element, allowedRoles }) => {
+  const token = localStorage.getItem('token');
+  const role = getCurrentRole();
+  const isAuthenticated = Boolean(token) || Boolean(role);
+
+  if (!isAuthenticated || !role) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!allowedRoles.includes(role)) {
+    return <Navigate to={getDefaultPathByRole(role)} replace />;
+  }
+
+  return element;
+};
+
 const App = () => {
   return (
     <Router>
@@ -23,18 +73,48 @@ const App = () => {
       <div style={{ paddingTop: 0, paddingBottom: 64 }}>
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/children" element={<Children />} />
-          <Route path="/milestones" element={<Milestones />} />
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/std_dashboard" element={<StdDashboard />} />
-          <Route path="/teacher_dashboard" element={<TeacherDash />} />
-          <Route path="/admin_dashboard" element={<AdminDashboard />} />
-          <Route path="/students" element={<Student />} />
-          <Route path="/publish-results" element={<PublishResults />} />
-          <Route path="/e-library" element={<ELibrary />} />
-          <Route path="/activities" element={<Activities />} />
-          <Route path="/chat" element={<ChatRoom />} />
+          <Route
+            path="/std_dashboard"
+            element={<ProtectedRoleRoute allowedRoles={['PARENT']} element={<StdDashboard />} />}
+          />
+          <Route
+            path="/children"
+            element={<ProtectedRoleRoute allowedRoles={['PARENT']} element={<Children />} />}
+          />
+          <Route
+            path="/milestones"
+            element={<ProtectedRoleRoute allowedRoles={['PARENT']} element={<Milestones />} />}
+          />
+          <Route
+            path="/activities"
+            element={<ProtectedRoleRoute allowedRoles={['PARENT']} element={<Activities />} />}
+          />
+          <Route
+            path="/teacher_dashboard"
+            element={<ProtectedRoleRoute allowedRoles={['TEACHER']} element={<TeacherDash />} />}
+          />
+          <Route
+            path="/students"
+            element={<ProtectedRoleRoute allowedRoles={['TEACHER']} element={<Student />} />}
+          />
+          <Route
+            path="/publish-results"
+            element={<ProtectedRoleRoute allowedRoles={['TEACHER']} element={<PublishResults />} />}
+          />
+          <Route
+            path="/admin_dashboard"
+            element={<ProtectedRoleRoute allowedRoles={['ADMIN']} element={<AdminDashboard />} />}
+          />
+          <Route
+            path="/e-library"
+            element={<ProtectedRoleRoute allowedRoles={['PARENT', 'TEACHER']} element={<ELibrary />} />}
+          />
+          <Route
+            path="/chat"
+            element={<ProtectedRoleRoute allowedRoles={['PARENT', 'TEACHER']} element={<ChatRoom />} />}
+          />
         </Routes>
       </div>
       <Footer />
