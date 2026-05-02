@@ -168,3 +168,21 @@ class FollowUpMessage(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+
+
+# -----------------------------
+# Chat Messages
+# -----------------------------
+class ChatMessage(models.Model):
+    sender_name = models.CharField(max_length=200)
+    sender_role = models.CharField(max_length=50)  # PARENT, TEACHER, ADMIN
+    receiver_name = models.CharField(max_length=200, default='')
+    room = models.CharField(max_length=500, default='', db_index=True)
+    message = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.sender_name} ({self.sender_role}): {self.message[:50]}"
+
+    class Meta:
+        ordering = ['timestamp']

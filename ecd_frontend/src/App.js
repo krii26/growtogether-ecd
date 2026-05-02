@@ -12,6 +12,7 @@ import Student from './pages/Student';
 import PublishResults from './pages/PublishResults';
 import Activities from './pages/Activities';
 import AdminDashboard from './pages/AdminDashboard';
+import ChatRoom from './pages/ChatRoom';
 import Header from './components/Header';
 import Footer from './components/Footer';
 
@@ -33,6 +34,7 @@ const App = () => {
           <Route path="/publish-results" element={<PublishResults />} />
           <Route path="/e-library" element={<ELibrary />} />
           <Route path="/activities" element={<Activities />} />
+          <Route path="/chat" element={<ChatRoom />} />
         </Routes>
       </div>
       <Footer />

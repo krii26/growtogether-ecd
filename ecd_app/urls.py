@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     ChildViewSet, MilestoneViewSet, ELibraryViewSet,
     ActivityViewSet, ProgressReportViewSet, UserProfileViewSet, FollowUpMessageViewSet,
-    register, login, google_login
+    ChatMessageViewSet, register, login, google_login
 )
 
 router = DefaultRouter()
@@ -14,6 +14,7 @@ router.register(r'activities', ActivityViewSet)
 router.register(r'progress_reports', ProgressReportViewSet)
 router.register(r'user_profiles', UserProfileViewSet)
 router.register(r'follow_up_messages', FollowUpMessageViewSet)
+router.register(r'chat_messages', ChatMessageViewSet)
 
 urlpatterns = [
     path('register/', register),

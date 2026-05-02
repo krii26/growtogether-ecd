@@ -10,11 +10,11 @@ from google.auth.transport import requests as grequests
 
 # Create your views here.
 from rest_framework import viewsets
-from .models import Child, Milestone, ELibrary, Activity, ProgressReport, UserProfile, FollowUpMessage
+from .models import Child, Milestone, ELibrary, Activity, ProgressReport, UserProfile, FollowUpMessage, ChatMessage
 from .serializers import (
     ChildSerializer, MilestoneSerializer, ELibrarySerializer,
     ActivitySerializer, ProgressReportSerializer, UserProfileSerializer,
-    FollowUpMessageSerializer
+    FollowUpMessageSerializer, ChatMessageSerializer
 )
 
 class ChildViewSet(viewsets.ModelViewSet):
@@ -53,21 +53,29 @@ class UserProfileViewSet(viewsets.ModelViewSet):
     queryset = UserProfile.objects.all()
     serializer_class = UserProfileSerializer
 
+    def get_queryset(self):
+        queryset = UserProfile.objects.select_related('user').all()
+        role = self.request.query_params.get('role')
+        if role:
+            queryset = queryset.filter(role=role.upper())
+        return queryset
+
 
 class FollowUpMessageViewSet(viewsets.ModelViewSet):
     queryset = FollowUpMessage.objects.all()
     serializer_class = FollowUpMessageSerializer
 
+
+class ChatMessageViewSet(viewsets.ModelViewSet):
+    queryset = ChatMessage.objects.all()
+    serializer_class = ChatMessageSerializer
+    http_method_names = ['get', 'post', 'head', 'options']
+
     def get_queryset(self):
-        queryset = FollowUpMessage.objects.select_related('child', 'milestone').all()
-        child_id = self.request.query_params.get('child')
-        milestone_id = self.request.query_params.get('milestone')
-
-        if child_id:
-            queryset = queryset.filter(child_id=child_id)
-        if milestone_id:
-            queryset = queryset.filter(milestone_id=milestone_id)
-
+        queryset = ChatMessage.objects.all()
+        room = self.request.query_params.get('room')
+        if room:
+            queryset = queryset.filter(room=room)
         return queryset
 
 @api_view(['POST'])

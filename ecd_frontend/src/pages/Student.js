@@ -396,6 +396,10 @@ const Student = () => {
             <span style={iconStyle}>📊</span>
             Publish Results
           </div>
+          <div style={navItem()} onClick={() => navigate('/chat')}>
+            <span style={iconStyle}>💬</span>
+            Chat Room
+          </div>
         </div>
 
         <div style={userSection}>

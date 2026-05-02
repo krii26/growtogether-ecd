@@ -540,6 +540,10 @@ const ELibrary = () => {
               <span style={teacherIconStyle}>📊</span>
               Publish Results
             </div>
+            <div style={teacherNavItem()} onClick={() => navigate('/chat')}>
+              <span style={teacherIconStyle}>💬</span>
+              Chat Room
+            </div>
           </div>
 
           <div style={teacherUserSection}>

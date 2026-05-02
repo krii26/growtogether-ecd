@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Child, Milestone, ELibrary, Activity, ProgressReport, UserProfile, FollowUpMessage
+from .models import Child, Milestone, ELibrary, Activity, ProgressReport, UserProfile, FollowUpMessage, ChatMessage
 from django.contrib.auth.models import User
 
 # -----------------------------
@@ -75,6 +75,15 @@ class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
         fields = '__all__'
+
+
+# -----------------------------
+# Chat Message Serializer
+# -----------------------------
+class ChatMessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ChatMessage
+        fields = ['id', 'sender_name', 'sender_role', 'receiver_name', 'room', 'message', 'timestamp']
 
     def update(self, instance, validated_data):
         user_data = validated_data.pop('user', None)

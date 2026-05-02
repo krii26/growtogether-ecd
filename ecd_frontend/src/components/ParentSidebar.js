@@ -6,7 +6,8 @@ const navItems = [
   { key: 'children', label: 'My Children', icon: '👶', path: '/children' },
   { key: 'milestones', label: 'Milestones', icon: '📋', path: '/milestones' },
   { key: 'elibrary', label: 'E-Library', icon: '📚', path: '/e-library' },
-  { key: 'activities', label: 'Activities', icon: '💡', path: '/activities' }
+  { key: 'activities', label: 'Activities', icon: '💡', path: '/activities' },
+  { key: 'chat', label: 'Chat Room', icon: '💬', path: '/chat' }
 ];
 
 const ParentSidebar = ({ activeKey, userInfo, onLogout }) => {
