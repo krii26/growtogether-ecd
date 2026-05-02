@@ -1,15 +1,14 @@
 from django.shortcuts import render
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, action as viewset_action
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status, viewsets
 from .serializers import RegistrationSerializer, LoginSerializer
 from django.conf import settings
 from google.oauth2 import id_token
 from google.auth.transport import requests as grequests
 
 # Create your views here.
-from rest_framework import viewsets
 from .models import Child, Milestone, ELibrary, Activity, ProgressReport, UserProfile, FollowUpMessage, ChatMessage
 from .serializers import (
     ChildSerializer, MilestoneSerializer, ELibrarySerializer,
@@ -59,6 +58,22 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         if role:
             queryset = queryset.filter(role=role.upper())
         return queryset
+
+    @viewset_action(detail=True, methods=['post'])
+    def set_active(self, request, pk=None):
+        profile = self.get_object()
+        is_active = request.data.get('is_active')
+        if is_active is None:
+            return Response({'error': 'is_active required'}, status=status.HTTP_400_BAD_REQUEST)
+        profile.user.is_active = bool(is_active)
+        profile.user.save(update_fields=['is_active'])
+        return Response({'is_active': profile.user.is_active})
+
+    @viewset_action(detail=True, methods=['delete'])
+    def delete_user(self, request, pk=None):
+        profile = self.get_object()
+        profile.user.delete()  # cascade deletes profile too
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class FollowUpMessageViewSet(viewsets.ModelViewSet):

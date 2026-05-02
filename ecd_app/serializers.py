@@ -76,6 +76,17 @@ class UserProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = '__all__'
 
+    def update(self, instance, validated_data):
+        user_data = validated_data.pop('user', None)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        if user_data and instance.user:
+            for attr, value in user_data.items():
+                setattr(instance.user, attr, value)
+            instance.user.save()
+        return instance
+
 
 # -----------------------------
 # Chat Message Serializer
