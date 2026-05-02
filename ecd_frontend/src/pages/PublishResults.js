@@ -14,8 +14,27 @@ const PublishResults = () => {
   const [publishing, setPublishing] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [userInfo, setUserInfo] = useState({
+    first_name: 'John',
+    last_name: 'Doe',
+    role: 'Teacher'
+  });
 
   useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        const user = JSON.parse(storedUser);
+        setUserInfo({
+          first_name: user.first_name || 'John',
+          last_name: user.last_name || 'Doe',
+          role: user.role || 'Teacher'
+        });
+      } catch (error) {
+        console.error('Failed to parse user info', error);
+      }
+    }
+
     fetchChildren();
     fetchRecentReports();
   }, []);
@@ -105,6 +124,14 @@ const PublishResults = () => {
     if (diffDays < 7) return `${diffDays} days ago`;
     return date.toLocaleDateString();
   };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    navigate('/login');
+  };
+
+  const initials = `${userInfo.first_name?.[0] || 'J'}${userInfo.last_name?.[0] || 'D'}`.toUpperCase();
 
   const layout = {
     display: 'grid',
@@ -269,12 +296,12 @@ const PublishResults = () => {
 
         <div style={userSection}>
           <div style={userProfile}>
-            <div style={userAvatar}>JD</div>
+            <div style={userAvatar}>{initials}</div>
             <div>
-              <div style={userName}>John Doe</div>
-              <div style={userRole}>Teacher</div>
+              <div style={userName}>{userInfo.first_name} {userInfo.last_name}</div>
+              <div style={userRole}>{userInfo.role}</div>
             </div>
-            <div style={logoutIcon} onClick={() => navigate('/login')}>↗</div>
+            <div style={logoutIcon} onClick={handleLogout}>↗</div>
           </div>
         </div>
       </aside>
@@ -337,9 +364,10 @@ const PublishResults = () => {
               <option value="">-- Select assessment type --</option>
               <option value="Social-Emotional Development">Social-Emotional Development</option>
               <option value="Cognitive">Cognitive</option>
+              <option value="Physical">Physical</option>
               <option value="Language">Language</option>
-              <option value="Motor Skills">Motor Skills</option>
-              <option value="Behavior">Behavior</option>
+              <option value="Self-Care">Self-Care</option>
+              <option value="Executive Function">Executive Function</option>
             </select>
           </div>
 

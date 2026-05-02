@@ -10,6 +10,8 @@ const TeacherDash = () => {
     resourcesAccessed: 0,
   });
   const [recentActivities, setRecentActivities] = useState([]);
+  const [dashboardError, setDashboardError] = useState('');
+  const [lastUpdated, setLastUpdated] = useState(null);
   const [userInfo, setUserInfo] = useState({
     first_name: '',
     last_name: '',
@@ -17,42 +19,53 @@ const TeacherDash = () => {
   });
 
   useEffect(() => {
+    let isMounted = true;
+
     const load = async () => {
       try {
+        setDashboardError('');
+
         // Load user info from localStorage or API
         const storedUser = localStorage.getItem('user');
         if (storedUser) {
           const user = JSON.parse(storedUser);
-          setUserInfo({
-            first_name: user.first_name || 'John',
-            last_name: user.last_name || 'Doe',
-            role: user.role || 'Teacher'
-          });
+          if (isMounted) {
+            setUserInfo({
+              first_name: user.first_name || 'John',
+              last_name: user.last_name || 'Doe',
+              role: user.role || 'Teacher'
+            });
+          }
         }
 
         // Load dashboard data
-        const [childrenRes, reportsRes] = await Promise.all([
+        const [childrenRes, reportsRes, resourcesRes] = await Promise.all([
           API.get('children/'),
           API.get('progress_reports/'),
+          API.get('elibrary/'),
         ]);
-        
+
+        const children = childrenRes.data || [];
         const reports = reportsRes.data || [];
-        
-        setStats({
-          totalStudents: childrenRes.data?.length || 0,
-          resultsPublished: reports.length || 0,
-          resourcesAccessed: 42,
-        });
+        const resources = resourcesRes.data || [];
+
+        if (isMounted) {
+          setStats({
+            totalStudents: children.length || 0,
+            resultsPublished: reports.length || 0,
+            resourcesAccessed: resources.length || 0,
+          });
+        }
 
         // Recent activities from published assessments
-        const activityList = reports.slice(-2).reverse().map(report => {
-          const child = childrenRes.data.find(c => c.id === report.child);
+        const activityList = reports.slice(-5).reverse().map((report) => {
+          const child = children.find((c) => c.id === report.child);
           const childName = child ? child.name : 'Unknown Student';
           const date = new Date(report.report_date);
           const now = new Date();
           const diffHours = Math.floor((now - date) / (1000 * 60 * 60));
           const timeAgo = diffHours < 1 ? 'Just now' : diffHours < 24 ? `${diffHours} hour${diffHours > 1 ? 's' : ''} ago` : `${Math.floor(diffHours / 24)} day${Math.floor(diffHours / 24) > 1 ? 's' : ''} ago`;
-          
+
           return {
             id: report.id,
             type: 'result',
@@ -65,12 +78,25 @@ const TeacherDash = () => {
           };
         });
 
-        setRecentActivities(activityList);
+        if (isMounted) {
+          setRecentActivities(activityList);
+          setLastUpdated(new Date());
+        }
       } catch (err) {
         console.error('Failed to load dashboard data', err);
+        if (isMounted) {
+          setDashboardError('Unable to refresh dashboard data. Showing last available values.');
+        }
       }
     };
+
     load();
+
+    const refreshId = setInterval(load, 30000);
+    return () => {
+      isMounted = false;
+      clearInterval(refreshId);
+    };
   }, []);
 
   const handleLogout = () => {
@@ -78,6 +104,8 @@ const TeacherDash = () => {
     localStorage.removeItem('user');
     navigate('/login');
   };
+
+  const initials = `${userInfo.first_name?.[0] || 'J'}${userInfo.last_name?.[0] || 'D'}`.toUpperCase();
 
   // Styles
   const layout = {
@@ -362,9 +390,7 @@ const TeacherDash = () => {
         {/* User Profile Section */}
         <div style={userSection}>
           <div style={userProfile}>
-            <div style={userAvatar}>
-              {userInfo.first_name?.[0]}{userInfo.last_name?.[0]}
-            </div>
+            <div style={userAvatar}>{initials}</div>
             <div style={userInfo2}>
               <div style={userName}>{userInfo.first_name} {userInfo.last_name}</div>
               <div style={userRole}>{userInfo.role}</div>
@@ -382,6 +408,16 @@ const TeacherDash = () => {
         <div style={header}>
           <div style={title}>Teacher Dashboard</div>
           <div style={subtitle}>Welcome back! Here's what's happening today.</div>
+          {lastUpdated && (
+            <div style={{ ...subtitle, marginTop: 6, fontSize: 12 }}>
+              Last updated: {lastUpdated.toLocaleTimeString()}
+            </div>
+          )}
+          {dashboardError && (
+            <div style={{ marginTop: 8, color: '#b91c1c', fontSize: 13 }}>
+              {dashboardError}
+            </div>
+          )}
         </div>
 
         {/* Stats Cards */}
@@ -414,7 +450,13 @@ const TeacherDash = () => {
         {/* Recent Activity */}
         <div style={activitySection}>
           <div style={sectionTitle}>Recent Activity</div>
-          
+
+          {recentActivities.length === 0 && (
+            <div style={{ color: '#6b7280', fontSize: 14 }}>
+              No recent activity yet.
+            </div>
+          )}
+
           {recentActivities.map(activity => (
             <div key={activity.id} style={activityItem}>
               <div style={activityIcon(activity.iconBg, activity.iconColor)}>

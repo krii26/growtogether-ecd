@@ -2,18 +2,52 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API from '../api/api';
 
+const CATEGORY_CONFIG = {
+  'social-emotional': {
+    title: 'Social-Emotional',
+    color: '#a78bfa',
+    icon: '👥'
+  },
+  cognitive: {
+    title: 'Cognitive',
+    color: '#60a5fa',
+    icon: '🧠'
+  },
+  physical: {
+    title: 'Physical',
+    color: '#34d399',
+    icon: '💪'
+  },
+  language: {
+    title: 'Language',
+    color: '#f472b6',
+    icon: '🗣️'
+  },
+  'self-care': {
+    title: 'Self-Care',
+    color: '#f59e0b',
+    icon: '🧼'
+  },
+  'executive-function': {
+    title: 'Executive Function',
+    color: '#22c55e',
+    icon: '🎯'
+  }
+};
+
+const getInitialMilestones = () =>
+  Object.keys(CATEGORY_CONFIG).reduce((acc, key) => {
+    acc[key] = [];
+    return acc;
+  }, {});
+
 const Student = () => {
   const navigate = useNavigate();
   const [children, setChildren] = useState([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
-  const [studentMilestones, setStudentMilestones] = useState({
-    'social-emotional': [],
-    'cognitive': [],
-    'physical': [],
-    'language': []
-  });
+  const [studentMilestones, setStudentMilestones] = useState(getInitialMilestones);
   const [loadingMilestones, setLoadingMilestones] = useState(false);
   const [reviewingMilestone, setReviewingMilestone] = useState(null);
   const [rating, setRating] = useState(0);
@@ -24,6 +58,11 @@ const Student = () => {
   const [followUpSending, setFollowUpSending] = useState(false);
   const [followUpError, setFollowUpError] = useState('');
   const [followUpSuccess, setFollowUpSuccess] = useState('');
+  const [userInfo, setUserInfo] = useState({
+    first_name: 'John',
+    last_name: 'Doe',
+    role: 'Teacher'
+  });
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -35,6 +74,20 @@ const Student = () => {
   }, [children, search]);
 
   useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        const user = JSON.parse(storedUser);
+        setUserInfo({
+          first_name: user.first_name || 'John',
+          last_name: user.last_name || 'Doe',
+          role: user.role || 'Teacher'
+        });
+      } catch (error) {
+        console.error('Failed to parse user info', error);
+      }
+    }
+
     const fetchChildren = async () => {
       try {
         setLoading(true);
@@ -56,13 +109,8 @@ const Student = () => {
       const res = await API.get('milestones/', {
         params: { child: student.id }
       });
-      
-      const grouped = {
-        'social-emotional': [],
-        'cognitive': [],
-        'physical': [],
-        'language': []
-      };
+
+      const grouped = getInitialMilestones();
 
       (res.data || []).forEach((milestone) => {
         if (grouped[milestone.category]) {
@@ -85,12 +133,13 @@ const Student = () => {
     setFollowUpMessage('');
     setFollowUpError('');
     setFollowUpSuccess('');
-    setStudentMilestones({
-      'social-emotional': [],
-      'cognitive': [],
-      'physical': [],
-      'language': []
-    });
+    setStudentMilestones(getInitialMilestones());
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    navigate('/login');
   };
 
   const handleOpenFollowUp = (milestone) => {
@@ -322,29 +371,6 @@ const Student = () => {
     return child?.photo || '/happychild.jpg';
   };
 
-  const categoryConfig = {
-    'social-emotional': {
-      title: 'Social-Emotional',
-      color: '#a78bfa',
-      icon: '👥'
-    },
-    'cognitive': {
-      title: 'Cognitive',
-      color: '#60a5fa',
-      icon: '🧠'
-    },
-    'physical': {
-      title: 'Physical',
-      color: '#34d399',
-      icon: '💪'
-    },
-    'language': {
-      title: 'Language',
-      color: '#f472b6',
-      icon: '🗣️'
-    }
-  };
-
   return (
     <div style={layout}>
       <aside style={sidebar}>
@@ -366,7 +392,7 @@ const Student = () => {
             <span style={iconStyle}>📚</span>
             E-Library
           </div>
-          <div style={navItem()}>
+          <div style={navItem()} onClick={() => navigate('/publish-results')}>
             <span style={iconStyle}>📊</span>
             Publish Results
           </div>
@@ -374,12 +400,15 @@ const Student = () => {
 
         <div style={userSection}>
           <div style={userProfile}>
-            <div style={userAvatar}>JD</div>
-            <div>
-              <div style={userName}>John Doe</div>
-              <div style={userRole}>Teacher</div>
+            <div style={userAvatar}>
+              {(userInfo.first_name?.[0] || 'J').toUpperCase()}
+              {(userInfo.last_name?.[0] || 'D').toUpperCase()}
             </div>
-            <div style={logoutIcon} onClick={() => navigate('/login')}>↗</div>
+            <div>
+              <div style={userName}>{userInfo.first_name} {userInfo.last_name}</div>
+              <div style={userRole}>{userInfo.role}</div>
+            </div>
+            <div style={logoutIcon} onClick={handleLogout}>↗</div>
           </div>
         </div>
       </aside>
@@ -617,7 +646,7 @@ const Student = () => {
                       gridTemplateColumns: 'repeat(2, 1fr)',
                       gap: '16px'
                     }}>
-                      {Object.entries(categoryConfig).map(([category, config]) => (
+                      {Object.entries(CATEGORY_CONFIG).map(([category, config]) => (
                         <div
                           key={category}
                           style={{
@@ -646,12 +675,12 @@ const Student = () => {
                               fontSize: '12px',
                               fontWeight: '600'
                             }}>
-                              {studentMilestones[category].length}
+                              {studentMilestones[category]?.length || 0}
                             </span>
                           </div>
 
                           <div style={{ padding: '12px' }}>
-                            {studentMilestones[category].length === 0 ? (
+                            {(studentMilestones[category]?.length || 0) === 0 ? (
                               <div style={{ 
                                 textAlign: 'center', 
                                 padding: '20px', 
@@ -662,7 +691,7 @@ const Student = () => {
                               </div>
                             ) : (
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                {studentMilestones[category].map((milestone) => (
+                                {(studentMilestones[category] || []).map((milestone) => (
                                   <div
                                     key={milestone.id}
                                     style={{
@@ -1040,6 +1069,8 @@ const Student = () => {
                     {reviewingMilestone.category === 'cognitive' && '🧠'}
                     {reviewingMilestone.category === 'physical' && '💪'}
                     {reviewingMilestone.category === 'language' && '🗣️'}
+                    {reviewingMilestone.category === 'self-care' && '🧼'}
+                    {reviewingMilestone.category === 'executive-function' && '🎯'}
                   </div>
                   <div>
                     <h2 style={{ margin: '0 0 4px 0', fontSize: '24px', fontWeight: '700' }}>

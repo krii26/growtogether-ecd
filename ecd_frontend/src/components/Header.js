@@ -1,7 +1,10 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 const Header = () => {
+  const location = useLocation();
+  const showAuthButtons = location.pathname === '/login' || location.pathname === '/register';
+
   const barStyle = {
     display: 'flex',
     alignItems: 'center',
@@ -39,10 +42,12 @@ const Header = () => {
         <span style={brandStyle}>GrowTogether</span>
       </div>
 
-      <div style={rightStyle}>
-        <Link to="/register"><button style={pillBtn}>Register</button></Link>
-        <Link to="/login"><button style={pillBtn}>Login</button></Link>
-      </div>
+      {showAuthButtons && (
+        <div style={rightStyle}>
+          <Link to="/register"><button style={pillBtn}>Register</button></Link>
+          <Link to="/login"><button style={pillBtn}>Login</button></Link>
+        </div>
+      )}
     </header>
   );
 };

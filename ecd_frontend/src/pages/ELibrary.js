@@ -3,6 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import API from '../api/api';
 import ParentSidebar from '../components/ParentSidebar';
 
+const isTeacherRole = (role) => {
+  const normalized = (role || '').toString().trim().toLowerCase();
+  return normalized === 'teacher';
+};
+
 const ELibrary = () => {
   const navigate = useNavigate();
   const [resources, setResources] = useState([]);
@@ -263,6 +268,9 @@ const ELibrary = () => {
     navigate('/login');
   };
 
+  const teacherView = isTeacherRole(userInfo.role);
+  const initials = `${userInfo.first_name?.[0] || 'J'}${userInfo.last_name?.[0] || 'D'}`.toUpperCase();
+
   // Inline Styles
   const layout = {
     display: 'grid',
@@ -426,9 +434,128 @@ const ELibrary = () => {
     marginBottom: '8px'
   };
 
+  const teacherSidebar = {
+    background: '#fff',
+    borderRight: '1px solid #e5e7eb',
+    padding: '20px 16px',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'space-between',
+    position: 'sticky',
+    top: 0,
+    height: '100vh'
+  };
+
+  const teacherLogoSection = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+    padding: '12px 16px',
+    marginBottom: 32
+  };
+
+  const teacherLogoIcon = {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    background: 'linear-gradient(135deg, #a855f7 0%, #d946ef 100%)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    color: '#fff',
+    fontSize: '20px'
+  };
+
+  const teacherLogoText = { fontWeight: 700, fontSize: 18, color: '#111827' };
+
+  const teacherNavItem = (active = false) => ({
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+    padding: '12px 16px',
+    borderRadius: 10,
+    cursor: 'pointer',
+    color: active ? '#7c3aed' : '#374151',
+    background: active ? '#f3e8ff' : 'transparent',
+    fontWeight: active ? 700 : 500,
+    transition: 'all 0.2s ease'
+  });
+
+  const teacherIconStyle = { width: 20, textAlign: 'center' };
+
+  const teacherUserSection = {
+    borderTop: '1px solid #e5e7eb',
+    paddingTop: 16,
+    marginTop: 'auto'
+  };
+
+  const teacherUserProfile = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+    padding: '12px 16px',
+    background: '#f9fafb',
+    borderRadius: 12
+  };
+
+  const teacherUserAvatar = {
+    width: 40,
+    height: 40,
+    borderRadius: '50%',
+    background: 'linear-gradient(135deg, #a855f7 0%, #d946ef 100%)',
+    color: '#fff',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontWeight: 700
+  };
+
+  const teacherUserName = { fontWeight: 600, color: '#111827' };
+  const teacherUserRole = { fontSize: 12, color: '#6b7280' };
+  const teacherLogoutIcon = { marginLeft: 'auto', cursor: 'pointer', color: '#9ca3af' };
+
   return (
     <div style={layout}>
-      <ParentSidebar activeKey="elibrary" userInfo={userInfo} onLogout={handleLogout} />
+      {teacherView ? (
+        <aside style={teacherSidebar}>
+          <div>
+            <div style={teacherLogoSection}>
+              <div style={teacherLogoIcon}>👶</div>
+              <div style={teacherLogoText}>GrowTogether</div>
+            </div>
+
+            <div style={teacherNavItem()} onClick={() => navigate('/teacher_dashboard')}>
+              <span style={teacherIconStyle}>🏠</span>
+              Dashboard
+            </div>
+            <div style={teacherNavItem()} onClick={() => navigate('/students')}>
+              <span style={teacherIconStyle}>👥</span>
+              Students
+            </div>
+            <div style={teacherNavItem(true)}>
+              <span style={teacherIconStyle}>📚</span>
+              E-Library
+            </div>
+            <div style={teacherNavItem()} onClick={() => navigate('/publish-results')}>
+              <span style={teacherIconStyle}>📊</span>
+              Publish Results
+            </div>
+          </div>
+
+          <div style={teacherUserSection}>
+            <div style={teacherUserProfile}>
+              <div style={teacherUserAvatar}>{initials}</div>
+              <div>
+                <div style={teacherUserName}>{userInfo.first_name} {userInfo.last_name}</div>
+                <div style={teacherUserRole}>{userInfo.role || 'Teacher'}</div>
+              </div>
+              <div style={teacherLogoutIcon} onClick={handleLogout}>↗</div>
+            </div>
+          </div>
+        </aside>
+      ) : (
+        <ParentSidebar activeKey="elibrary" userInfo={userInfo} onLogout={handleLogout} />
+      )}
 
       {/* Main Content */}
       <div style={mainContent}>
