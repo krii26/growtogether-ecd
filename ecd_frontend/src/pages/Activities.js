@@ -527,6 +527,7 @@ const Activities = () => {
     }
 
     return shuffleItems(activities.filter((activity) => activity.age === selectedAge));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activities, selectedAge]);
 
   const openDetails = (activity) => {
@@ -878,89 +879,6 @@ const Activities = () => {
     gridTemplateColumns: '220px 1fr',
     minHeight: '100vh',
     background: '#f8f9fa'
-  };
-
-  const sidebar = {
-    background: '#f8f9fa',
-    borderRight: '1px solid #e0e0e0',
-    padding: '20px 16px',
-    position: 'sticky',
-    top: 0,
-    height: '100vh',
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'space-between'
-  };
-
-  const navItem = (active) => ({
-    display: 'flex',
-    alignItems: 'center',
-    gap: 12,
-    padding: '12px 16px',
-    borderRadius: 8,
-    color: active ? '#6a11cb' : '#666',
-    background: active ? '#e8d5f2' : 'transparent',
-    cursor: 'pointer',
-    marginBottom: 8,
-    fontSize: '15px',
-    fontWeight: active ? 600 : 500,
-    transition: 'all 0.2s'
-  });
-
-  const iconStyle = {
-    fontSize: '18px',
-    width: '20px',
-    textAlign: 'center'
-  };
-
-  const userSection = {
-    borderTop: '1px solid #e0e0e0',
-    paddingTop: '16px',
-    marginTop: 'auto'
-  };
-
-  const userProfile = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 12,
-    padding: '12px 16px',
-    background: '#fff',
-    borderRadius: 10,
-    cursor: 'pointer'
-  };
-
-  const userAvatar = {
-    width: 40,
-    height: 40,
-    borderRadius: '50%',
-    background: 'linear-gradient(135deg, #a855f7 0%, #d946ef 100%)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    color: 'white',
-    fontWeight: 700,
-    fontSize: '16px'
-  };
-
-  const userInfo2 = { flex: 1 };
-
-  const userName = {
-    fontSize: '14px',
-    fontWeight: 600,
-    color: '#333',
-    lineHeight: 1.2
-  };
-
-  const userRole = {
-    fontSize: '12px',
-    color: '#999',
-    marginTop: 2
-  };
-
-  const logoutIcon = {
-    fontSize: '18px',
-    color: '#999',
-    cursor: 'pointer'
   };
 
   const mainContent = {

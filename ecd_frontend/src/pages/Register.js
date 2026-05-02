@@ -50,7 +50,7 @@ const Register = () => {
         role: form.role,
       };
 
-      const res = await API.post('register/', payload);
+      await API.post('register/', payload);
       setSuccess('Registration successful. Redirecting to login...');
       setError('');
 

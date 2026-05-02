@@ -45,6 +45,7 @@ const Children = () => {
   useEffect(() => {
     fetchChildren();
     loadUserInfo();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadUserInfo = () => {
@@ -204,100 +205,6 @@ const Children = () => {
     gap: 0,
     minHeight: '100vh',
     background: '#ffffff'
-  };
-
-  const sidebar = {
-    width: '240px',
-    background: '#ffffff',
-    borderRight: '1px solid #e5e7eb',
-    padding: '24px 16px',
-    position: 'sticky',
-    top: 0,
-    height: '100vh',
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'space-between',
-    boxSizing: 'border-box'
-  };
-
-  const navItem = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 12,
-    padding: '12px 16px',
-    borderRadius: 8,
-    color: '#4b5563',
-    cursor: 'pointer',
-    marginBottom: 6,
-    fontSize: '15px',
-    fontWeight: 500,
-    transition: 'all 0.2s ease'
-  };
-
-  const navActive = { 
-    ...navItem, 
-    background: '#e8eefc', 
-    color: '#1d4ed8',
-    fontWeight: 600
-  };
-
-  const iconStyle = {
-    fontSize: '18px',
-    width: '20px',
-    textAlign: 'center'
-  };
-
-  const userSection = {
-    borderTop: '1px solid #e5e7eb',
-    paddingTop: '16px',
-    marginTop: 'auto'
-  };
-
-  const userProfile = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 12,
-    padding: '12px 16px',
-    background: '#f8fafc',
-    border: '1px solid #e5e7eb',
-    borderRadius: 10,
-    cursor: 'default'
-  };
-
-  const userAvatar = {
-    width: 40,
-    height: 40,
-    borderRadius: '50%',
-    background: 'linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    color: 'white',
-    fontWeight: 700,
-    fontSize: '16px'
-  };
-
-  const userInfo2 = {
-    flex: 1
-  };
-
-  const userName = {
-    fontSize: '14px',
-    fontWeight: 600,
-    color: '#333',
-    lineHeight: 1.2
-  };
-
-  const userRole = {
-    fontSize: '12px',
-    color: '#6b7280',
-    marginTop: 2
-  };
-
-  const logoutIcon = {
-    fontSize: '18px',
-    color: '#6b7280',
-    cursor: 'pointer'
   };
 
   const mainContent = {

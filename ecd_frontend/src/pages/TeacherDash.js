@@ -10,7 +10,6 @@ const TeacherDash = () => {
     resourcesAccessed: 0,
   });
   const [recentActivities, setRecentActivities] = useState([]);
-  const [recentAssessments, setRecentAssessments] = useState([]);
   const [userInfo, setUserInfo] = useState({
     first_name: '',
     last_name: '',
@@ -38,7 +37,6 @@ const TeacherDash = () => {
         ]);
         
         const reports = reportsRes.data || [];
-        setRecentAssessments(reports.slice(-5).reverse());
         
         setStats({
           totalStudents: childrenRes.data?.length || 0,

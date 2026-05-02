@@ -22,6 +22,8 @@ class Milestone(models.Model):
         ('cognitive', 'Cognitive'),
         ('physical', 'Physical'),
         ('language', 'Language'),
+        ('self-care', 'Self-Care & Independence'),
+        ('executive-function', 'Executive Function & Attention'),
     )
     
     child = models.ForeignKey(Child, on_delete=models.CASCADE, related_name='milestones')
@@ -59,13 +61,13 @@ class ELibrary(models.Model):
         ('Safety', 'Safety'),
     )
 
-    title = models.CharField(max_length=200)
+    title = models.CharField(max_length=500)
     resource_type = models.CharField(max_length=10, choices=RESOURCE_TYPES)
     category = models.CharField(max_length=50, choices=CATEGORIES, default='Nutrition')
     description = models.TextField(blank=True)
     image = models.CharField(max_length=500, blank=True, null=True)  # Image URL/path (supports both local paths and external URLs)
     image_file = models.ImageField(upload_to='library_images/', blank=True, null=True)  # For uploaded images
-    file_url = models.URLField(blank=True, null=True)  # Can store file link or cloud URL
+    file_url = models.URLField(max_length=1000, blank=True, null=True)  # Can store file link or cloud URL
     date_uploaded = models.DateField(auto_now_add=True)
 
     def __str__(self):

@@ -103,98 +103,6 @@ const StdDashboard = () => {
     padding: '16px 20px',
   };
 
-  const sidebar = {
-    background: '#f8f9fa',
-    borderRadius: 0,
-    boxShadow: 'none',
-    padding: '20px 16px',
-    position: 'sticky',
-    top: 0,
-    height: '100vh',
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'space-between'
-  };
-
-  const navItem = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 12,
-    padding: '12px 16px',
-    borderRadius: 8,
-    color: '#666',
-    cursor: 'pointer',
-    marginBottom: 8,
-    fontSize: '15px',
-    fontWeight: 500,
-    transition: 'all 0.2s'
-  };
-
-  const navActive = { 
-    ...navItem, 
-    background: '#e8d5f2', 
-    color: '#6a11cb',
-    fontWeight: 600
-  };
-
-  const iconStyle = {
-    fontSize: '18px',
-    width: '20px',
-    textAlign: 'center'
-  };
-
-  const userSection = {
-    borderTop: '1px solid #e0e0e0',
-    paddingTop: '16px',
-    marginTop: 'auto'
-  };
-
-  const userProfile = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 12,
-    padding: '12px 16px',
-    background: '#fff',
-    borderRadius: 10,
-    cursor: 'pointer'
-  };
-
-  const userAvatar = {
-    width: 40,
-    height: 40,
-    borderRadius: '50%',
-    background: 'linear-gradient(135deg, #a855f7 0%, #d946ef 100%)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    color: 'white',
-    fontWeight: 700,
-    fontSize: '16px'
-  };
-
-  const userInfo2 = {
-    flex: 1
-  };
-
-  const userName = {
-    fontSize: '14px',
-    fontWeight: 600,
-    color: '#333',
-    lineHeight: 1.2
-  };
-
-  const userRole = {
-    fontSize: '12px',
-    color: '#999',
-    marginTop: 2
-  };
-
-  const logoutIcon = {
-    fontSize: '18px',
-    color: '#999',
-    cursor: 'pointer'
-  };
-
   const content = {
     background: '#ffffff',
     borderRadius: 12,
@@ -248,9 +156,6 @@ const StdDashboard = () => {
     background: '#f8f9ff',
     marginBottom: 8
   };
-
-  const progressWrap = { width: '100%', background: '#eee', borderRadius: 6, height: 6 };
-  const progressBar = (pct, color) => ({ width: pct + '%', height: '100%', borderRadius: 6, background: color });
 
   return (
     <div style={layout}>

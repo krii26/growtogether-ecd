@@ -181,6 +181,7 @@ const Milestones = () => {
   useEffect(() => {
     // First, fetch all children
     fetchChildren();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -529,87 +530,9 @@ const Milestones = () => {
     background: '#f8f9fa'
   };
 
-  const sidebar = {
-    background: '#f8f9fa',
-    borderRight: '1px solid #e0e0e0',
-    padding: '20px 16px',
-  };
-
-  const navItem = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    padding: '12px 16px',
-    margin: '4px 0',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontSize: '14px',
-    color: '#666',
-    transition: 'all 0.2s',
-    fontWeight: '500'
-  };
-
-  const navActive = {
-    ...navItem,
-    background: '#e9d5ff',
-    color: '#6a11cb'
-  };
-
-  const iconStyle = {
-    fontSize: '20px'
-  };
-
   const mainContent = {
     padding: '24px 40px',
     background: '#ffffff'
-  };
-
-  const userSection = {
-    marginTop: 'auto',
-    paddingTop: '20px',
-    borderTop: '1px solid #e0e0e0'
-  };
-
-  const userProfile = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px'
-  };
-
-  const userAvatar = {
-    width: 40,
-    height: 40,
-    borderRadius: '50%',
-    background: 'linear-gradient(135deg, #a855f7 0%, #d946ef 100%)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    color: 'white',
-    fontWeight: 700,
-    fontSize: '16px'
-  };
-
-  const userInfo2 = {
-    flex: 1
-  };
-
-  const userName = {
-    fontSize: '14px',
-    fontWeight: 600,
-    color: '#333',
-    lineHeight: 1.2
-  };
-
-  const userRole = {
-    fontSize: '12px',
-    color: '#999',
-    marginTop: 2
-  };
-
-  const logoutIcon = {
-    fontSize: '18px',
-    color: '#999',
-    cursor: 'pointer'
   };
 
   const handleLogout = () => {

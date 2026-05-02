@@ -124,6 +124,7 @@ const Login = () => {
     }, 300);
 
     return () => window.clearInterval(intervalId);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const containerStyle = {

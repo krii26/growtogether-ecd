@@ -93,13 +93,29 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+# Supabase cloud PostgreSQL — data stored in the cloud, not on local disk.
+# Set USE_SQLITE_FALLBACK=1 only for emergency local rollback.
+if os.environ.get('USE_SQLITE_FALLBACK') == '1':
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': 'postgres',
+            'USER': 'postgres.okfxmiihdgzoimfaqhwg',
+            'PASSWORD': 'KrishikaKhadka2026Strong',
+            'HOST': 'aws-1-ap-southeast-1.pooler.supabase.com',
+            'PORT': '5432',
+            'OPTIONS': {
+                'sslmode': 'require',
+            },
+        }
+    }
 
 
 # Password validation

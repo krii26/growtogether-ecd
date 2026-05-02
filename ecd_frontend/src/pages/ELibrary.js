@@ -14,7 +14,6 @@ const ELibrary = () => {
     last_name: '',
     role: ''
   });
-  const [activeNav, setActiveNav] = useState('E-Library');
 
   const categories = [
     'All Categories',
@@ -192,6 +191,7 @@ const ELibrary = () => {
   useEffect(() => {
     loadUserInfo();
     fetchResources();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -263,11 +263,6 @@ const ELibrary = () => {
     navigate('/login');
   };
 
-  const navigateTo = (path, navName) => {
-    setActiveNav(navName);
-    navigate(path);
-  };
-
   // Inline Styles
   const layout = {
     display: 'grid',
@@ -279,39 +274,6 @@ const ELibrary = () => {
       gridTemplateColumns: '1fr'
     }
   };
-
-  const sidebar = {
-    background: '#f8f9fa',
-    borderRight: '1px solid #e0e0e0',
-    padding: '20px 16px',
-    position: 'sticky',
-    top: 0,
-    height: '100vh',
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'space-between',
-    '@media (maxWidth: 768px)': {
-      position: 'relative',
-      height: 'auto',
-      borderRight: 'none',
-      borderBottom: '1px solid #e0e0e0',
-      paddingBottom: '10px'
-    }
-  };
-
-  const navItem = (isActive) => ({
-    display: 'flex',
-    alignItems: 'center',
-    padding: '12px 16px',
-    marginBottom: '8px',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    background: isActive ? '#e8d5f2' : 'transparent',
-    color: isActive ? '#7b2cbf' : '#333',
-    fontWeight: isActive ? '600' : '500',
-    fontSize: '14px',
-    transition: 'all 0.3s ease'
-  });
 
   const mainContent = {
     padding: '32px',
@@ -450,42 +412,6 @@ const ELibrary = () => {
     textDecoration: 'none',
     cursor: 'pointer',
     transition: 'opacity 0.3s ease'
-  };
-
-  const userProfile = {
-    borderTop: '1px solid #e0e0e0',
-    paddingTop: '16px',
-    marginTop: 'auto'
-  };
-
-  const profileInfo = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px'
-  };
-
-  const profileAvatar = {
-    width: '40px',
-    height: '40px',
-    borderRadius: '50%',
-    background: '#d8a5d8',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: '16px'
-  };
-
-  const profileText = {
-    fontSize: '13px',
-    color: '#333',
-    fontWeight: '500'
-  };
-
-  const profileRole = {
-    fontSize: '12px',
-    color: '#999'
   };
 
   const emptyState = {
