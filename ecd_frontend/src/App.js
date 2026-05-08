@@ -109,7 +109,7 @@ const App = () => {
           />
           <Route
             path="/e-library"
-            element={<ProtectedRoleRoute allowedRoles={['PARENT', 'TEACHER']} element={<ELibrary />} />}
+            element={<ProtectedRoleRoute allowedRoles={['PARENT', 'TEACHER', 'ADMIN']} element={<ELibrary />} />}
           />
           <Route
             path="/chat"

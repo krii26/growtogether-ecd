@@ -89,8 +89,11 @@ class ChatMessageViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = ChatMessage.objects.all()
         room = self.request.query_params.get('room')
+        participant = self.request.query_params.get('participant')
         if room:
             queryset = queryset.filter(room=room)
+        elif participant:
+            queryset = queryset.filter(room__icontains=participant)
         return queryset
 
 @api_view(['POST'])

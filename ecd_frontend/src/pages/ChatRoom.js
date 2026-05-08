@@ -7,7 +7,26 @@ import ParentSidebar from '../components/ParentSidebar';
 const isTeacherRole = (role) =>
   (role || '').toString().trim().toLowerCase() === 'teacher';
 
-const makeRoom = (nameA, nameB) => [nameA, nameB].sort().join('||');
+const toRoomParticipant = (userId) => `user:${userId}`;
+
+const makeRoom = (userIdA, userIdB) => [toRoomParticipant(userIdA), toRoomParticipant(userIdB)].sort().join('||');
+
+const getLastSeenStorageKey = (userId) => `chat_last_seen_${userId}`;
+
+const readLastSeenMap = (userId) => {
+  if (!userId) return {};
+
+  try {
+    return JSON.parse(localStorage.getItem(getLastSeenStorageKey(userId)) || '{}');
+  } catch (_) {
+    return {};
+  }
+};
+
+const writeLastSeenMap = (userId, value) => {
+  if (!userId) return;
+  localStorage.setItem(getLastSeenStorageKey(userId), JSON.stringify(value));
+};
 
 const formatTime = (ts) => {
   if (!ts) return '';
@@ -50,16 +69,18 @@ const nameInitials = (name) =>
 const ChatRoom = () => {
   const navigate = useNavigate();
 
-  const [me, setMe] = useState({ first_name: '', last_name: '', role: 'Parent' });
+  const [me, setMe] = useState({ id: null, first_name: '', last_name: '', role: 'Parent' });
   const [contacts, setContacts] = useState([]);
   const [selectedContact, setSelectedContact] = useState(null);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [contactsLoading, setContactsLoading] = useState(true);
+  const [unreadCounts, setUnreadCounts] = useState({});
 
   const messagesEndRef = useRef(null);
   const pollingRef = useRef(null);
+  const unreadPollingRef = useRef(null);
   const lastMsgCountRef = useRef(0);
 
   useEffect(() => {
@@ -67,13 +88,13 @@ const ChatRoom = () => {
     if (stored) {
       try {
         const u = JSON.parse(stored);
-        setMe({ first_name: u.first_name || '', last_name: u.last_name || '', role: u.role || 'Parent' });
+        setMe({ id: u.id ?? null, first_name: u.first_name || '', last_name: u.last_name || '', role: u.role || 'Parent' });
       } catch (_) {}
     }
   }, []);
 
   useEffect(() => {
-    if (!me.role) return;
+    if (!me.role || !me.id) return;
     const oppositeRole = isTeacherRole(me.role) ? 'PARENT' : 'TEACHER';
     setContactsLoading(true);
     API.get(`user_profiles/?role=${oppositeRole}`)
@@ -82,20 +103,67 @@ const ChatRoom = () => {
           .map((p) => {
             const u = p.user || {};
             const fullName = `${u.first_name || ''} ${u.last_name || ''}`.trim();
-            return fullName ? { name: fullName, role: p.role } : null;
+            if (!fullName || !u.id || u.id === me.id || u.is_active === false) {
+              return null;
+            }
+
+            return {
+              userId: u.id,
+              name: fullName,
+              role: p.role,
+              room: makeRoom(me.id, u.id),
+            };
           })
           .filter(Boolean);
-        setContacts(list);
+        setContacts(Array.from(new Map(list.map((contact) => [contact.userId, contact])).values()));
       })
       .catch(() => setContacts([]))
       .finally(() => setContactsLoading(false));
-  }, [me.role]);
+  }, [me.id, me.role]);
 
   const myFullName = `${me.first_name} ${me.last_name}`.trim() || 'User';
 
+  const markRoomAsSeen = useCallback((room, roomMessages) => {
+    if (!me.id || !roomMessages.length) return;
+
+    const latestMessageId = roomMessages[roomMessages.length - 1]?.id;
+    if (!latestMessageId) return;
+
+    const lastSeenMap = readLastSeenMap(me.id);
+    if ((lastSeenMap[room] || 0) < latestMessageId) {
+      writeLastSeenMap(me.id, { ...lastSeenMap, [room]: latestMessageId });
+    }
+
+    setUnreadCounts((prev) => (prev[room] ? { ...prev, [room]: 0 } : prev));
+  }, [me.id]);
+
+  const refreshUnreadCounts = useCallback(async () => {
+    if (!me.id) return;
+
+    try {
+      const res = await API.get(`chat_messages/?participant=${encodeURIComponent(toRoomParticipant(me.id))}`);
+      const groupedMessages = (res.data || []).reduce((acc, msg) => {
+        (acc[msg.room] = acc[msg.room] || []).push(msg);
+        return acc;
+      }, {});
+      const lastSeenMap = readLastSeenMap(me.id);
+      const nextUnreadCounts = {};
+
+      Object.entries(groupedMessages).forEach(([room, roomMessages]) => {
+        const lastSeenId = lastSeenMap[room] || 0;
+        const unread = roomMessages.filter((msg) => msg.sender_name !== myFullName && msg.id > lastSeenId).length;
+        if (unread > 0) {
+          nextUnreadCounts[room] = unread;
+        }
+      });
+
+      setUnreadCounts(nextUnreadCounts);
+    } catch (_) {}
+  }, [me.id, myFullName]);
+
   const fetchMessages = useCallback(async () => {
     if (!selectedContact) return;
-    const room = makeRoom(myFullName, selectedContact.name);
+    const room = selectedContact.room;
     try {
       const res = await API.get(`chat_messages/?room=${encodeURIComponent(room)}`);
       const data = res.data || [];
@@ -103,8 +171,9 @@ const ChatRoom = () => {
         setMessages(data);
         lastMsgCountRef.current = data.length;
       }
+      markRoomAsSeen(room, data);
     } catch (_) {}
-  }, [selectedContact, myFullName]);
+  }, [selectedContact, markRoomAsSeen]);
 
   useEffect(() => {
     if (!selectedContact) return;
@@ -119,10 +188,19 @@ const ChatRoom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  useEffect(() => {
+    if (!me.id) return undefined;
+
+    refreshUnreadCounts();
+    unreadPollingRef.current = setInterval(refreshUnreadCounts, 3000);
+
+    return () => clearInterval(unreadPollingRef.current);
+  }, [me.id, refreshUnreadCounts]);
+
   const handleSend = async () => {
     const text = input.trim();
     if (!text || sending || !selectedContact) return;
-    const room = makeRoom(myFullName, selectedContact.name);
+    const room = selectedContact.room;
     setSending(true);
     try {
       await API.post('chat_messages/', {
@@ -134,6 +212,7 @@ const ChatRoom = () => {
       });
       setInput('');
       await fetchMessages();
+      await refreshUnreadCounts();
     } catch (_) {} finally {
       setSending(false);
     }
@@ -179,6 +258,7 @@ const ChatRoom = () => {
     contactAvatar: (role) => ({ width: 42, height: 42, borderRadius: '50%', background: avatarGradient(role), color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 14, flexShrink: 0 }),
     contactName: { fontSize: 14, fontWeight: 600, color: '#111827' },
     contactRole: (role) => ({ display: 'inline-block', fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 8, background: roleBadge(role).bg, color: roleBadge(role).color, textTransform: 'uppercase', marginTop: 3 }),
+    unreadBadge: { marginLeft: 'auto', minWidth: 22, height: 22, borderRadius: 999, background: '#dc2626', color: '#fff', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 7px', flexShrink: 0 },
     convo: { flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' },
     convoHeader: { padding: '16px 24px', background: '#fff', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0 },
     convoTitle: { fontSize: 16, fontWeight: 700, color: '#111827' },
@@ -244,13 +324,15 @@ const ChatRoom = () => {
             ) : (
               contacts.map((c) => {
                 const active = selectedContact?.name === c.name;
+                const unreadCount = unreadCounts[c.room] || 0;
                 return (
-                  <div key={c.name} style={S.contactItem(active)} onClick={() => setSelectedContact(c)}>
+                  <div key={c.userId} style={S.contactItem(active)} onClick={() => setSelectedContact(c)}>
                     <div style={S.contactAvatar(c.role)}>{nameInitials(c.name)}</div>
-                    <div>
+                    <div style={{ minWidth: 0 }}>
                       <div style={S.contactName}>{c.name}</div>
                       <span style={S.contactRole(c.role)}>{c.role}</span>
                     </div>
+                    {unreadCount > 0 && <div style={S.unreadBadge}>{unreadCount > 9 ? '9+' : unreadCount}</div>}
                   </div>
                 );
               })

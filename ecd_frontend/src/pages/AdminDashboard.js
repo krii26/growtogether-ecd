@@ -140,11 +140,6 @@ const AdminDashboard = () => {
     };
   }, [users, children, reportCountByChild]);
 
-  const failedUploads = useMemo(() => {
-    return activities.filter((a) => !a.title || !a.description).length +
-      resources.filter((r) => !r.title || !r.resource_type).length;
-  }, [activities, resources]);
-
   const filteredUsers = useMemo(() => {
     const term = userSearch.trim().toLowerCase();
     if (!term) return users;
@@ -396,8 +391,14 @@ const AdminDashboard = () => {
               <div style={{ fontWeight: 600, color: "#111827" }}>{userInfo.first_name} {userInfo.last_name}</div>
               <div style={{ fontSize: 12, color: "#6b7280" }}>{userInfo.role}</div>
             </div>
-            <div style={{ marginLeft: "auto", cursor: "pointer", color: "#9ca3af" }} onClick={handleLogout} title="Logout">↗</div>
           </div>
+          <button
+            type="button"
+            style={{ width: "100%", marginTop: 12, border: "1px solid #fecaca", background: "#fee2e2", color: "#b91c1c", borderRadius: 10, padding: "10px 12px", fontSize: 14, fontWeight: 700, cursor: "pointer" }}
+            onClick={handleLogout}
+          >
+            Logout
+          </button>
         </div>
       </aside>
 
@@ -405,7 +406,7 @@ const AdminDashboard = () => {
       <main style={main}>
         <div style={header}>
           <div style={titleSt}>Admin Dashboard</div>
-          <div style={subtitle}>Manage users, children, content, reports, follow-up messages, alerts, and security from one place.</div>
+          <div style={subtitle}>Manage users, children, content, reports, follow-up messages, and security from one place.</div>
         </div>
 
         {error && <div style={alertError}>{error} <button style={{ ...btn, float: "right", background: "transparent", color: "#b91c1c", padding: 0 }} onClick={() => setError("")}>✕</button></div>}
@@ -428,8 +429,8 @@ const AdminDashboard = () => {
           ))}
         </div>
 
-        {/* User Management + Alerts */}
-        <div style={twoCol}>
+        {/* User Management */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 16, marginBottom: 16 }}>
           <div style={card}>
             <div style={sectionTitle}>User Management</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 10, marginBottom: 12 }}>
@@ -482,23 +483,6 @@ const AdminDashboard = () => {
                   )}
                 </tbody>
               </table>
-            </div>
-          </div>
-
-          <div style={card}>
-            <div style={sectionTitle}>Notifications and Alerts</div>
-            <div style={{ display: "grid", gap: 10 }}>
-              {[
-                ["Incomplete child profiles", stats.incompleteChildProfiles, stats.incompleteChildProfiles > 0 ? "#fff7ed" : null],
-                ["Failed data/upload issues", failedUploads, failedUploads > 0 ? "#fff7ed" : null],
-                ["Duplicate child records", duplicateChildren.length, duplicateChildren.length > 0 ? "#fff7ed" : null],
-                ["Unresolved follow-ups", unresolvedFollowups.size, unresolvedFollowups.size > 0 ? "#fff7ed" : null],
-              ].map(([label, value, bg]) => (
-                <div key={label} style={{ background: bg || "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 10, padding: 12 }}>
-                  <div style={{ fontWeight: 700, marginBottom: 4 }}>{label}</div>
-                  <div style={{ color: value > 0 ? "#9a3412" : "#6b7280", fontSize: 13, fontWeight: value > 0 ? 700 : 400 }}>{value}</div>
-                </div>
-              ))}
             </div>
           </div>
         </div>
@@ -571,9 +555,15 @@ const AdminDashboard = () => {
                     <div style={{ fontWeight: 700 }}>{label}</div>
                     <div style={{ color: "#6b7280", fontSize: 13, marginTop: 2 }}>{desc}</div>
                   </div>
-                  <button style={{ ...btnPrimary, opacity: 0.6, cursor: "not-allowed" }} disabled title="Admin stays in admin dashboard session">
-                    Locked
-                  </button>
+                  {label === "📚 E-Library" ? (
+                    <button style={btnPrimary} onClick={() => navigate("/e-library")}>
+                      Open
+                    </button>
+                  ) : (
+                    <button style={{ ...btnPrimary, opacity: 0.6, cursor: "not-allowed" }} disabled>
+                      View only
+                    </button>
+                  )}
                 </div>
               ))}
             </div>

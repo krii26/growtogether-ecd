@@ -227,10 +227,17 @@ const TeacherDash = () => {
     marginTop: 2
   };
 
-  const logoutIcon = {
-    fontSize: '18px',
-    color: '#9ca3af',
-    cursor: 'pointer'
+  const logoutButton = {
+    width: '100%',
+    border: '1px solid #fecaca',
+    background: '#fee2e2',
+    color: '#b91c1c',
+    borderRadius: 10,
+    padding: '10px 12px',
+    fontSize: '14px',
+    fontWeight: 700,
+    cursor: 'pointer',
+    marginTop: 12
   };
 
   const content = {
@@ -399,10 +406,8 @@ const TeacherDash = () => {
               <div style={userName}>{userInfo.first_name} {userInfo.last_name}</div>
               <div style={userRole}>{userInfo.role}</div>
             </div>
-            <div style={logoutIcon} onClick={handleLogout}>
-              ↗
-            </div>
           </div>
+          <button type="button" style={logoutButton} onClick={handleLogout}>Logout</button>
         </div>
       </aside>
 

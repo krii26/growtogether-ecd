@@ -8,6 +8,11 @@ const isTeacherRole = (role) => {
   return normalized === 'teacher';
 };
 
+const isAdminRole = (role) => {
+  const normalized = (role || '').toString().trim().toLowerCase();
+  return normalized === 'admin' || normalized === 'super_admin';
+};
+
 const ELibrary = () => {
   const navigate = useNavigate();
   const [resources, setResources] = useState([]);
@@ -269,6 +274,8 @@ const ELibrary = () => {
   };
 
   const teacherView = isTeacherRole(userInfo.role);
+  const adminView = isAdminRole(userInfo.role);
+  const staffView = teacherView || adminView;
   const initials = `${userInfo.first_name?.[0] || 'J'}${userInfo.last_name?.[0] || 'D'}`.toUpperCase();
 
   // Inline Styles
@@ -512,11 +519,25 @@ const ELibrary = () => {
 
   const teacherUserName = { fontWeight: 600, color: '#111827' };
   const teacherUserRole = { fontSize: 12, color: '#6b7280' };
-  const teacherLogoutIcon = { marginLeft: 'auto', cursor: 'pointer', color: '#9ca3af' };
+  const teacherLogoutButton = {
+    width: '100%',
+    border: '1px solid #fecaca',
+    background: '#fee2e2',
+    color: '#b91c1c',
+    borderRadius: 10,
+    padding: '10px 12px',
+    fontSize: '14px',
+    fontWeight: 700,
+    cursor: 'pointer',
+    marginTop: 12
+  };
+
+  const dashboardPath = adminView ? '/admin_dashboard' : '/teacher_dashboard';
+  const dashboardLabel = adminView ? 'Admin Dashboard' : 'Dashboard';
 
   return (
     <div style={layout}>
-      {teacherView ? (
+      {staffView ? (
         <aside style={teacherSidebar}>
           <div>
             <div style={teacherLogoSection}>
@@ -524,25 +545,29 @@ const ELibrary = () => {
               <div style={teacherLogoText}>GrowTogether</div>
             </div>
 
-            <div style={teacherNavItem()} onClick={() => navigate('/teacher_dashboard')}>
+            <div style={teacherNavItem()} onClick={() => navigate(dashboardPath)}>
               <span style={teacherIconStyle}>🏠</span>
-              Dashboard
+              {dashboardLabel}
             </div>
-            <div style={teacherNavItem()} onClick={() => navigate('/students')}>
-              <span style={teacherIconStyle}>👥</span>
-              Students
-            </div>
+            {!adminView && (
+              <>
+                <div style={teacherNavItem()} onClick={() => navigate('/students')}>
+                  <span style={teacherIconStyle}>👥</span>
+                  Students
+                </div>
+                <div style={teacherNavItem()} onClick={() => navigate('/publish-results')}>
+                  <span style={teacherIconStyle}>📊</span>
+                  Publish Results
+                </div>
+                <div style={teacherNavItem()} onClick={() => navigate('/chat')}>
+                  <span style={teacherIconStyle}>💬</span>
+                  Chat Room
+                </div>
+              </>
+            )}
             <div style={teacherNavItem(true)}>
               <span style={teacherIconStyle}>📚</span>
               E-Library
-            </div>
-            <div style={teacherNavItem()} onClick={() => navigate('/publish-results')}>
-              <span style={teacherIconStyle}>📊</span>
-              Publish Results
-            </div>
-            <div style={teacherNavItem()} onClick={() => navigate('/chat')}>
-              <span style={teacherIconStyle}>💬</span>
-              Chat Room
             </div>
           </div>
 
@@ -551,10 +576,10 @@ const ELibrary = () => {
               <div style={teacherUserAvatar}>{initials}</div>
               <div>
                 <div style={teacherUserName}>{userInfo.first_name} {userInfo.last_name}</div>
-                <div style={teacherUserRole}>{userInfo.role || 'Teacher'}</div>
+                <div style={teacherUserRole}>{userInfo.role || (adminView ? 'Admin' : 'Teacher')}</div>
               </div>
-              <div style={teacherLogoutIcon} onClick={handleLogout}>↗</div>
             </div>
+            <button type="button" style={teacherLogoutButton} onClick={handleLogout}>Logout</button>
           </div>
         </aside>
       ) : (
