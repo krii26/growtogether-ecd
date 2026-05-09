@@ -110,15 +110,18 @@ const Student = () => {
         params: { child: student.id }
       });
 
+      const studentMilestoneList = res.data || [];
+
       const grouped = getInitialMilestones();
 
-      (res.data || []).forEach((milestone) => {
+      studentMilestoneList.forEach((milestone) => {
         if (grouped[milestone.category]) {
           grouped[milestone.category].push(milestone);
         }
       });
 
       setStudentMilestones(grouped);
+      setSelectedStudent({ ...student, milestones: studentMilestoneList });
     } catch (err) {
       console.error('Failed to load milestones', err);
     } finally {
@@ -362,9 +365,22 @@ const Student = () => {
   };
 
   const computeProgress = (child) => {
-    const milestones = child?.milestones || [];
-    if (!milestones.length) return 0;
-    return Math.min(100, milestones.length * 10);
+    const activeMilestonesCount = (child?.milestones || []).length;
+
+    let completedMilestonesCount = 0;
+    if (child?.id) {
+      try {
+        const storedCompleted = localStorage.getItem(`completedMilestones_${child.id}`);
+        completedMilestonesCount = storedCompleted ? JSON.parse(storedCompleted).length : 0;
+      } catch (error) {
+        completedMilestonesCount = 0;
+      }
+    }
+
+    const totalMilestones = activeMilestonesCount + completedMilestonesCount;
+    if (!totalMilestones) return 0;
+
+    return Math.round((completedMilestonesCount / totalMilestones) * 100);
   };
 
   const getAvatar = (child) => {
