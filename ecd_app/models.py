@@ -178,7 +178,8 @@ class ChatMessage(models.Model):
     sender_role = models.CharField(max_length=50)  # PARENT, TEACHER, ADMIN
     receiver_name = models.CharField(max_length=200, default='')
     room = models.CharField(max_length=500, default='', db_index=True)
-    message = models.TextField()
+    message = models.TextField(blank=True, default='')
+    document = models.FileField(upload_to='chat_documents/', null=True, blank=True)
     timestamp = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

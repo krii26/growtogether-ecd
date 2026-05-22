@@ -16,6 +16,17 @@ from .serializers import (
     FollowUpMessageSerializer, ChatMessageSerializer
 )
 
+
+def get_or_create_login_profile(user):
+    if user.is_superuser:
+        return None
+
+    profile, _ = UserProfile.objects.get_or_create(
+        user=user,
+        defaults={'role': 'PARENT'}
+    )
+    return profile
+
 class ChildViewSet(viewsets.ModelViewSet):
     queryset = Child.objects.all()
     serializer_class = ChildSerializer
@@ -114,7 +125,7 @@ def login(request):
     serializer = LoginSerializer(data=request.data)
     if serializer.is_valid():
         user = serializer.validated_data['user']
-        profile = getattr(user, 'profile', None)
+        profile = get_or_create_login_profile(user)
         role = 'SUPER_ADMIN' if user.is_superuser else getattr(profile, 'role', None)
         return Response(
             {
@@ -159,10 +170,9 @@ def google_login(request):
         })
         if created:
             # Create a profile with default role
-            from .models import UserProfile
             UserProfile.objects.create(user=user, role='PARENT')
 
-        profile = getattr(user, 'profile', None)
+        profile = get_or_create_login_profile(user)
         return Response({
             'id': user.id,
             'email': user.email,

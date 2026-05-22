@@ -92,9 +92,25 @@ class UserProfileSerializer(serializers.ModelSerializer):
 # Chat Message Serializer
 # -----------------------------
 class ChatMessageSerializer(serializers.ModelSerializer):
+    document_url = serializers.SerializerMethodField()
+    document_name = serializers.SerializerMethodField()
+
     class Meta:
         model = ChatMessage
-        fields = ['id', 'sender_name', 'sender_role', 'receiver_name', 'room', 'message', 'timestamp']
+        fields = ['id', 'sender_name', 'sender_role', 'receiver_name', 'room', 'message', 'document', 'document_url', 'document_name', 'timestamp']
+
+    def get_document_url(self, obj):
+        if not obj.document:
+            return None
+        request = self.context.get('request')
+        if request:
+            return request.build_absolute_uri(obj.document.url)
+        return obj.document.url
+
+    def get_document_name(self, obj):
+        if not obj.document:
+            return None
+        return obj.document.name.split('/')[-1]
 
     def update(self, instance, validated_data):
         user_data = validated_data.pop('user', None)

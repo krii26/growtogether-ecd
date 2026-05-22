@@ -74,11 +74,13 @@ const ChatRoom = () => {
   const [selectedContact, setSelectedContact] = useState(null);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
+  const [selectedDocument, setSelectedDocument] = useState(null);
   const [sending, setSending] = useState(false);
   const [contactsLoading, setContactsLoading] = useState(true);
   const [unreadCounts, setUnreadCounts] = useState({});
 
   const messagesEndRef = useRef(null);
+  const fileInputRef = useRef(null);
   const pollingRef = useRef(null);
   const unreadPollingRef = useRef(null);
   const lastMsgCountRef = useRef(0);
@@ -199,23 +201,39 @@ const ChatRoom = () => {
 
   const handleSend = async () => {
     const text = input.trim();
-    if (!text || sending || !selectedContact) return;
+    if ((!text && !selectedDocument) || sending || !selectedContact) return;
     const room = selectedContact.room;
     setSending(true);
     try {
-      await API.post('chat_messages/', {
-        sender_name: myFullName,
-        sender_role: me.role,
-        receiver_name: selectedContact.name,
-        room,
-        message: text,
+      const payload = new FormData();
+      payload.append('sender_name', myFullName);
+      payload.append('sender_role', me.role);
+      payload.append('receiver_name', selectedContact.name);
+      payload.append('room', room);
+      payload.append('message', text);
+      if (selectedDocument) {
+        payload.append('document', selectedDocument);
+      }
+
+      await API.post('chat_messages/', payload, {
+        headers: { 'Content-Type': 'multipart/form-data' }
       });
+
       setInput('');
+      setSelectedDocument(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
       await fetchMessages();
       await refreshUnreadCounts();
     } catch (_) {} finally {
       setSending(false);
     }
+  };
+
+  const handleDocumentChange = (e) => {
+    const file = e.target.files?.[0] || null;
+    setSelectedDocument(file);
   };
 
   const handleKeyDown = (e) => {
@@ -264,8 +282,13 @@ const ChatRoom = () => {
     convoTitle: { fontSize: 16, fontWeight: 700, color: '#111827' },
     convoSub: { fontSize: 12, color: '#6b7280' },
     messages: { flex: 1, overflowY: 'auto', padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 4 },
+    inputWrapper: { flex: 1, display: 'flex', flexDirection: 'column', gap: 8 },
     inputBar: { padding: '14px 24px', background: '#fff', borderTop: '1px solid #e5e7eb', display: 'flex', gap: 10, alignItems: 'flex-end', flexShrink: 0 },
     textarea: { flex: 1, padding: '11px 14px', borderRadius: 12, border: '1px solid #e5e7eb', fontSize: 14, fontFamily: 'inherit', outline: 'none', resize: 'none', lineHeight: 1.5, maxHeight: 100, overflowY: 'auto', background: '#f9fafb', color: '#1f2937' },
+    attachBtn: { width: 44, height: 44, borderRadius: 12, border: '1px solid #d1d5db', background: '#f9fafb', color: '#4b5563', cursor: 'pointer', fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+    selectedDocChip: { display: 'flex', alignItems: 'center', gap: 8, background: '#eef2ff', color: '#3730a3', border: '1px solid #c7d2fe', borderRadius: 10, padding: '6px 10px', fontSize: 12, fontWeight: 600, maxWidth: '100%' },
+    selectedDocName: { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+    clearDocBtn: { border: 'none', background: 'transparent', color: '#4338ca', cursor: 'pointer', fontSize: 14, lineHeight: 1, padding: 0 },
     sendBtn: (disabled) => ({ width: 44, height: 44, borderRadius: 12, border: 'none', background: disabled ? '#e5e7eb' : 'linear-gradient(135deg,#a855f7,#d946ef)', color: disabled ? '#9ca3af' : '#fff', cursor: disabled ? 'not-allowed' : 'pointer', fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: disabled ? 'none' : '0 4px 14px rgba(168,85,247,0.4)' }),
     empty: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#9ca3af', gap: 8 },
     dateDivider: { display: 'flex', alignItems: 'center', gap: 12, margin: '14px 0' },
@@ -274,6 +297,7 @@ const ChatRoom = () => {
     bubbleRow: (own) => ({ display: 'flex', flexDirection: own ? 'row-reverse' : 'row', alignItems: 'flex-end', gap: 8, marginBottom: 4 }),
     avStyle: (role) => ({ width: 32, height: 32, borderRadius: '50%', background: avatarGradient(role), color: '#fff', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }),
     bubbleText: (own) => ({ background: own ? 'linear-gradient(135deg,#a855f7,#d946ef)' : '#fff', color: own ? '#fff' : '#1f2937', padding: '10px 14px', borderRadius: own ? '18px 4px 18px 18px' : '4px 18px 18px 18px', fontSize: 14, lineHeight: 1.5, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', border: own ? 'none' : '1px solid #e5e7eb', wordBreak: 'break-word' }),
+    attachmentLink: (own) => ({ display: 'inline-block', marginTop: 6, padding: '7px 10px', borderRadius: 8, fontSize: 12, fontWeight: 600, background: own ? 'rgba(255,255,255,0.2)' : '#eef2ff', color: own ? '#fff' : '#3730a3', textDecoration: 'none' }),
     bubbleMeta: (own) => ({ fontSize: 11, color: '#9ca3af', marginTop: 3, textAlign: own ? 'right' : 'left' }),
     senderLabel: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 },
     senderName: { fontSize: 12, fontWeight: 600, color: '#374151' },
@@ -378,6 +402,8 @@ const ChatRoom = () => {
                     </div>
                     {msgs.map((msg) => {
                       const own = msg.sender_name === myFullName;
+                      const hasMessage = Boolean(msg.message && msg.message.trim());
+                      const hasDocument = Boolean(msg.document_url);
                       return (
                         <div key={msg.id} style={S.bubbleRow(own)}>
                           <div style={S.avStyle(msg.sender_role)}>{nameInitials(msg.sender_name)}</div>
@@ -388,7 +414,14 @@ const ChatRoom = () => {
                                 <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 8, background: roleBadge(msg.sender_role).bg, color: roleBadge(msg.sender_role).color, textTransform: 'uppercase' }}>{msg.sender_role}</span>
                               </div>
                             )}
-                            <div style={S.bubbleText(own)}>{msg.message}</div>
+                            <div style={S.bubbleText(own)}>
+                              {hasMessage && <div>{msg.message}</div>}
+                              {hasDocument && (
+                                <a href={msg.document_url} target="_blank" rel="noopener noreferrer" style={S.attachmentLink(own)}>
+                                  📎 {msg.document_name || 'Open attachment'}
+                                </a>
+                              )}
+                            </div>
                             <div style={S.bubbleMeta(own)}>{formatTime(msg.timestamp)}</div>
                           </div>
                         </div>
@@ -400,17 +433,52 @@ const ChatRoom = () => {
               </div>
 
               <div style={S.inputBar}>
-                <textarea
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder={`Message ${selectedContact.name}…`}
-                  rows={1}
-                  style={S.textarea}
-                  onFocus={(e) => { e.target.style.borderColor = '#a855f7'; }}
-                  onBlur={(e) => { e.target.style.borderColor = '#e5e7eb'; }}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".pdf,.doc,.docx,.txt,.rtf,.xls,.xlsx,.ppt,.pptx,.csv,.jpg,.jpeg,.png,.gif,.webp"
+                  style={{ display: 'none' }}
+                  onChange={handleDocumentChange}
                 />
-                <button onClick={handleSend} disabled={!input.trim() || sending} style={S.sendBtn(!input.trim() || sending)}>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  style={S.attachBtn}
+                  title="Attach document"
+                >
+                  📎
+                </button>
+                <div style={S.inputWrapper}>
+                  {selectedDocument && (
+                    <div style={S.selectedDocChip}>
+                      <span>Attached:</span>
+                      <span style={S.selectedDocName}>{selectedDocument.name}</span>
+                      <button
+                        type="button"
+                        style={S.clearDocBtn}
+                        onClick={() => {
+                          setSelectedDocument(null);
+                          if (fileInputRef.current) {
+                            fileInputRef.current.value = '';
+                          }
+                        }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )}
+                  <textarea
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder={`Message ${selectedContact.name}…`}
+                    rows={1}
+                    style={S.textarea}
+                    onFocus={(e) => { e.target.style.borderColor = '#a855f7'; }}
+                    onBlur={(e) => { e.target.style.borderColor = '#e5e7eb'; }}
+                  />
+                </div>
+                <button onClick={handleSend} disabled={(!input.trim() && !selectedDocument) || sending} style={S.sendBtn((!input.trim() && !selectedDocument) || sending)}>
                   ➤
                 </button>
               </div>

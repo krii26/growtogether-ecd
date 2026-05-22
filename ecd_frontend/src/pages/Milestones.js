@@ -140,6 +140,51 @@ const getMilestoneDescription = (category, title) => {
   return matchedMilestone?.description || '';
 };
 
+const categoryDescriptions = {
+  'social-emotional': {
+    title: 'Social-Emotional',
+    icon: '👥',
+    about: 'Supports how children understand feelings, build relationships, and cooperate with others.',
+    aim: 'Help children express emotions safely and interact positively with adults and peers.',
+    objective: 'Track progress in social interaction, emotional expression, sharing, and response to social cues.'
+  },
+  cognitive: {
+    title: 'Cognitive',
+    icon: '🧠',
+    about: 'Focuses on thinking, memory, attention, and early problem-solving abilities.',
+    aim: 'Develop understanding, reasoning, and recall through daily learning experiences.',
+    objective: 'Track progress in object recognition, following instructions, memory recall, and simple problem-solving.'
+  },
+  physical: {
+    title: 'Physical',
+    icon: '💪',
+    about: 'Covers body movement, coordination, strength, and motor control.',
+    aim: 'Strengthen gross and fine motor development for active and independent participation.',
+    objective: 'Track progress in movement skills, hand control, coordination, and physical self-help tasks.'
+  },
+  language: {
+    title: 'Language',
+    icon: '🗣️',
+    about: 'Builds listening, understanding, speaking, and communication through words and gestures.',
+    aim: 'Support clear communication and comprehension in everyday routines.',
+    objective: 'Track progress in responding to sound/name, basic word use, understanding simple language, and combining words/gestures.'
+  },
+  'self-care': {
+    title: 'Self-Care & Independence',
+    icon: '🧼',
+    about: 'Encourages children to complete age-appropriate personal care tasks with less assistance.',
+    aim: 'Build confidence and responsibility in daily routines such as feeding, dressing, and hygiene.',
+    objective: 'Track progress in independent feeding, dressing, toilet readiness, and handwashing habits.'
+  },
+  'executive-function': {
+    title: 'Executive Function & Attention',
+    icon: '🎯',
+    about: 'Supports self-regulation skills like focus, memory, waiting, and impulse control.',
+    aim: 'Help children manage behavior, stay on task, and follow routines more independently.',
+    objective: 'Track progress in attention span, turn-taking, impulse control, and following 2-step instructions.'
+  }
+};
+
 const Milestones = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -157,6 +202,7 @@ const Milestones = () => {
   });
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showCategoryDescriptionModal, setShowCategoryDescriptionModal] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('social-emotional');
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
@@ -611,37 +657,53 @@ const Milestones = () => {
           </div>
         )}
 
-        {/* Add Milestone Button */}
-        <button
-          onClick={() => {
-            setShowAddModal(true);
-            setEditingMilestone(null);
-            setSelectedTitles([]);
-            setPerTitleData({});
-            setForm({
-              title: '',
-              description: '',
-              parent_note: '',
-              date_achieved: '',
-              image: null,
-              imagePreview: null
-            });
-            setError('');
-          }}
-          style={{
-            padding: '10px 20px',
-            background: '#8b5cf6',
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            marginBottom: '30px',
-            fontSize: '14px',
-            fontWeight: '500'
-          }}
-        >
-          + Add Milestone
-        </button>
+        {/* Action Buttons */}
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '30px' }}>
+          <button
+            onClick={() => {
+              setShowAddModal(true);
+              setEditingMilestone(null);
+              setSelectedTitles([]);
+              setPerTitleData({});
+              setForm({
+                title: '',
+                description: '',
+                parent_note: '',
+                date_achieved: '',
+                image: null,
+                imagePreview: null
+              });
+              setError('');
+            }}
+            style={{
+              padding: '10px 20px',
+              background: '#8b5cf6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: '500'
+            }}
+          >
+            + Add Milestone
+          </button>
+          <button
+            onClick={() => setShowCategoryDescriptionModal(true)}
+            style={{
+              padding: '10px 20px',
+              background: '#eef2ff',
+              color: '#4338ca',
+              border: '1px solid #c7d2fe',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: '600'
+            }}
+          >
+            Category Description
+          </button>
+        </div>
 
         {error && (
           <div style={{
@@ -1455,6 +1517,87 @@ const Milestones = () => {
                     </div>
                   </div>
                 )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Category Description Modal */}
+        {showCategoryDescriptionModal && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1002,
+            padding: '20px'
+          }}>
+            <div style={{
+              background: 'white',
+              borderRadius: '12px',
+              maxWidth: '760px',
+              width: '100%',
+              maxHeight: '85vh',
+              overflowY: 'auto',
+              boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)'
+            }}>
+              <div style={{
+                padding: '18px 22px',
+                borderBottom: '1px solid #e5e7eb',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '12px'
+              }}>
+                <h2 style={{ margin: 0, fontSize: '20px', color: '#111827' }}>Milestone Category Description</h2>
+                <button
+                  onClick={() => setShowCategoryDescriptionModal(false)}
+                  style={{
+                    border: 'none',
+                    background: '#f3f4f6',
+                    color: '#374151',
+                    borderRadius: '6px',
+                    width: '32px',
+                    height: '32px',
+                    cursor: 'pointer',
+                    fontSize: '18px',
+                    lineHeight: 1
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+
+              <div style={{ padding: '20px', display: 'grid', gap: '14px' }}>
+                {Object.entries(categoryDescriptions).map(([key, info]) => (
+                  <div
+                    key={key}
+                    style={{
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '10px',
+                      padding: '14px 16px',
+                      background: '#f9fafb'
+                    }}
+                  >
+                    <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', color: '#111827' }}>
+                      {info.icon} {info.title}
+                    </h3>
+                    <p style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#374151', lineHeight: 1.55 }}>
+                      <strong>About:</strong> {info.about}
+                    </p>
+                    <p style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#374151', lineHeight: 1.55 }}>
+                      <strong>Aim:</strong> {info.aim}
+                    </p>
+                    <p style={{ margin: 0, fontSize: '14px', color: '#374151', lineHeight: 1.55 }}>
+                      <strong>Objective:</strong> {info.objective}
+                    </p>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
