@@ -38,7 +38,7 @@ const Header = () => {
   return (
     <header style={barStyle}>
       <div style={leftStyle}>
-        <img src="/logo.png" alt="GrowTogether" style={logoStyle} />
+        <img src="https://res.cloudinary.com/ddcmtilho/image/upload/v1779921986/growtogether/frontend_assets/logo.png" alt="GrowTogether" style={logoStyle} />
         <span style={brandStyle}>GrowTogether</span>
       </div>
 

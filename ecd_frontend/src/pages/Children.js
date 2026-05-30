@@ -6,6 +6,7 @@ import ParentSidebar from '../components/ParentSidebar';
 const Children = () => {
   const navigate = useNavigate();
   const [children, setChildren] = useState([]);
+  const [riskByChild, setRiskByChild] = useState({});
   const [userInfo, setUserInfo] = useState({
     first_name: '',
     last_name: '',
@@ -49,10 +50,11 @@ const Children = () => {
   }, []);
 
   const loadUserInfo = () => {
-    const storedUser = localStorage.getItem('user');
+    const storedUser = sessionStorage.getItem('user');
     if (storedUser) {
       const user = JSON.parse(storedUser);
       setUserInfo({
+        id: user.id,
         first_name: user.first_name || 'John',
         last_name: user.last_name || 'Doe',
         role: user.role || 'Parent'
@@ -62,12 +64,88 @@ const Children = () => {
 
   const fetchChildren = async () => {
     try {
-      const response = await API.get('children/');
-      setChildren(response.data);
+      const response = await API.get('children/', { skipCache: true });
+      const allChildren = response.data || [];
+      const storedUser = sessionStorage.getItem('user');
+      const currentUser = storedUser ? JSON.parse(storedUser) : null;
+      const ownedChildren = currentUser?.id
+        ? allChildren.filter((child) => String(child?.parent) === String(currentUser.id))
+        : allChildren;
+      const childList = ownedChildren;
+      setChildren(childList);
+
+      if (childList.length > 0) {
+        const riskResults = await Promise.allSettled(
+          childList.map((child) => API.get(`children/${child.id}/risk_assessment/`))
+        );
+
+        const nextRiskMap = {};
+        riskResults.forEach((result, index) => {
+          const childId = childList[index]?.id;
+          if (!childId) return;
+
+          if (result.status === 'fulfilled') {
+            nextRiskMap[childId] = result.value?.data?.risk_level || 'UNKNOWN';
+          } else {
+            nextRiskMap[childId] = 'UNKNOWN';
+          }
+        });
+
+        setRiskByChild(nextRiskMap);
+      } else {
+        setRiskByChild({});
+      }
     } catch (error) {
       console.error('Error fetching children:', error);
       setError(getApiErrorMessage(error, 'Failed to load children.'));
     }
+  };
+
+  const getChildOverallProgress = (child) => {
+    const childMilestones = Array.isArray(child?.milestones) ? child.milestones : [];
+    const activeCount = childMilestones.length;
+
+    let completedCount = 0;
+    try {
+      const storedCompleted = localStorage.getItem(`completedMilestones_${child.id}`);
+      const parsedCompleted = storedCompleted ? JSON.parse(storedCompleted) : [];
+      completedCount = Array.isArray(parsedCompleted) ? parsedCompleted.length : 0;
+    } catch (_) {
+      completedCount = 0;
+    }
+
+    const total = activeCount + completedCount;
+    if (total === 0) {
+      return 0;
+    }
+
+    return Math.round((completedCount / total) * 100);
+  };
+
+  const getRiskBadgeStyle = (riskLevel) => {
+    const level = (riskLevel || '').toUpperCase();
+    if (level === 'HIGH') {
+      return {
+        background: '#fee2e2',
+        color: '#b91c1c',
+      };
+    }
+    if (level === 'MEDIUM') {
+      return {
+        background: '#fef3c7',
+        color: '#b45309',
+      };
+    }
+    if (level === 'LOW') {
+      return {
+        background: '#dcfce7',
+        color: '#166534',
+      };
+    }
+    return {
+      background: '#f3f4f6',
+      color: '#4b5563',
+    };
   };
 
   const handleChange = (e) => {
@@ -96,6 +174,9 @@ const Children = () => {
       const formData = new FormData();
       formData.append('name', form.name);
       formData.append('date_of_birth', form.date_of_birth);
+      if (userInfo.id) {
+        formData.append('parent', String(userInfo.id));
+      }
       formData.append('parent_name', userInfo.first_name + ' ' + userInfo.last_name || 'Parent');
       if (form.photo instanceof File) {
         formData.append('photo', form.photo);
@@ -117,8 +198,8 @@ const Children = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('user');
     navigate('/login');
   };
 
@@ -159,6 +240,9 @@ const Children = () => {
       const formData = new FormData();
       formData.append('name', form.name);
       formData.append('date_of_birth', form.date_of_birth);
+      if (userInfo.id) {
+        formData.append('parent', String(userInfo.id));
+      }
       formData.append('parent_name', userInfo.first_name + ' ' + userInfo.last_name || 'Parent');
       if (form.photo instanceof File) {
         formData.append('photo', form.photo);
@@ -192,12 +276,6 @@ const Children = () => {
     const ageMonths = totalMonths % 12;
     return `${ageYears} years ${ageMonths} months`;
   };
-
-  const progressData = [
-    { name: 'Social-Emotional', percent: 85, color: '#6366f1' },
-    { name: 'Cognitive', percent: 78, color: '#2563eb' },
-    { name: 'Physical', percent: 92, color: '#059669' }
-  ];
 
   // Styles
   const layout = {
@@ -400,47 +478,31 @@ const Children = () => {
     fontWeight: 600
   };
 
-  const progressSection = {
-    marginBottom: '16px'
-  };
-
-  const progressItem = {
-    marginBottom: '14px'
-  };
-
-  const progressLabel = {
+  const childMetaRow = {
     display: 'flex',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: '6px'
+    gap: '8px',
+    flexWrap: 'wrap',
+    marginTop: '8px'
   };
 
-  const progressName = {
-    fontSize: '13px',
-    color: '#374151',
-    fontWeight: 500
+  const progressBadge = {
+    display: 'inline-block',
+    padding: '5px 12px',
+    background: '#eff6ff',
+    color: '#1d4ed8',
+    borderRadius: '12px',
+    fontSize: '11px',
+    fontWeight: 700
   };
 
-  const progressValue = {
-    fontSize: '13px',
-    fontWeight: 600
+  const riskBadgeBase = {
+    display: 'inline-block',
+    padding: '5px 12px',
+    borderRadius: '12px',
+    fontSize: '11px',
+    fontWeight: 700
   };
-
-  const progressBar = {
-    width: '100%',
-    height: '7px',
-    background: '#e5e7eb',
-    borderRadius: '999px',
-    overflow: 'hidden'
-  };
-
-  const progressFill = (percent, color) => ({
-    width: `${percent}%`,
-    height: '100%',
-    background: color,
-    borderRadius: '999px',
-    transition: 'width 0.3s ease'
-  });
 
   const actionsRow = {
     display: 'grid',
@@ -498,7 +560,7 @@ const Children = () => {
             <div key={child.id} style={childCard}>
               <div style={childHeader}>
                 <img 
-                  src={child.photo || '/default-child.jpg'} 
+                  src={child.photo || 'https://res.cloudinary.com/ddcmtilho/image/upload/v1779921988/growtogether/frontend_assets/happychild.jpg'} 
                   alt={child.name}
                   style={childAvatar}
                 />
@@ -506,20 +568,18 @@ const Children = () => {
                   <div style={childName}>{child.name}</div>
                   <div style={childAge}>Age: {calculateAge(child.date_of_birth)}</div>
                   <span style={activeBadge}>Active</span>
-                </div>
-              </div>
-              <div style={progressSection}>
-                {progressData.map((progress) => (
-                  <div key={progress.name} style={progressItem}>
-                    <div style={progressLabel}>
-                      <span style={progressName}>{progress.name}</span>
-                      <span style={{ ...progressValue, color: progress.color }}>{progress.percent}%</span>
-                    </div>
-                    <div style={progressBar}>
-                      <div style={progressFill(progress.percent, progress.color)}></div>
-                    </div>
+                  <div style={childMetaRow}>
+                    <span style={progressBadge}>Progress: {getChildOverallProgress(child)}%</span>
+                    <span
+                      style={{
+                        ...riskBadgeBase,
+                        ...getRiskBadgeStyle(riskByChild[child.id]),
+                      }}
+                    >
+                      Risk: {riskByChild[child.id] || 'UNKNOWN'}
+                    </span>
                   </div>
-                ))}
+                </div>
               </div>
               <div style={actionsRow}>
                 <button 

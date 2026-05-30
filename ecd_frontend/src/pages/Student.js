@@ -35,11 +35,107 @@ const CATEGORY_CONFIG = {
   }
 };
 
+const TEACHER_CATEGORY_TO_MILESTONE = {
+  social_emotional: 'social-emotional',
+  cognitive: 'cognitive',
+  physical: 'physical',
+  language: 'language',
+  self_care_independence: 'self-care',
+  executive_function_attention: 'executive-function'
+};
+
+const normalizeTeacherCategoryToMilestone = (value) => {
+  if (!value) return '';
+  const key = String(value).trim().toLowerCase().replace(/-/g, '_');
+  return TEACHER_CATEGORY_TO_MILESTONE[key] || '';
+};
+
+const AUTO_SUPPORT_MAPPING = {
+  'social-emotional': {
+    activityDomains: ['Social-Emotional'],
+    libraryCategories: ['Behavior', 'Psychology'],
+    quickDrills: [
+      'Do 10-minute turn-taking games with peer support.',
+      'Use role-play to practice greeting, waiting, and sharing.',
+      'Praise each positive social interaction immediately.'
+    ]
+  },
+  cognitive: {
+    activityDomains: ['Cognitive', 'Science'],
+    libraryCategories: ['Psychology', 'Language'],
+    quickDrills: [
+      'Break tasks into 2-3 simple steps with visual cues.',
+      'Repeat matching/sorting games in short daily sessions.',
+      'Ask simple reasoning questions after each task.'
+    ]
+  },
+  physical: {
+    activityDomains: ['Physical', 'Fine Motor', 'Math + Physical'],
+    libraryCategories: ['Nutrition', 'Safety'],
+    quickDrills: [
+      'Practice balance and coordination drills for 10 minutes daily.',
+      'Use hand-strength tasks like squeezing clay or cloth clips.',
+      'Increase difficulty gradually after consistent success.'
+    ]
+  },
+  language: {
+    activityDomains: ['Language'],
+    libraryCategories: ['Language', 'Psychology'],
+    quickDrills: [
+      'Use picture naming and sentence expansion routines.',
+      'Read short stories and ask the child to retell key events.',
+      'Model target words repeatedly in natural conversation.'
+    ]
+  },
+  'self-care': {
+    activityDomains: ['Fine Motor', 'Physical'],
+    libraryCategories: ['Safety', 'Nutrition'],
+    quickDrills: [
+      'Use step-by-step hygiene and dressing routines.',
+      'Practice one self-care skill at the same time each day.',
+      'Fade adult prompts as independence improves.'
+    ]
+  },
+  'executive-function': {
+    activityDomains: ['Cognitive', 'Science'],
+    libraryCategories: ['Psychology', 'Behavior'],
+    quickDrills: [
+      'Use visual schedules and first-then instructions.',
+      'Set short focus intervals with movement breaks.',
+      'Practice memory and planning tasks with immediate feedback.'
+    ]
+  }
+};
+
+const getRatingProfile = (score) => {
+  if (score <= 4) {
+    return {
+      level: 'High support needed',
+      cause: 'Observed performance is significantly below expected milestone level, likely due to low skill consistency and high prompt dependence.',
+      fix: 'Use scaffolded step-by-step practice, shorter sessions, and frequent repetition before increasing task difficulty.'
+    };
+  }
+  if (score <= 7) {
+    return {
+      level: 'Moderate support needed',
+      cause: 'Performance is emerging but inconsistent, often affected by attention, confidence, or incomplete skill generalization.',
+      fix: 'Increase guided practice frequency, reinforce correct attempts quickly, and practice the same skill in different settings.'
+    };
+  }
+  return {
+    level: 'Maintaining and extending',
+    cause: 'Performance is mostly stable with minor gaps in fluency or independence.',
+    fix: 'Maintain practice with gradually harder tasks and reduce adult support to promote independent mastery.'
+  };
+};
+
 const getInitialMilestones = () =>
   Object.keys(CATEGORY_CONFIG).reduce((acc, key) => {
     acc[key] = [];
     return acc;
   }, {});
+
+const EXCELLENT_REMARK = 'You did a great job.';
 
 const Student = () => {
   const navigate = useNavigate();
@@ -58,10 +154,22 @@ const Student = () => {
   const [followUpSending, setFollowUpSending] = useState(false);
   const [followUpError, setFollowUpError] = useState('');
   const [followUpSuccess, setFollowUpSuccess] = useState('');
+  const [riskAssessment, setRiskAssessment] = useState(null);
+  const [loadingRisk, setLoadingRisk] = useState(false);
+  const [riskError, setRiskError] = useState('');
+  const [riskFollowUpSending, setRiskFollowUpSending] = useState(false);
+  const [riskFollowUpSuccess, setRiskFollowUpSuccess] = useState('');
+  const [riskFollowUpError, setRiskFollowUpError] = useState('');
+  const [activityCatalog, setActivityCatalog] = useState([]);
+  const [libraryCatalog, setLibraryCatalog] = useState([]);
+  const [catalogLoading, setCatalogLoading] = useState(false);
+  const [catalogError, setCatalogError] = useState('');
+  const [suggestionsTouched, setSuggestionsTouched] = useState(false);
   const [userInfo, setUserInfo] = useState({
     first_name: 'John',
     last_name: 'Doe',
-    role: 'Teacher'
+    role: 'Teacher',
+    category: ''
   });
 
   const filtered = useMemo(() => {
@@ -74,24 +182,56 @@ const Student = () => {
   }, [children, search]);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
+    const storedUser = sessionStorage.getItem('user');
+    let parsedUser = null;
     if (storedUser) {
       try {
         const user = JSON.parse(storedUser);
+        parsedUser = user;
         setUserInfo({
           first_name: user.first_name || 'John',
           last_name: user.last_name || 'Doe',
-          role: user.role || 'Teacher'
+          role: user.role || 'Teacher',
+          category: user.category || ''
         });
       } catch (error) {
         console.error('Failed to parse user info', error);
       }
     }
 
+    const hydrateTeacherCategory = async () => {
+      if (!parsedUser) return;
+      if ((parsedUser.role || '').toUpperCase() !== 'TEACHER') return;
+      if (parsedUser.category) return;
+
+      try {
+        const res = await API.get('user_profiles/?role=TEACHER', { skipCache: true });
+        const profiles = res.data || [];
+
+        const matched = profiles.find((profile) => {
+          const profileUser = profile.user || {};
+          return (
+            (parsedUser.id && profileUser.id === parsedUser.id) ||
+            (parsedUser.email && profileUser.email && String(profileUser.email).toLowerCase() === String(parsedUser.email).toLowerCase()) ||
+            (parsedUser.username && profileUser.username && String(profileUser.username).toLowerCase() === String(parsedUser.username).toLowerCase())
+          );
+        });
+
+        const category = matched?.category || '';
+        if (!category) return;
+
+        setUserInfo((prev) => ({ ...prev, category }));
+        const nextUser = { ...parsedUser, category };
+        sessionStorage.setItem('user', JSON.stringify(nextUser));
+      } catch (err) {
+        console.error('Failed to hydrate teacher category from profile', err);
+      }
+    };
+
     const fetchChildren = async () => {
       try {
         setLoading(true);
-        const res = await API.get('children/');
+        const res = await API.get('children/', { skipCache: true });
         setChildren(res.data || []);
       } catch (err) {
         console.error('Failed to load students', err);
@@ -100,32 +240,179 @@ const Student = () => {
       }
     };
     fetchChildren();
+
+    const fetchSupportCatalog = async () => {
+      setCatalogLoading(true);
+      setCatalogError('');
+
+      const [activitiesResult, libraryResult] = await Promise.allSettled([
+        API.get('activities/'),
+        API.get('elibrary/')
+      ]);
+
+      let hasError = false;
+
+      if (activitiesResult.status === 'fulfilled') {
+        setActivityCatalog(activitiesResult.value.data || []);
+      } else {
+        hasError = true;
+        setActivityCatalog([]);
+      }
+
+      if (libraryResult.status === 'fulfilled') {
+        setLibraryCatalog(libraryResult.value.data || []);
+      } else {
+        hasError = true;
+        setLibraryCatalog([]);
+      }
+
+      if (hasError) {
+        console.error('Support catalog fetch had partial/complete failure', {
+          activitiesError: activitiesResult.status === 'rejected' ? activitiesResult.reason : null,
+          libraryError: libraryResult.status === 'rejected' ? libraryResult.reason : null,
+        });
+        setCatalogError('Auto support recommendations are partially limited right now.');
+      }
+
+      setCatalogLoading(false);
+    };
+
+    fetchSupportCatalog();
+    hydrateTeacherCategory();
   }, []);
+
+  const autoSupportPlan = useMemo(() => {
+    if (!reviewingMilestone || rating === 0) {
+      return null;
+    }
+
+    if (rating >= 9) {
+      return {
+        level: 'Excellent performance',
+        cause: EXCELLENT_REMARK,
+        fix: '',
+        activities: [],
+        resources: [],
+        autoText: EXCELLENT_REMARK,
+        isPraiseOnly: true,
+      };
+    }
+
+    const category = normalizeTeacherCategoryToMilestone(reviewingMilestone.category) || (reviewingMilestone.category || '').toLowerCase();
+    const mapping = AUTO_SUPPORT_MAPPING[category] || {
+      activityDomains: [],
+      libraryCategories: [],
+      quickDrills: ['Use short guided practice and repeat this milestone daily.']
+    };
+
+    const profile = getRatingProfile(rating);
+    const milestoneId = reviewingMilestone.id;
+
+    const domainSet = new Set((mapping.activityDomains || []).map((d) => d.toLowerCase()));
+    const categorySet = new Set((mapping.libraryCategories || []).map((c) => c.toLowerCase()));
+
+    const activities = (activityCatalog || [])
+      .filter((activity) => {
+        const domain = (activity.domain || '').toLowerCase();
+        return activity.milestone === milestoneId || domainSet.has(domain);
+      })
+      .slice(0, 3);
+
+    const resources = (libraryCatalog || [])
+      .filter((resource) => {
+        const resourceCategory = (resource.category || '').toLowerCase();
+        return categorySet.has(resourceCategory);
+      })
+      .slice(0, 3);
+
+    const fallbackActivities = activities.length > 0
+      ? activities
+      : (activityCatalog || []).slice(0, 3);
+    const fallbackResources = resources.length > 0
+      ? resources
+      : (libraryCatalog || []).slice(0, 3);
+
+    const activityNames = fallbackActivities.map((item) => item.title).filter(Boolean);
+    const resourceNames = fallbackResources.map((item) => item.title).filter(Boolean);
+    const drillText = (mapping.quickDrills || []).slice(0, 2).join(' ');
+
+    const autoText = [
+      `Cause: ${profile.cause}`,
+      `Fix Plan: ${profile.fix}`,
+      drillText ? `Practice Plan: ${drillText}` : '',
+      activityNames.length ? `Recommended activities: ${activityNames.join(', ')}.` : '',
+      resourceNames.length ? `Recommended library content: ${resourceNames.join(', ')}.` : ''
+    ].filter(Boolean).join('\n');
+
+    return {
+      ...profile,
+      activities: fallbackActivities,
+      resources: fallbackResources,
+      autoText,
+      isPraiseOnly: false,
+    };
+  }, [reviewingMilestone, rating, activityCatalog, libraryCatalog]);
+
+  const teacherMilestoneCategory = useMemo(
+    () => normalizeTeacherCategoryToMilestone(userInfo.category),
+    [userInfo.category]
+  );
+
+  const visibleCategoryEntries = useMemo(() => {
+    if ((userInfo.role || '').toUpperCase() !== 'TEACHER') {
+      return Object.entries(CATEGORY_CONFIG);
+    }
+
+    if (!teacherMilestoneCategory || !CATEGORY_CONFIG[teacherMilestoneCategory]) {
+      return [];
+    }
+
+    return [[teacherMilestoneCategory, CATEGORY_CONFIG[teacherMilestoneCategory]]];
+  }, [userInfo.role, teacherMilestoneCategory]);
+
+  useEffect(() => {
+    if (!reviewingMilestone || !autoSupportPlan || suggestionsTouched) {
+      return;
+    }
+    setSuggestions(autoSupportPlan.autoText);
+  }, [reviewingMilestone, autoSupportPlan, suggestionsTouched]);
 
   const handleViewProfile = async (student) => {
     setSelectedStudent(student);
     setLoadingMilestones(true);
+    setLoadingRisk(true);
+    setRiskError('');
+    setRiskFollowUpSuccess('');
+    setRiskFollowUpError('');
     try {
-      const res = await API.get('milestones/', {
-        params: { child: student.id }
-      });
+      const [milestonesRes, riskRes] = await Promise.all([
+        API.get('milestones/', {
+          params: { child: student.id },
+          skipCache: true,
+        }),
+        API.get(`children/${student.id}/risk_assessment/`, { skipCache: true })
+      ]);
 
-      const studentMilestoneList = res.data || [];
+      const studentMilestoneList = milestonesRes.data || [];
 
       const grouped = getInitialMilestones();
 
       studentMilestoneList.forEach((milestone) => {
-        if (grouped[milestone.category]) {
-          grouped[milestone.category].push(milestone);
+        const milestoneCategory = normalizeTeacherCategoryToMilestone(milestone.category) || milestone.category;
+        if (grouped[milestoneCategory]) {
+          grouped[milestoneCategory].push(milestone);
         }
       });
 
       setStudentMilestones(grouped);
+      setRiskAssessment(riskRes.data || null);
       setSelectedStudent({ ...student, milestones: studentMilestoneList });
     } catch (err) {
       console.error('Failed to load milestones', err);
+      setRiskError('Unable to load risk assessment for this student right now.');
     } finally {
       setLoadingMilestones(false);
+      setLoadingRisk(false);
     }
   };
 
@@ -137,11 +424,15 @@ const Student = () => {
     setFollowUpError('');
     setFollowUpSuccess('');
     setStudentMilestones(getInitialMilestones());
+    setRiskAssessment(null);
+    setRiskError('');
+    setRiskFollowUpSuccess('');
+    setRiskFollowUpError('');
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('user');
     navigate('/login');
   };
 
@@ -199,16 +490,44 @@ const Student = () => {
     }
   };
 
+  const handleCreateRiskFollowUp = async () => {
+    if (!selectedStudent?.id) return;
+
+    try {
+      setRiskFollowUpSending(true);
+      setRiskFollowUpSuccess('');
+      setRiskFollowUpError('');
+
+      const response = await API.post(`children/${selectedStudent.id}/create_risk_followup/`, {});
+      const itemId = response?.data?.id;
+      setRiskFollowUpSuccess(
+        itemId
+          ? `Risk follow-up created successfully. Status: OPEN (ID #${itemId}).`
+          : 'Risk follow-up created successfully. Status: OPEN.'
+      );
+    } catch (err) {
+      console.error('Failed to create risk follow-up', err);
+      setRiskFollowUpError(
+        err?.response?.data?.error ||
+        'Could not create risk follow-up. Ensure this student has milestones and try again.'
+      );
+    } finally {
+      setRiskFollowUpSending(false);
+    }
+  };
+
   const handleReviewMilestone = (milestone) => {
     setReviewingMilestone(milestone);
     setRating(0);
     setSuggestions('');
+    setSuggestionsTouched(false);
   };
 
   const handleCloseReview = () => {
     setReviewingMilestone(null);
     setRating(0);
     setSuggestions('');
+    setSuggestionsTouched(false);
   };
 
   const getTargetDateStatus = (targetDate) => {
@@ -349,6 +668,28 @@ const Student = () => {
   const badge = { fontWeight: 600, color: '#6b7280', fontSize: 13 };
   const actionBtn = { background: '#f3e8ff', color: '#7c3aed', border: 'none', borderRadius: 10, padding: '8px 12px', cursor: 'pointer', fontWeight: 600 };
 
+  const riskBadgeStyle = (level) => {
+    if (level === 'HIGH') {
+      return {
+        background: '#fee2e2',
+        color: '#b91c1c',
+        border: '1px solid #fecaca'
+      };
+    }
+    if (level === 'MEDIUM') {
+      return {
+        background: '#ffedd5',
+        color: '#c2410c',
+        border: '1px solid #fed7aa'
+      };
+    }
+    return {
+      background: '#dcfce7',
+      color: '#166534',
+      border: '1px solid #bbf7d0'
+    };
+  };
+
   const formatAge = (child) => {
     if (child?.date_of_birth) {
       const dob = new Date(child.date_of_birth);
@@ -384,7 +725,7 @@ const Student = () => {
   };
 
   const getAvatar = (child) => {
-    return child?.photo || '/happychild.jpg';
+    return child?.photo || 'https://res.cloudinary.com/ddcmtilho/image/upload/v1779921988/growtogether/frontend_assets/happychild.jpg';
   };
 
   return (
@@ -648,6 +989,197 @@ const Student = () => {
                       </div>
                     </div>
                   </div>
+
+                  <div style={{ marginTop: '18px' }}>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '10px',
+                      marginBottom: '10px',
+                      flexWrap: 'wrap'
+                    }}>
+                      <div style={{ fontSize: '15px', fontWeight: '700', color: '#111827' }}>
+                        Early Risk Alert
+                      </div>
+                      {riskAssessment?.risk_level && (
+                        <span style={{
+                          ...riskBadgeStyle(riskAssessment.risk_level),
+                          borderRadius: '999px',
+                          fontSize: '11px',
+                          fontWeight: '700',
+                          padding: '4px 10px',
+                          letterSpacing: '0.03em'
+                        }}>
+                          {riskAssessment.risk_level} RISK
+                        </span>
+                      )}
+                    </div>
+
+                    {loadingRisk && (
+                      <div style={{ fontSize: '13px', color: '#6b7280' }}>Calculating risk score...</div>
+                    )}
+
+                    {!loadingRisk && riskError && (
+                      <div style={{
+                        fontSize: '13px',
+                        color: '#b91c1c',
+                        background: '#fee2e2',
+                        padding: '8px 10px',
+                        borderRadius: '8px'
+                      }}>
+                        {riskError}
+                      </div>
+                    )}
+
+                    {!loadingRisk && !riskError && riskAssessment && (
+                      <div style={{
+                        background: '#ffffff',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '10px',
+                        padding: '12px'
+                      }}>
+                        <div style={{ marginBottom: '8px', fontSize: '13px', color: '#374151' }}>
+                          Score: <strong>{riskAssessment.score}/100</strong>
+                        </div>
+                        <div style={{ marginBottom: '10px', fontSize: '13px', color: '#374151' }}>
+                          Recommended milestone: <strong>{riskAssessment.recommended_milestone_title || 'Not available'}</strong>
+                        </div>
+                        <ul style={{ margin: '0 0 10px 18px', padding: 0, color: '#4b5563', fontSize: '13px' }}>
+                          {(riskAssessment.reasons || []).map((reason, idx) => (
+                            <li key={`${reason}-${idx}`} style={{ marginBottom: '4px' }}>{reason}</li>
+                          ))}
+                        </ul>
+
+                        {(riskAssessment.low_rated_milestones || []).length > 0 && (
+                          <div style={{
+                            marginBottom: '12px',
+                            border: '1px solid #fecaca',
+                            borderRadius: '8px',
+                            background: '#fff7f7',
+                            padding: '10px'
+                          }}>
+                            <div style={{ fontSize: '13px', fontWeight: '700', color: '#991b1b', marginBottom: '6px' }}>
+                              Low-rated completed milestones and improvement plan
+                            </div>
+                            {(riskAssessment.low_rated_milestones || []).map((item) => (
+                              <div
+                                key={`low-${item.progress_report_id}`}
+                                style={{
+                                  marginBottom: '8px',
+                                  paddingBottom: '8px',
+                                  borderBottom: '1px dashed #fecaca'
+                                }}
+                              >
+                                <div style={{ fontSize: '12px', color: '#7f1d1d', fontWeight: '700' }}>
+                                  {item.title} {item.rating ? `(Rating: ${item.rating}/10)` : ''}
+                                </div>
+                                <div style={{ fontSize: '12px', color: '#7f1d1d', marginTop: '2px' }}>
+                                  Cause: {item.cause}
+                                </div>
+                                <div style={{ fontSize: '12px', color: '#7f1d1d', marginTop: '2px' }}>
+                                  How to improve: {item.fix}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {riskAssessment.risk_level === 'HIGH' && (
+                          <div style={{
+                            marginBottom: '12px',
+                            border: '1px solid #fde68a',
+                            borderRadius: '8px',
+                            background: '#fffbeb',
+                            padding: '10px'
+                          }}>
+                            <div style={{ fontSize: '13px', fontWeight: '700', color: '#92400e', marginBottom: '6px' }}>
+                              Suggested support plan
+                            </div>
+
+                            <div style={{ marginBottom: '8px' }}>
+                              <div style={{ fontSize: '12px', fontWeight: '700', color: '#78350f', marginBottom: '4px' }}>
+                                E-Library content
+                              </div>
+                              {(riskAssessment.support_recommendations?.library_resources || []).length > 0 ? (
+                                <ul style={{ margin: 0, paddingLeft: '16px', color: '#4b5563', fontSize: '12px' }}>
+                                  {(riskAssessment.support_recommendations?.library_resources || []).map((resource) => (
+                                    <li key={`lib-${resource.id}`} style={{ marginBottom: '3px' }}>
+                                      <strong>{resource.title}</strong>
+                                      {resource.category ? ` (${resource.category})` : ''}
+                                    </li>
+                                  ))}
+                                </ul>
+                              ) : (
+                                <div style={{ fontSize: '12px', color: '#6b7280' }}>No library recommendations yet.</div>
+                              )}
+                            </div>
+
+                            <div>
+                              <div style={{ fontSize: '12px', fontWeight: '700', color: '#78350f', marginBottom: '4px' }}>
+                                Activity suggestions
+                              </div>
+                              {(riskAssessment.support_recommendations?.activity_suggestions || []).length > 0 ? (
+                                <ul style={{ margin: 0, paddingLeft: '16px', color: '#4b5563', fontSize: '12px' }}>
+                                  {(riskAssessment.support_recommendations?.activity_suggestions || []).map((activity) => (
+                                    <li key={`act-${activity.id}`} style={{ marginBottom: '3px' }}>
+                                      <strong>{activity.title || 'Untitled activity'}</strong>
+                                      {activity.domain ? ` (${activity.domain})` : ''}
+                                    </li>
+                                  ))}
+                                </ul>
+                              ) : (
+                                <div style={{ fontSize: '12px', color: '#6b7280' }}>No activity recommendations yet.</div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={handleCreateRiskFollowUp}
+                          disabled={riskFollowUpSending}
+                          style={{
+                            padding: '8px 12px',
+                            border: 'none',
+                            borderRadius: '8px',
+                            background: riskFollowUpSending ? '#a5b4fc' : '#4f46e5',
+                            color: '#fff',
+                            fontSize: '12px',
+                            fontWeight: '700',
+                            cursor: riskFollowUpSending ? 'not-allowed' : 'pointer'
+                          }}
+                        >
+                          {riskFollowUpSending ? 'Creating...' : 'Create Follow-up From Risk'}
+                        </button>
+
+                        {riskFollowUpSuccess && (
+                          <div style={{
+                            marginTop: '8px',
+                            fontSize: '12px',
+                            color: '#065f46',
+                            background: '#d1fae5',
+                            padding: '7px 9px',
+                            borderRadius: '8px'
+                          }}>
+                            {riskFollowUpSuccess}
+                          </div>
+                        )}
+                        {riskFollowUpError && (
+                          <div style={{
+                            marginTop: '8px',
+                            fontSize: '12px',
+                            color: '#b91c1c',
+                            background: '#fee2e2',
+                            padding: '7px 9px',
+                            borderRadius: '8px'
+                          }}>
+                            {riskFollowUpError}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Milestones Section */}
@@ -661,12 +1193,25 @@ const Student = () => {
                       Loading milestones...
                     </div>
                   ) : (
+                    visibleCategoryEntries.length === 0 ? (
+                      <div style={{
+                        textAlign: 'center',
+                        padding: '20px',
+                        color: '#9ca3af',
+                        fontSize: '13px',
+                        border: '1px dashed #d1d5db',
+                        borderRadius: '12px',
+                        background: '#f9fafb'
+                      }}>
+                        Teacher specialization is not configured. Please contact an admin.
+                      </div>
+                    ) : (
                     <div style={{
                       display: 'grid',
                       gridTemplateColumns: 'repeat(2, 1fr)',
                       gap: '16px'
                     }}>
-                      {Object.entries(CATEGORY_CONFIG).map(([category, config]) => (
+                      {visibleCategoryEntries.map(([category, config]) => (
                         <div
                           key={category}
                           style={{
@@ -846,6 +1391,7 @@ const Student = () => {
                         </div>
                       ))}
                     </div>
+                    )
                   )}
                 </div>
 
@@ -861,7 +1407,9 @@ const Student = () => {
                     Total Milestones Achieved
                   </div>
                   <div style={{ fontSize: '32px', fontWeight: '700', color: '#7c3aed' }}>
-                    {Object.values(studentMilestones).reduce((sum, arr) => sum + arr.length, 0)}
+                    {visibleCategoryEntries.length > 0
+                      ? visibleCategoryEntries.reduce((sum, [category]) => sum + (studentMilestones[category]?.length || 0), 0)
+                      : 0}
                   </div>
                 </div>
               </div>
@@ -1085,19 +1633,14 @@ const Student = () => {
                     borderRadius: '12px',
                     fontSize: '24px'
                   }}>
-                    {reviewingMilestone.category === 'social-emotional' && '👥'}
-                    {reviewingMilestone.category === 'cognitive' && '🧠'}
-                    {reviewingMilestone.category === 'physical' && '💪'}
-                    {reviewingMilestone.category === 'language' && '🗣️'}
-                    {reviewingMilestone.category === 'self-care' && '🧼'}
-                    {reviewingMilestone.category === 'executive-function' && '🎯'}
+                    {CATEGORY_CONFIG[normalizeTeacherCategoryToMilestone(reviewingMilestone.category)]?.icon || '🎯'}
                   </div>
                   <div>
                     <h2 style={{ margin: '0 0 4px 0', fontSize: '24px', fontWeight: '700' }}>
                       {reviewingMilestone.title}
                     </h2>
                     <div style={{ fontSize: '14px', opacity: 0.9, textTransform: 'capitalize' }}>
-                      {reviewingMilestone.category.replace('-', ' ')} Milestone
+                      {(CATEGORY_CONFIG[normalizeTeacherCategoryToMilestone(reviewingMilestone.category)]?.title || reviewingMilestone.category.replace('-', ' '))} Milestone
                     </div>
                   </div>
                 </div>
@@ -1304,6 +1847,95 @@ const Student = () => {
                       </button>
                     ))}
                   </div>
+
+                  {rating > 0 && autoSupportPlan && (
+                    <div style={{
+                      marginBottom: '16px',
+                      background: '#f8fafc',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '10px',
+                      padding: '12px'
+                    }}>
+                      <div style={{ fontSize: '13px', fontWeight: '700', color: '#1e293b', marginBottom: '6px' }}>
+                        Auto recommendation ({autoSupportPlan.level})
+                      </div>
+                      {autoSupportPlan.isPraiseOnly ? (
+                        <div style={{ fontSize: '13px', color: '#166534', marginBottom: '8px', fontWeight: '600' }}>
+                          {autoSupportPlan.autoText}
+                        </div>
+                      ) : (
+                        <>
+                          <div style={{ fontSize: '12px', color: '#334155', marginBottom: '4px' }}>
+                            Likely cause: {autoSupportPlan.cause}
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#334155', marginBottom: '8px' }}>
+                            Improvement focus: {autoSupportPlan.fix}
+                          </div>
+
+                          <div style={{ fontSize: '12px', color: '#0f172a', fontWeight: '700', marginBottom: '4px' }}>
+                            Recommended activities
+                          </div>
+                          {(autoSupportPlan.activities || []).length > 0 ? (
+                            <ul style={{ margin: '0 0 8px 16px', padding: 0, fontSize: '12px', color: '#334155' }}>
+                              {(autoSupportPlan.activities || []).map((item) => (
+                                <li key={`auto-act-${item.id}`}>{item.title || 'Untitled activity'}</li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '8px' }}>
+                              No activity matches yet. Add more activities for this category to improve recommendations.
+                            </div>
+                          )}
+
+                          <div style={{ fontSize: '12px', color: '#0f172a', fontWeight: '700', marginBottom: '4px' }}>
+                            Recommended library content
+                          </div>
+                          {(autoSupportPlan.resources || []).length > 0 ? (
+                            <ul style={{ margin: '0 0 8px 16px', padding: 0, fontSize: '12px', color: '#334155' }}>
+                              {(autoSupportPlan.resources || []).map((item) => (
+                                <li key={`auto-lib-${item.id}`}>{item.title || 'Untitled resource'}</li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '8px' }}>
+                              No library matches yet. Add more e-library content for this category.
+                            </div>
+                          )}
+                        </>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSuggestions(autoSupportPlan.autoText);
+                          setSuggestionsTouched(false);
+                        }}
+                        style={{
+                          border: 'none',
+                          background: '#dbeafe',
+                          color: '#1d4ed8',
+                          borderRadius: '7px',
+                          padding: '6px 10px',
+                          fontSize: '12px',
+                          fontWeight: '700',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {autoSupportPlan.isPraiseOnly ? 'Use Positive Remark' : 'Use Auto Suggestion Text'}
+                      </button>
+                    </div>
+                  )}
+
+                  {catalogLoading && (
+                    <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '10px' }}>
+                      Loading recommendation catalog...
+                    </div>
+                  )}
+                  {catalogError && (
+                    <div style={{ fontSize: '12px', color: '#b91c1c', marginBottom: '10px' }}>
+                      {catalogError}
+                    </div>
+                  )}
                 </div>
 
                 {/* Suggestions Section */}
@@ -1318,7 +1950,10 @@ const Student = () => {
                   </h3>
                   <textarea
                     value={suggestions}
-                    onChange={(e) => setSuggestions(e.target.value)}
+                    onChange={(e) => {
+                      setSuggestions(e.target.value);
+                      setSuggestionsTouched(true);
+                    }}
                     placeholder="Write your suggestions or comments here..."
                     style={{
                       width: '100%',
@@ -1369,7 +2004,11 @@ const Student = () => {
                       try {
                         // Create progress report with behavior as notes
                         const behavior = reviewingMilestone.title || 'Milestone completed';
-                        const notesText = suggestions ? `Behavior: ${behavior}\n\nSuggestions: ${suggestions}` : `Behavior: ${behavior}`;
+                        const categoryForNotes = reviewingMilestone.category || 'unknown';
+                        const suggestionText = suggestions.trim();
+                        const notesText = rating >= 9
+                          ? `Behavior: ${behavior}\nCategory: ${categoryForNotes}\nRemark: ${suggestionText || EXCELLENT_REMARK}`
+                          : `Behavior: ${behavior}\nCategory: ${categoryForNotes}\nCause: ${suggestionText || 'Teacher observed low consistency during completion.'}\nFix Plan: ${suggestionText || 'Repeat targeted activities daily and review progress weekly.'}`;
                         
                         const progressData = {
                           child: selectedStudent.id,
@@ -1379,7 +2018,10 @@ const Student = () => {
                         
                         await API.post('progress_reports/', progressData);
                         
-                        // Save to completed milestones in localStorage
+                        // Delete the milestone from active milestones first.
+                        // Only after successful deletion we persist completed data locally.
+                        await API.delete(`milestones/${reviewingMilestone.id}/`);
+
                         const completedMilestone = {
                           ...reviewingMilestone,
                           rating: rating,
@@ -1388,20 +2030,17 @@ const Student = () => {
                           childId: selectedStudent.id,
                           childName: selectedStudent.name
                         };
-                        
+
                         const storageKey = `completedMilestones_${selectedStudent.id}`;
                         const existing = JSON.parse(localStorage.getItem(storageKey) || '[]');
                         existing.push(completedMilestone);
                         localStorage.setItem(storageKey, JSON.stringify(existing));
                         
-                        // Delete the milestone from active milestones
-                        await API.delete(`milestones/${reviewingMilestone.id}/`);
-                        
                         // Remove from local state
-                        const category = reviewingMilestone.category;
+                        const category = normalizeTeacherCategoryToMilestone(reviewingMilestone.category) || reviewingMilestone.category;
                         setStudentMilestones(prev => ({
                           ...prev,
-                          [category]: prev[category].filter(m => m.id !== reviewingMilestone.id)
+                          [category]: (prev[category] || []).filter(m => m.id !== reviewingMilestone.id)
                         }));
                         
                         alert(`Milestone marked as complete!\nRating: ${rating}/10\nMilestone moved to completed section!`);

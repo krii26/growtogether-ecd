@@ -274,7 +274,7 @@ const Home = () => {
           </div>
         </div>
         <div style={heroImageStyle}>
-          <img src="/happychild.jpg" alt="Child learning" style={heroImgStyle} />
+          <img src="https://res.cloudinary.com/ddcmtilho/image/upload/v1779921988/growtogether/frontend_assets/happychild.jpg" alt="Child learning" style={heroImgStyle} />
         </div>
       </section>
 

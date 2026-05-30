@@ -6,8 +6,7 @@ const Login = () => {
   const navigate = useNavigate();
   const [form, setForm] = useState({
     email: '',
-    password: '',
-    role: 'PARENT'
+    password: ''
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -35,18 +34,20 @@ const Login = () => {
       const payload = {
         email: form.email,
         password: form.password,
-        role: form.role,
       };
 
       const response = await API.post('login/', payload);
 
-      const userData = response.data?.user || response.data || { role: form.role };
-      localStorage.setItem('user', JSON.stringify(userData));
+      const userData = response.data?.user || response.data || { role: 'PARENT' };
+      if (response.data?.token) {
+        sessionStorage.setItem('token', response.data.token);
+      }
+      sessionStorage.setItem('user', JSON.stringify(userData));
       
       setSuccess('Login successful. Redirecting...');
       setError('');
       
-      const resolvedRole = (userData.role || form.role || 'PARENT').toUpperCase();
+      const resolvedRole = (userData.role || 'PARENT').toUpperCase();
       const dashboardPath =
         resolvedRole === 'TEACHER'
           ? '/teacher_dashboard'
@@ -65,7 +66,10 @@ const Login = () => {
       const res = await API.post('google-login/', { credential: credentialResponse.credential });
 
       const userData = res.data?.user || res.data || { role: 'PARENT' };
-      localStorage.setItem('user', JSON.stringify(userData));
+      if (res.data?.token) {
+        sessionStorage.setItem('token', res.data.token);
+      }
+      sessionStorage.setItem('user', JSON.stringify(userData));
 
       setSuccess('Login successful. Redirecting...');
       setError('');
@@ -193,17 +197,6 @@ const Login = () => {
     fontFamily: 'inherit'
   };
 
-  const selectStyle = {
-    width: '100%',
-    padding: '10px 12px',
-    fontSize: 13,
-    border: '1px solid #ddd',
-    borderRadius: 6,
-    boxSizing: 'border-box',
-    fontFamily: 'inherit',
-    background: 'white'
-  };
-
   const buttonStyle = {
     width: '100%',
     padding: '12px 20px',
@@ -272,7 +265,7 @@ const Login = () => {
         <h1 style={headingStyle}>
           Learning, playing and<br />Growing Together.
         </h1>
-        <img src="/hero-bg.jpg" alt="Child learning" style={imageStyle} />
+        <img src="https://res.cloudinary.com/ddcmtilho/image/upload/v1779921989/growtogether/frontend_assets/hero-bg.png" alt="Child learning" style={imageStyle} />
       </div>
 
       <div style={rightStyle}>
@@ -302,20 +295,6 @@ const Login = () => {
                 onChange={handleChange}
                 style={inputStyle}
               />
-            </div>
-
-            <div style={{ marginBottom: 12 }}>
-              <label style={labelStyle}>I am a</label>
-              <select
-                name="role"
-                value={form.role}
-                onChange={handleChange}
-                style={selectStyle}
-              >
-                <option value="PARENT">Parent</option>
-                <option value="TEACHER">Teacher</option>
-                <option value="ADMIN">Admin</option>
-              </select>
             </div>
 
             <button type="submit" style={buttonStyle}>Login</button>

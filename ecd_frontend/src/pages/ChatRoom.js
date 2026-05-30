@@ -86,7 +86,7 @@ const ChatRoom = () => {
   const lastMsgCountRef = useRef(0);
 
   useEffect(() => {
-    const stored = localStorage.getItem('user');
+    const stored = sessionStorage.getItem('user');
     if (stored) {
       try {
         const u = JSON.parse(stored);
@@ -143,7 +143,7 @@ const ChatRoom = () => {
     if (!me.id) return;
 
     try {
-      const res = await API.get(`chat_messages/?participant=${encodeURIComponent(toRoomParticipant(me.id))}`);
+      const res = await API.get(`chat_messages/?participant=${encodeURIComponent(toRoomParticipant(me.id))}`, { skipCache: true });
       const groupedMessages = (res.data || []).reduce((acc, msg) => {
         (acc[msg.room] = acc[msg.room] || []).push(msg);
         return acc;
@@ -167,7 +167,7 @@ const ChatRoom = () => {
     if (!selectedContact) return;
     const room = selectedContact.room;
     try {
-      const res = await API.get(`chat_messages/?room=${encodeURIComponent(room)}`);
+      const res = await API.get(`chat_messages/?room=${encodeURIComponent(room)}`, { skipCache: true });
       const data = res.data || [];
       if (data.length !== lastMsgCountRef.current) {
         setMessages(data);
@@ -212,7 +212,11 @@ const ChatRoom = () => {
       payload.append('room', room);
       payload.append('message', text);
       if (selectedDocument) {
-        payload.append('document', selectedDocument);
+        if ((selectedDocument.type || '').startsWith('image/')) {
+          payload.append('image', selectedDocument);
+        } else {
+          payload.append('document', selectedDocument);
+        }
       }
 
       await API.post('chat_messages/', payload, {
@@ -241,8 +245,8 @@ const ChatRoom = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('user');
     navigate('/login');
   };
 
@@ -403,7 +407,9 @@ const ChatRoom = () => {
                     {msgs.map((msg) => {
                       const own = msg.sender_name === myFullName;
                       const hasMessage = Boolean(msg.message && msg.message.trim());
-                      const hasDocument = Boolean(msg.document_url);
+                      const attachmentUrl = msg.image_url || msg.document_url;
+                      const attachmentName = msg.image_name || msg.document_name || 'Open attachment';
+                      const hasDocument = Boolean(attachmentUrl);
                       return (
                         <div key={msg.id} style={S.bubbleRow(own)}>
                           <div style={S.avStyle(msg.sender_role)}>{nameInitials(msg.sender_name)}</div>
@@ -417,8 +423,8 @@ const ChatRoom = () => {
                             <div style={S.bubbleText(own)}>
                               {hasMessage && <div>{msg.message}</div>}
                               {hasDocument && (
-                                <a href={msg.document_url} target="_blank" rel="noopener noreferrer" style={S.attachmentLink(own)}>
-                                  📎 {msg.document_name || 'Open attachment'}
+                                <a href={attachmentUrl} target="_blank" rel="noopener noreferrer" style={S.attachmentLink(own)}>
+                                  📎 {attachmentName}
                                 </a>
                               )}
                             </div>

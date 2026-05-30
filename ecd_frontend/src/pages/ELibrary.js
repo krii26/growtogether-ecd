@@ -16,7 +16,6 @@ const isAdminRole = (role) => {
 const ELibrary = () => {
   const navigate = useNavigate();
   const [resources, setResources] = useState([]);
-  const [filteredResources, setFilteredResources] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
   const [searchQuery, setSearchQuery] = useState('');
   const [userInfo, setUserInfo] = useState({
@@ -35,66 +34,146 @@ const ELibrary = () => {
     'Safety'
   ];
 
+  const fallbackImages = [
+    'https://images.unsplash.com/photo-1491013516836-7db643ee1254?w=900&q=80&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=900&q=80&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1516627145497-ae6968895b74?w=900&q=80&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1544717305-2782549b5136?w=900&q=80&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1485546246426-74dc88dec4d9?w=900&q=80&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1526634332515-d56c5fd16991?w=900&q=80&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1541696454087-5c2d5d0d6c3c?w=900&q=80&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1516302752625-fcc3c50ae61f?w=900&q=80&auto=format&fit=crop'
+  ];
+
+  const hashString = (value) => {
+    const text = (value || '').toString();
+    let hash = 0;
+    for (let index = 0; index < text.length; index += 1) {
+      hash = (hash * 31 + text.charCodeAt(index)) >>> 0;
+    }
+    return hash;
+  };
+
+  const getFallbackImage = (resource) => {
+    const seed = `${resource?.category || ''}-${resource?.title || ''}`;
+    return fallbackImages[hashString(seed) % fallbackImages.length];
+  };
+
+  const getCanonicalContentUrl = (resource) => {
+    const title = (resource?.title || '').toLowerCase();
+
+    if (title.includes('social-emotional milestone support guide')) {
+      return 'https://www.virtuallabschool.org/infant-toddler/social-and-emotional-development/lesson-2';
+    }
+    if (title.includes('executive function milestone support guide')) {
+      return 'https://developingchild.harvard.edu/resource-guides/guide-executive-function/';
+    }
+    if (title.includes('language milestone support guide')) {
+      return 'https://www.asha.org/public/developmental-milestones/communication-milestones/';
+    }
+    if (title.includes('cognitive milestone support guide')) {
+      return 'https://www.cdc.gov/act-early/milestones/index.html';
+    }
+    if (title.includes('self-care milestone support guide')) {
+      return 'https://www.zerotothree.org/resource/supporting-early-development-one-milestone-at-a-time/';
+    }
+    if (title.includes('physical milestone support guide')) {
+      return 'https://www.healthychildren.org/English/family-life/health-management/Pages/Milestones-Matter.aspx';
+    }
+    if (title.includes('understanding child anxiety')) {
+      return 'https://childmind.org/topics/anxiety/';
+    }
+    if (title.includes('encouraging positive behavior')) {
+      return 'https://www.cdc.gov/parents/essentials/toddlersandpreschoolers/positive/index.html';
+    }
+    if (title.includes('bilingual development in young children')) {
+      return 'https://www.asha.org/public/developmental-milestones/communication-milestones/';
+    }
+    if (title.includes('building resilience in young children')) {
+      return 'https://www.apa.org/topics/resilience/children';
+    }
+    if (title.includes('reading aloud to young children')) {
+      return 'https://www.readingrockets.org/topics/reading-aloud';
+    }
+
+    return null;
+  };
+
+  const getContentUrl = (resource) => {
+    const canonical = getCanonicalContentUrl(resource);
+    if (canonical) {
+      return canonical;
+    }
+
+    const preferred = (resource?.link || '').trim();
+    if (preferred && preferred !== '#') {
+      return preferred;
+    }
+
+    const query = encodeURIComponent(`${resource?.title || 'child development resource'} ${resource?.category || ''}`.trim());
+    return `https://www.google.com/search?q=${query}`;
+  };
+
   const mockResources = [
     {
       id: 1,
       title: 'Healthy Eating for Toddlers',
       category: 'Nutrition',
       description: 'Essential nutrition guidelines and meal planning tips for children aged 1-3 years.',
-      image: '/healthyeating.jpg',
-      link: 'https://babyfriendlynl.ca/wp-content/uploads/2018/06/Healthy-Eating-for-Your-Toddler-2014-with-vit.-D-update-Feb.-2017.pdf',
-      source: 'Baby Friendly NL',
-      sourceUrl: 'https://babyfriendlynl.ca'
+      image: 'https://res.cloudinary.com/ddcmtilho/image/upload/v1779921990/growtogether/frontend_assets/healthyeating.jpg',
+      link: 'https://www.healthychildren.org/English/ages-stages/toddler/nutrition/Pages/default.aspx',
+      source: 'HealthyChildren.org (AAP)',
+      sourceUrl: 'https://www.healthychildren.org'
     },
     {
       id: 2,
       title: 'Emotional Development Stages',
       category: 'Psychology',
       description: "Understanding your child's emotional growth and how to support it effectively.",
-      image: '/social-emotional.jpg',
-      link: 'https://www.rasmussen.edu/degrees/education/blog/stages-of-emotional-development/',
-      source: 'Rasmussen University',
-      sourceUrl: 'https://www.rasmussen.edu'
+      image: 'https://res.cloudinary.com/ddcmtilho/image/upload/v1779921991/growtogether/frontend_assets/social-emotional.jpg',
+      link: 'https://www.virtuallabschool.org/infant-toddler/social-and-emotional-development/lesson-2',
+      source: 'Virtual Lab School',
+      sourceUrl: 'https://www.virtuallabschool.org'
     },
     {
       id: 3,
       title: 'Managing Tantrums Effectively',
       category: 'Behavior',
       description: 'Practical strategies for handling challenging behaviors in young children.',
-      image: '/traumakid.jpg',
-      link: 'https://snhr.org/wp-content/uploads/2023/05/TPYK-Handbook-EN06122022.pdf',
-      source: 'Stanford Center on Early Childhood',
-      sourceUrl: 'https://snhr.org'
+      image: 'https://res.cloudinary.com/ddcmtilho/image/upload/v1779921992/growtogether/frontend_assets/traumakid.jpg',
+      link: 'https://developingchild.harvard.edu/resource-guides/guide-executive-function/',
+      source: 'Harvard Center on Developing Child',
+      sourceUrl: 'https://developingchild.harvard.edu'
     },
     {
       id: 4,
       title: 'Healthy Sleep Habits',
       category: 'Sleep',
       description: 'Creating bedtime routines and ensuring quality sleep for optimal development.',
-      image: '/healthySleep.jpg',
-      link: 'https://www.nationwidechildrens.org/conditions/health-library/healthy-sleep-habits-in-children',
-      source: 'Nationwide Children\'s Hospital',
-      sourceUrl: 'https://www.nationwidechildrens.org'
+      image: 'https://res.cloudinary.com/ddcmtilho/image/upload/v1779921992/growtogether/frontend_assets/healthySleep.webp',
+      link: 'https://www.asha.org/public/developmental-milestones/communication-milestones/',
+      source: 'ASHA',
+      sourceUrl: 'https://www.asha.org'
     },
     {
       id: 5,
       title: 'Language Development Milestones',
       category: 'Language',
       description: 'Supporting your child\'s communication skills from birth to age 6.',
-      image: '/languageDev.png',
-      link: 'https://socialsci.libretexts.org/Bookshelves/Human_Development/Lifespan_Development_(OpenStax)/03%3A_Physical_and_Cognitive_Development_in_Infants_and_Toddlers_(Birth_to_Age_3)/3.05%3A_Language_in_Infants_and_Toddlers',
-      source: 'LibreTexts (OpenStax)',
-      sourceUrl: 'https://socialsci.libretexts.org'
+      image: 'https://res.cloudinary.com/ddcmtilho/image/upload/v1779921994/growtogether/frontend_assets/languageDev.png',
+      link: 'https://www.asha.org/public/developmental-milestones/communication-milestones/',
+      source: 'ASHA',
+      sourceUrl: 'https://www.asha.org'
     },
     {
       id: 6,
       title: 'Child Safety Essentials',
       category: 'Safety',
       description: 'Comprehensive guide to keeping your child safe at home and outdoors.',
-      image: '/safety.jpg',
-      link: 'https://www.savethechildren.net/stories/tips-keeping-children-under-12-safe-online',
-      source: 'Save the Children',
-      sourceUrl: 'https://www.savethechildren.net'
+      image: 'https://res.cloudinary.com/ddcmtilho/image/upload/v1779921995/growtogether/frontend_assets/safety.jpg',
+      link: 'https://www.cdc.gov/act-early/milestones/index.html',
+      source: 'CDC',
+      sourceUrl: 'https://www.cdc.gov'
     },
     {
       id: 7,
@@ -102,9 +181,9 @@ const ELibrary = () => {
       category: 'Psychology',
       description: 'How to recognize signs of anxiety in young children and practical ways to support their emotional well-being at home and in school.',
       image: 'https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=600&q=80&auto=format&fit=crop',
-      link: 'https://www.anxietycanada.com/articles/how-to-help-your-anxious-child/',
-      source: 'Anxiety Canada',
-      sourceUrl: 'https://www.anxietycanada.com'
+      link: 'https://childmind.org/topics/anxiety/',
+      source: 'Child Mind Institute',
+      sourceUrl: 'https://childmind.org'
     },
     {
       id: 8,
@@ -152,7 +231,7 @@ const ELibrary = () => {
       category: 'Language',
       description: 'What research says about raising bilingual children, common myths debunked, and strategies to support dual language growth.',
       image: 'https://images.unsplash.com/photo-1489710437720-ebb67ec84dd2?w=600&q=80&auto=format&fit=crop',
-      link: 'https://www.asha.org/public/speech/development/bilingual/',
+      link: 'https://www.asha.org/public/developmental-milestones/communication-milestones/',
       source: 'ASHA',
       sourceUrl: 'https://www.asha.org'
     },
@@ -172,9 +251,9 @@ const ELibrary = () => {
       category: 'Psychology',
       description: 'Practical strategies parents and teachers can use to help children bounce back from setbacks, stress, and change.',
       image: 'https://images.unsplash.com/photo-1526634332515-d56c5fd16991?w=600&q=80&auto=format&fit=crop',
-      link: 'https://www.zerotothree.org/resource/building-resilience-in-young-children/',
-      source: 'ZERO TO THREE',
-      sourceUrl: 'https://www.zerotothree.org'
+      link: 'https://www.apa.org/topics/resilience/children',
+      source: 'American Psychological Association',
+      sourceUrl: 'https://www.apa.org'
     },
     {
       id: 15,
@@ -192,7 +271,7 @@ const ELibrary = () => {
       category: 'Language',
       description: 'Research-backed benefits of reading together daily and tips for making story time engaging from birth to age 5.',
       image: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=600&q=80&auto=format&fit=crop',
-      link: 'https://www.readingrockets.org/article/why-read-aloud',
+      link: 'https://www.readingrockets.org/topics/reading-aloud',
       source: 'Reading Rockets',
       sourceUrl: 'https://www.readingrockets.org'
     },
@@ -204,12 +283,42 @@ const ELibrary = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    filterResources(resources, selectedCategory, searchQuery);
-  }, [selectedCategory, searchQuery, resources]);
+  const matchesResourceFilter = (resource) => {
+    const normalize = (value) => (value || '').toString().trim().toLowerCase();
+    const normalizedCategory = normalize(selectedCategory);
+    const normalizedQuery = normalize(searchQuery);
+    const queryTerms = normalizedQuery.split(/[^a-z0-9]+/i).filter(Boolean);
+
+    const resourceCategory = normalize(resource?.category);
+    const categoryMatch = normalizedCategory === 'all categories' || resourceCategory === normalizedCategory;
+
+    if (!categoryMatch) {
+      return false;
+    }
+
+    if (queryTerms.length === 0) {
+      return true;
+    }
+
+    const searchableText = [
+      resource?.title,
+      resource?.description,
+      resource?.category,
+      resource?.source,
+      resource?.sourceUrl,
+      resource?.link,
+      getCanonicalContentUrl(resource),
+    ]
+      .map(normalize)
+      .join(' ');
+
+    return queryTerms.every((term) => searchableText.includes(term));
+  };
+
+  const filteredResources = (resources || []).filter(matchesResourceFilter);
 
   const loadUserInfo = () => {
-    const storedUser = localStorage.getItem('user');
+    const storedUser = sessionStorage.getItem('user');
     if (storedUser) {
       const user = JSON.parse(storedUser);
       setUserInfo({
@@ -222,13 +331,16 @@ const ELibrary = () => {
 
   const fetchResources = async () => {
     try {
-      const response = await API.get('/elibrary/');
+      const response = await API.get('elibrary/', { skipCache: true });
       let apiResources = response.data;
 
       // Map API response to match frontend format
       apiResources = apiResources.map(resource => ({
         ...resource,
-        link: resource.file_url || '#',
+        image: resource.image || resource.image_file || getFallbackImage(resource),
+        link: resource.file_url || resource.sourceUrl || '#',
+        source: resource.source || (resource.file_url ? 'Uploaded resource' : 'GrowTogether Library'),
+        sourceUrl: resource.sourceUrl || resource.file_url || '#',
       }));
 
       // Merge: API-only resources are included, but built-in mock resources
@@ -246,30 +358,16 @@ const ELibrary = () => {
     } catch (error) {
       console.error('Error fetching E-Library resources:', error);
       // Fallback to built-in resources if API fails
-      setResources(mockResources);
+      setResources(mockResources.map((resource) => ({
+        ...resource,
+        image: resource.image || getFallbackImage(resource),
+      })));
     }
-  };
-
-  const filterResources = (allResources, category, query) => {
-    let filtered = allResources;
-
-    if (category !== 'All Categories') {
-      filtered = filtered.filter(r => r.category === category);
-    }
-
-    if (query.trim()) {
-      filtered = filtered.filter(r =>
-        r.title.toLowerCase().includes(query.toLowerCase()) ||
-        r.description.toLowerCase().includes(query.toLowerCase())
-      );
-    }
-
-    setFilteredResources(filtered);
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('user');
     navigate('/login');
   };
 
@@ -429,6 +527,25 @@ const ELibrary = () => {
     transition: 'opacity 0.3s ease'
   };
 
+  const getSourceLabel = (resource) => {
+    if (resource?.source) return resource.source;
+    if (resource?.sourceUrl) {
+      try {
+        return new URL(resource.sourceUrl).hostname.replace(/^www\./, '');
+      } catch (_) {
+        return 'External Source';
+      }
+    }
+    if (resource?.link && resource.link !== '#') {
+      try {
+        return new URL(resource.link).hostname.replace(/^www\./, '');
+      } catch (_) {
+        return 'External Source';
+      }
+    }
+    return 'GrowTogether Library';
+  };
+
   const emptyState = {
     textAlign: 'center',
     padding: '60px 20px'
@@ -519,17 +636,11 @@ const ELibrary = () => {
 
   const teacherUserName = { fontWeight: 600, color: '#111827' };
   const teacherUserRole = { fontSize: 12, color: '#6b7280' };
-  const teacherLogoutButton = {
-    width: '100%',
-    border: '1px solid #fecaca',
-    background: '#fee2e2',
-    color: '#b91c1c',
-    borderRadius: 10,
-    padding: '10px 12px',
-    fontSize: '14px',
-    fontWeight: 700,
+  const teacherLogoutIcon = {
+    marginLeft: 'auto',
     cursor: 'pointer',
-    marginTop: 12
+    color: '#9ca3af',
+    fontSize: 16
   };
 
   const dashboardPath = adminView ? '/admin_dashboard' : '/teacher_dashboard';
@@ -555,6 +666,10 @@ const ELibrary = () => {
                   <span style={teacherIconStyle}>👥</span>
                   Students
                 </div>
+                <div style={teacherNavItem(true)}>
+                  <span style={teacherIconStyle}>📚</span>
+                  E-Library
+                </div>
                 <div style={teacherNavItem()} onClick={() => navigate('/publish-results')}>
                   <span style={teacherIconStyle}>📊</span>
                   Publish Results
@@ -565,10 +680,12 @@ const ELibrary = () => {
                 </div>
               </>
             )}
-            <div style={teacherNavItem(true)}>
-              <span style={teacherIconStyle}>📚</span>
-              E-Library
-            </div>
+            {adminView && (
+              <div style={teacherNavItem(true)}>
+                <span style={teacherIconStyle}>📚</span>
+                E-Library
+              </div>
+            )}
           </div>
 
           <div style={teacherUserSection}>
@@ -578,8 +695,8 @@ const ELibrary = () => {
                 <div style={teacherUserName}>{userInfo.first_name} {userInfo.last_name}</div>
                 <div style={teacherUserRole}>{userInfo.role || (adminView ? 'Admin' : 'Teacher')}</div>
               </div>
+              <div style={teacherLogoutIcon} onClick={handleLogout}>↗</div>
             </div>
-            <button type="button" style={teacherLogoutButton} onClick={handleLogout}>Logout</button>
           </div>
         </aside>
       ) : (
@@ -597,7 +714,7 @@ const ELibrary = () => {
         <div style={filterSection}>
           <input
             type="text"
-            placeholder="Search resources..."
+            placeholder="Search by title, description, category, or source..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             style={searchBar}
@@ -613,14 +730,30 @@ const ELibrary = () => {
           </select>
         </div>
 
+        <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 16 }}>
+          Showing {filteredResources.length} result{filteredResources.length === 1 ? '' : 's'}
+          {searchQuery.trim() ? ` for "${searchQuery.trim()}"` : ''}
+          {selectedCategory !== 'All Categories' ? ` in ${selectedCategory}` : ''}
+        </div>
+
         {/* Resources Grid */}
         {filteredResources.length > 0 ? (
           <div style={resourcesGrid}>
-            {filteredResources.map(resource => {
+            {resources.map(resource => {
+              if (!matchesResourceFilter(resource)) {
+                return null;
+              }
               const categoryColors = getCategoryColor(resource.category);
               return (
-                <div key={resource.id} style={resourceCard}>
-                  <img src={resource.image} alt={resource.title} style={resourceImage} />
+                <div key={`${resource.id}-${resource.title}`} style={resourceCard}>
+                  <img
+                    src={resource.image || getFallbackImage(resource)}
+                    alt={resource.title}
+                    style={resourceImage}
+                    onError={(event) => {
+                      event.currentTarget.src = getFallbackImage(resource);
+                    }}
+                  />
                   <div style={resourceContent}>
                     <div
                       style={{
@@ -633,27 +766,29 @@ const ELibrary = () => {
                     </div>
                     <h3 style={resourceTitle}>{resource.title}</h3>
                     <p style={resourceDescription}>{resource.description}</p>
-                    {resource.source && (
-                      <>
-                        <div style={{ borderTop: '1px solid #eee', margin: '12px 0' }} />
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
-                          <span style={{ fontSize: 14, color: '#aaa' }}>🔗</span>
-                          <span style={{ fontSize: 13, color: '#555' }}>
-                            <span style={{ fontWeight: 600 }}>Source: </span>
-                            <a
-                              href={resource.sourceUrl || resource.link}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              style={{ color: '#7b2cbf', textDecoration: 'none', fontWeight: 500 }}
-                            >
-                              {resource.source}
-                            </a>
+                    <div style={{ borderTop: '1px solid #eee', margin: '12px 0' }} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12, flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: 14, color: '#aaa' }}>🔗</span>
+                      <span style={{ fontSize: 13, color: '#555' }}>
+                        <span style={{ fontWeight: 600 }}>Source: </span>
+                        {resource.sourceUrl && resource.sourceUrl !== '#' ? (
+                          <a
+                            href={resource.sourceUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ color: '#7b2cbf', textDecoration: 'none', fontWeight: 500 }}
+                          >
+                            {getSourceLabel(resource)}
+                          </a>
+                        ) : (
+                          <span style={{ color: '#7b2cbf', fontWeight: 500 }}>
+                            {getSourceLabel(resource)}
                           </span>
-                        </div>
-                      </>
-                    )}
-                    <a href={resource.link} target="_blank" rel="noopener noreferrer" style={readMoreLink}>
-                      Read More →
+                        )}
+                      </span>
+                    </div>
+                    <a href={getContentUrl(resource)} target="_blank" rel="noopener noreferrer" style={readMoreLink}>
+                      Read More
                     </a>
                   </div>
                 </div>

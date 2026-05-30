@@ -144,44 +144,44 @@ const categoryDescriptions = {
   'social-emotional': {
     title: 'Social-Emotional',
     icon: '👥',
-    about: 'Supports how children understand feelings, build relationships, and cooperate with others.',
-    aim: 'Help children express emotions safely and interact positively with adults and peers.',
-    objective: 'Track progress in social interaction, emotional expression, sharing, and response to social cues.'
+    about: 'This is about how a child feels, shows emotions, and gets along with other people.',
+    aim: 'Help the child learn how to share, play, wait, and respond kindly to others.',
+    objective: 'Look for signs that the child can express feelings, join play, and react to simple social cues.'
   },
   cognitive: {
     title: 'Cognitive',
     icon: '🧠',
-    about: 'Focuses on thinking, memory, attention, and early problem-solving abilities.',
-    aim: 'Develop understanding, reasoning, and recall through daily learning experiences.',
-    objective: 'Track progress in object recognition, following instructions, memory recall, and simple problem-solving.'
+    about: 'This is about thinking skills like remembering, paying attention, and solving small problems.',
+    aim: 'Help the child learn to notice things, remember them, and follow simple ideas.',
+    objective: 'Check whether the child can recognize objects, follow instructions, and solve easy tasks.'
   },
   physical: {
     title: 'Physical',
     icon: '💪',
-    about: 'Covers body movement, coordination, strength, and motor control.',
-    aim: 'Strengthen gross and fine motor development for active and independent participation.',
-    objective: 'Track progress in movement skills, hand control, coordination, and physical self-help tasks.'
+    about: 'This is about body movement, balance, hand control, and using muscles well.',
+    aim: 'Help the child move better, use hands more clearly, and become stronger over time.',
+    objective: 'Check whether the child can crawl, walk, run, hold things, and do small hand tasks.'
   },
   language: {
     title: 'Language',
     icon: '🗣️',
-    about: 'Builds listening, understanding, speaking, and communication through words and gestures.',
-    aim: 'Support clear communication and comprehension in everyday routines.',
-    objective: 'Track progress in responding to sound/name, basic word use, understanding simple language, and combining words/gestures.'
+    about: 'This is about understanding words and using sounds, words, or gestures to communicate.',
+    aim: 'Help the child listen, understand, and start talking or pointing to show needs.',
+    objective: 'Check whether the child responds to name, uses simple words, and understands basic instructions.'
   },
   'self-care': {
     title: 'Self-Care & Independence',
     icon: '🧼',
-    about: 'Encourages children to complete age-appropriate personal care tasks with less assistance.',
-    aim: 'Build confidence and responsibility in daily routines such as feeding, dressing, and hygiene.',
-    objective: 'Track progress in independent feeding, dressing, toilet readiness, and handwashing habits.'
+    about: 'This is about doing everyday personal tasks like eating, dressing, and washing with less help.',
+    aim: 'Help the child become more independent in simple daily routines.',
+    objective: 'Check whether the child can feed themselves, dress, wash hands, and manage toilet steps.'
   },
   'executive-function': {
     title: 'Executive Function & Attention',
     icon: '🎯',
-    about: 'Supports self-regulation skills like focus, memory, waiting, and impulse control.',
-    aim: 'Help children manage behavior, stay on task, and follow routines more independently.',
-    objective: 'Track progress in attention span, turn-taking, impulse control, and following 2-step instructions.'
+    about: 'This is about focus, self-control, waiting, and remembering what to do next.',
+    aim: 'Help the child stay focused, calm, and follow simple routines without much help.',
+    objective: 'Check whether the child can pay attention, wait their turn, control actions, and follow two-step instructions.'
   }
 };
 
@@ -242,20 +242,20 @@ const Milestones = () => {
         setCompletedMilestones([]);
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedChildId]);
 
   const fetchChildren = async () => {
     try {
-      console.log('Fetching all children');
-      const res = await API.get('children/');
-      console.log('Children data:', res.data);
-      setChildren(res.data);
+      const res = await API.get('children/', { skipCache: true });
+      const childrenData = res.data || [];
+      setChildren(childrenData);
       
       // If childId from URL exists, use it; otherwise use first child
       if (childId) {
         setSelectedChildId(childId);
-      } else if (res.data.length > 0) {
-        setSelectedChildId(res.data[0].id);
+      } else if (childrenData.length > 0) {
+        setSelectedChildId(childrenData[0].id);
       } else {
         setError('No children found. Please add a child first.');
         setLoading(false);
@@ -269,16 +269,13 @@ const Milestones = () => {
 
   const fetchChildAndMilestones = async (childIdToFetch) => {
     try {
-      console.log('Fetching child with ID:', childIdToFetch);
-      const childRes = await API.get(`children/${childIdToFetch}/`);
-      console.log('Child data:', childRes.data);
-      setChild(childRes.data);
+      const selectedChild = (children || []).find((item) => String(item.id) === String(childIdToFetch));
+      setChild(selectedChild || null);
 
-      console.log('Fetching milestones for child:', childIdToFetch);
       const milestonesRes = await API.get('milestones/', {
-        params: { child: childIdToFetch }
+        params: { child: childIdToFetch },
+        skipCache: true,
       });
-      console.log('Milestones data:', milestonesRes.data);
 
       const grouped = {
         'social-emotional': [],
@@ -295,12 +292,37 @@ const Milestones = () => {
         }
       });
 
+      if (!selectedChild) {
+        const fallbackChild = (milestonesRes.data || [])[0]?.child;
+        if (fallbackChild) {
+          const matched = (children || []).find((item) => item.id === fallbackChild);
+          if (matched) {
+            setChild(matched);
+          }
+        }
+      }
+
       setMilestones(grouped);
+
+      // Keep completed list consistent: if a milestone still exists in active API data,
+      // it should not be counted as completed in local storage.
+      const activeIds = new Set((milestonesRes.data || []).map((m) => m.id));
+      const storageKey = `completedMilestones_${childIdToFetch}`;
+      const storedCompleted = localStorage.getItem(storageKey);
+      if (storedCompleted) {
+        const parsedCompleted = JSON.parse(storedCompleted);
+        if (Array.isArray(parsedCompleted)) {
+          const sanitized = parsedCompleted.filter((m) => !activeIds.has(m.id));
+          if (sanitized.length !== parsedCompleted.length) {
+            localStorage.setItem(storageKey, JSON.stringify(sanitized));
+            setCompletedMilestones(sanitized);
+          }
+        }
+      }
+
       setError('');
     } catch (error) {
       console.error('Error fetching data:', error);
-      console.error('Error response:', error.response?.data);
-      console.error('Error status:', error.response?.status);
       setError(`Failed to load milestones: ${error.message}`);
     } finally {
       setLoading(false);
@@ -582,13 +604,13 @@ const Milestones = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('user');
     navigate('/login');
   };
 
   // Get user info from localStorage for display
-  const storedUser = localStorage.getItem('user');
+  const storedUser = sessionStorage.getItem('user');
   const parsedUser = storedUser ? JSON.parse(storedUser) : {};
   const currentUser = {
     first_name: parsedUser.first_name || 'John',

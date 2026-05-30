@@ -10,7 +10,6 @@ const Register = () => {
     confirmPassword: '',
     first_name: '',
     last_name: '',
-    role: 'PARENT',
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -47,7 +46,7 @@ const Register = () => {
         password: form.password,
         first_name: form.first_name,
         last_name: form.last_name,
-        role: form.role,
+        role: 'PARENT',
       };
 
       await API.post('register/', payload);
@@ -227,18 +226,6 @@ const Register = () => {
     marginBottom: '16px'
   };
 
-  const selectStyle = {
-    width: '100%',
-    padding: '12px 16px',
-    fontSize: '14px',
-    border: '1px solid #ddd',
-    borderRadius: '6px',
-    boxSizing: 'border-box',
-    fontFamily: 'inherit',
-    background: 'white',
-    marginBottom: '16px'
-  };
-
   const buttonStyle = {
     width: '100%',
     padding: '12px 16px',
@@ -250,6 +237,20 @@ const Register = () => {
     fontWeight: '600',
     cursor: 'pointer',
     marginTop: '8px',
+    transition: 'all 0.3s ease'
+  };
+
+  const secondaryButtonStyle = {
+    width: '100%',
+    padding: '12px 16px',
+    background: 'transparent',
+    color: '#a855f7',
+    border: '1px solid #d8b4fe',
+    borderRadius: '6px',
+    fontSize: '16px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    marginTop: '10px',
     transition: 'all 0.3s ease'
   };
 
@@ -345,7 +346,7 @@ const Register = () => {
           </div>
           
           <div style={heroRightStyle}>
-            <img src="/happychild.jpg" alt="Child learning" style={heroImgBgStyle} />
+            <img src="https://res.cloudinary.com/ddcmtilho/image/upload/v1779921988/growtogether/frontend_assets/happychild.jpg" alt="Child learning" style={heroImgBgStyle} />
           </div>
         </section>
 
@@ -433,22 +434,8 @@ const Register = () => {
               />
             </div>
 
-            <div style={fieldGroupStyle}>
-              <label style={labelStyle}>I am a</label>
-              <select 
-                name="role" 
-                value={form.role} 
-                onChange={handleChange}
-                style={selectStyle}
-              >
-                <option value="">Select Role</option>
-                <option value="PARENT">Parent</option>
-                <option value="TEACHER">Teacher</option>
-                <option value="ADMIN">Admin</option>
-              </select>
-            </div>
-
             <button type="submit" style={buttonStyle}>Create Account</button>
+
 
             <div style={belowTextStyle}>
               Already have an account?

@@ -11,8 +11,6 @@ const StdDashboard = () => {
     milestones: 0,
     reports: 0,
   });
-  const [recentActivities, setRecentActivities] = useState([]);
-  const [upcomingMilestones, setUpcomingMilestones] = useState([]);
   const [progressReports, setProgressReports] = useState([]);
   const [children, setChildren] = useState([]);
   const [followMessages, setFollowMessages] = useState([]);
@@ -26,12 +24,14 @@ const StdDashboard = () => {
     const load = async () => {
       try {
         // Load user info from localStorage or API
-        const storedUser = localStorage.getItem('user');
+        const storedUser = sessionStorage.getItem('user');
         let parentFullName = '';
         let parentFirstName = '';
         let parentLastName = '';
+        let currentUserId = null;
         if (storedUser) {
           const user = JSON.parse(storedUser);
+          currentUserId = user.id || null;
           parentFirstName = (user.first_name || '').trim();
           parentLastName = (user.last_name || '').trim();
           parentFullName = `${parentFirstName} ${parentLastName}`.trim();
@@ -43,44 +43,80 @@ const StdDashboard = () => {
         }
 
         const [childrenRes, activitiesRes, milestonesRes, reportsRes, followMessagesRes] = await Promise.all([
-          API.get('children/'),
+          API.get('children/', { skipCache: true }),
           API.get('activities/'),
-          API.get('milestones/'),
-          API.get('progress_reports/'),
-          API.get('follow_up_messages/'),
+          API.get('milestones/', { skipCache: true }),
+          API.get('progress_reports/', { skipCache: true }),
+          API.get('follow_up_messages/', { skipCache: true }),
         ]);
-        setCounts({
-          children: childrenRes.data?.length || 0,
-          activities: activitiesRes.data?.length || 0,
-          milestones: milestonesRes.data?.length || 0,
-          reports: reportsRes.data?.length || 0,
-        });
-        setChildren(childrenRes.data || []);
-        setRecentActivities((activitiesRes.data || []).slice(0, 3));
-        setUpcomingMilestones((milestonesRes.data || []).slice(0, 3));
-        setProgressReports((reportsRes.data || []).slice(-5).reverse());
 
-        const allMessages = followMessagesRes.data || [];
+        const allChildren = childrenRes.data || [];
+        const ownedChildren = currentUserId
+          ? allChildren.filter((child) => String(child?.parent) === String(currentUserId))
+          : allChildren.filter((child) => {
+              const parentName = (child?.parent_name || '').trim().toLowerCase();
+              return parentName && parentName.includes(parentFullName.toLowerCase());
+            });
+        const ownedChildIds = new Set(ownedChildren.map((child) => child.id));
+        const ownedReports = (reportsRes.data || []).filter((report) => ownedChildIds.has(report.child));
+
+        setCounts({
+          children: ownedChildren.length,
+          activities: activitiesRes.data?.length || 0,
+          milestones: (milestonesRes.data || []).filter((milestone) => ownedChildIds.has(milestone.child)).length,
+          reports: ownedReports.length,
+        });
+        setChildren(ownedChildren);
+
+        const sortedRecentReports = [...ownedReports]
+          .sort((a, b) => {
+            const dateA = new Date(a.report_date || 0).getTime();
+            const dateB = new Date(b.report_date || 0).getTime();
+            if (dateA !== dateB) {
+              return dateB - dateA;
+            }
+            return (b.id || 0) - (a.id || 0);
+          })
+          .slice(0, 5);
+        setProgressReports(sortedRecentReports);
+
+        const allMessages = [...(followMessagesRes.data || [])].sort((a, b) => {
+          const dateA = new Date(a.created_at || 0).getTime();
+          const dateB = new Date(b.created_at || 0).getTime();
+          if (dateA !== dateB) {
+            return dateB - dateA;
+          }
+          return (b.id || 0) - (a.id || 0);
+        });
         const normalizedFull = parentFullName.toLowerCase();
         const normalizedFirst = parentFirstName.toLowerCase();
         const normalizedLast = parentLastName.toLowerCase();
 
-        const filteredByParent = normalizedFull
+        const childParentNames = ownedChildren
+          .map((child) => (child?.parent_name || '').trim().toLowerCase())
+          .filter(Boolean);
+
+        const candidateParentNames = Array.from(
+          new Set([
+            normalizedFull,
+            normalizedFirst,
+            normalizedLast,
+            ...childParentNames,
+          ].filter(Boolean))
+        );
+
+        const filteredByParent = candidateParentNames.length
           ? allMessages.filter((msg) => {
+              if (msg.child && !ownedChildIds.has(msg.child)) return false;
               const parentName = (msg.parent_name || '').trim().toLowerCase();
               if (!parentName) return false;
-              return (
-                parentName === normalizedFull ||
-                parentName.includes(normalizedFull) ||
-                (normalizedFirst && parentName.includes(normalizedFirst)) ||
-                (normalizedLast && parentName.includes(normalizedLast))
+              return candidateParentNames.some(
+                (candidate) => parentName === candidate || parentName.includes(candidate)
               );
             })
           : allMessages;
 
-        // Fallback so recent follow-up messages are still visible if parent naming is inconsistent.
-        const visibleMessages = filteredByParent.length > 0 ? filteredByParent : allMessages;
-        setFollowMessages(visibleMessages.slice(0, 6));
+        setFollowMessages(filteredByParent.slice(0, 6));
       } catch (err) {
         console.error('Failed to load dashboard data', err);
       }
@@ -89,8 +125,8 @@ const StdDashboard = () => {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('user');
     navigate('/login');
   };
 
@@ -122,8 +158,6 @@ const StdDashboard = () => {
   const title = { fontSize: 22, fontWeight: 700, color: '#222' };
   const subtitle = { fontSize: 12, color: '#666', marginTop: 4 };
 
-  const logoTopRight = { width: 36, height: 36, borderRadius: '50%' };
-
   const cards = {
     display: 'grid',
     gridTemplateColumns: 'repeat(4, minmax(0,1fr))',
@@ -139,22 +173,60 @@ const StdDashboard = () => {
   const cardTitle = { fontSize: 12, color: '#666' };
   const cardValue = { fontSize: 24, fontWeight: 700, marginTop: 6 };
 
-  const twoCols = {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: 12,
-    marginTop: 16
+  const listCard = { ...card };
+
+  const parseStructuredNotes = (notes) => {
+    const text = (notes || '').trim();
+    if (!text) {
+      return null;
+    }
+
+    const extract = (label) => {
+      const pattern = new RegExp(`(?:^|\\n)${label}:\\s*([\\s\\S]*?)(?=\\n[A-Za-z ]+:|$)`, 'i');
+      const match = text.match(pattern);
+      return match ? match[1].trim() : '';
+    };
+
+    const behavior = extract('Behavior');
+    const category = extract('Category');
+    const remark = extract('Remark');
+    const cause = extract('Cause');
+    const fixPlan = extract('Fix Plan');
+    const practicePlan = extract('Practice Plan');
+    const activities = extract('Recommended activities');
+    const library = extract('Recommended library content');
+
+    if (!behavior && !category && !remark && !cause && !fixPlan && !practicePlan && !activities && !library) {
+      return null;
+    }
+
+    const splitList = (value) =>
+      (value || '')
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean);
+
+    return {
+      behavior,
+      category,
+      remark,
+      cause,
+      fixPlan,
+      practicePlan,
+      activities: splitList(activities),
+      library: splitList(library),
+    };
   };
 
-  const listCard = { ...card };
-  const listItem = {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: '10px 12px',
-    borderRadius: 10,
-    background: '#f8f9ff',
-    marginBottom: 8
+  const reportTopicLabel = {
+    behavior: 'Behavior',
+    category: 'Category',
+    remark: 'Remark',
+    cause: 'Likely Cause',
+    fixPlan: 'Fix Plan',
+    practicePlan: 'Practice Plan',
+    activities: 'Recommended Activities',
+    library: 'Recommended Library Content',
   };
 
   return (
@@ -169,8 +241,6 @@ const StdDashboard = () => {
               <span style={title}>Student Dashboard</span>
               <span style={subtitle}>Welcome back! Here's what's happening today.</span>
             </div>
-            {/* Top-right app logo */}
-            <img src="/logo.png" alt="GrowTogether" style={logoTopRight} />
           </div>
 
           {/* Summary Cards */}
@@ -190,63 +260,6 @@ const StdDashboard = () => {
             <div style={card}>
               <div style={cardTitle}>Activity Ideas</div>
               <div style={cardValue}>{counts.activities}</div>
-            </div>
-          </div>
-
-          {/* Two column sections */}
-          <div style={twoCols}>
-            {/* Recent Activities */}
-            <div style={listCard}>
-              <div style={{ fontWeight: 700, marginBottom: 8 }}>Recent Activities</div>
-              {recentActivities.length === 0 && (
-                <div style={{ color: '#777', fontSize: 12 }}>No activities yet.</div>
-              )}
-              {recentActivities.map((a, idx) => (
-                <div key={idx} style={listItem}>
-                  <div>
-                    <div style={{ fontWeight: 600 }}>{a.title}</div>
-                    <div style={{ fontSize: 12, color: '#666' }}>
-                      {a.age && <span>Age: {a.age}</span>}
-                      {a.age && a.domain && <span> &middot; </span>}
-                      {a.domain && <span>{a.domain}</span>}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Upcoming Milestones */}
-            <div style={listCard}>
-              <div style={{ fontWeight: 700, marginBottom: 8 }}>Upcoming Milestones</div>
-              {upcomingMilestones.length === 0 && (
-                <div style={{ color: '#777', fontSize: 12 }}>No milestones yet.</div>
-              )}
-              {upcomingMilestones.map((m, idx) => {
-                const achieved = !!m.date_achieved;
-                return (
-                  <div key={idx} style={{ marginBottom: 12 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div style={{ fontWeight: 600 }}>{m.title}</div>
-                      <span style={{
-                        fontSize: 11,
-                        fontWeight: 600,
-                        padding: '2px 8px',
-                        borderRadius: 10,
-                        background: achieved ? '#d1fae5' : '#f3f4f6',
-                        color: achieved ? '#059669' : '#6b7280'
-                      }}>
-                        {achieved ? 'Achieved' : 'In Progress'}
-                      </span>
-                    </div>
-                    {achieved && (
-                      <div style={{ fontSize: 11, color: '#059669', marginTop: 2 }}>
-                        {new Date(m.date_achieved).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                      </div>
-                    )}
-                    <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>{m.description?.slice(0, 70) || 'Milestone'}</div>
-                  </div>
-                );
-              })}
             </div>
           </div>
 
@@ -317,6 +330,7 @@ const StdDashboard = () => {
                 const childName = child ? child.name : 'Unknown Child';
                 const date = new Date(report.report_date);
                 const formattedDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                const parsed = parseStructuredNotes(report.notes);
                 
                 return (
                   <div key={report.id} style={{
@@ -339,7 +353,119 @@ const StdDashboard = () => {
                         Score: {report.overall_score ? (report.overall_score / 10) : 'N/A'}/10
                       </div>
                     </div>
-                    <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 6 }}>{report.notes}</div>
+
+                    {parsed ? (
+                      <div style={{
+                        background: '#ffffff',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: 10,
+                        padding: '10px 12px',
+                        marginBottom: 8
+                      }}>
+                        {parsed.behavior && (
+                          <div style={{ marginBottom: 8 }}>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', marginBottom: 2 }}>
+                              {reportTopicLabel.behavior}
+                            </div>
+                            <div style={{ fontSize: 13, color: '#1f2937', fontWeight: 600 }}>{parsed.behavior}</div>
+                          </div>
+                        )}
+
+                        {parsed.category && (
+                          <div style={{ marginBottom: 8 }}>
+                            <span style={{
+                              display: 'inline-block',
+                              background: '#ede9fe',
+                              color: '#5b21b6',
+                              borderRadius: 999,
+                              fontSize: 11,
+                              fontWeight: 700,
+                              padding: '3px 8px'
+                            }}>
+                              {reportTopicLabel.category}: {parsed.category}
+                            </span>
+                          </div>
+                        )}
+
+                        {parsed.remark && (
+                          <div style={{ marginBottom: 8 }}>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', marginBottom: 2 }}>
+                              {reportTopicLabel.remark}
+                            </div>
+                            <div style={{ fontSize: 13, color: '#166534', lineHeight: 1.5, fontWeight: 600 }}>
+                              {parsed.remark}
+                            </div>
+                          </div>
+                        )}
+
+                        {parsed.cause && (
+                          <div style={{ marginBottom: 8 }}>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', marginBottom: 2 }}>
+                              {reportTopicLabel.cause}
+                            </div>
+                            <div style={{ fontSize: 13, color: '#4b5563', lineHeight: 1.5 }}>{parsed.cause}</div>
+                          </div>
+                        )}
+
+                        {parsed.fixPlan && (
+                          <div style={{ marginBottom: 8 }}>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', marginBottom: 2 }}>
+                              {reportTopicLabel.fixPlan}
+                            </div>
+                            <div style={{ fontSize: 13, color: '#4b5563', lineHeight: 1.5 }}>{parsed.fixPlan}</div>
+                          </div>
+                        )}
+
+                        {parsed.practicePlan && (
+                          <div style={{ marginBottom: 8 }}>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', marginBottom: 2 }}>
+                              {reportTopicLabel.practicePlan}
+                            </div>
+                            <div style={{ fontSize: 13, color: '#4b5563', lineHeight: 1.5 }}>{parsed.practicePlan}</div>
+                          </div>
+                        )}
+
+                        {parsed.activities.length > 0 && (
+                          <div style={{ marginBottom: 8 }}>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', marginBottom: 4 }}>
+                              {reportTopicLabel.activities}
+                            </div>
+                            <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, color: '#374151' }}>
+                              {parsed.activities.map((item, idx) => (
+                                <li key={`activity-${report.id}-${idx}`} style={{ marginBottom: 2 }}>{item}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {parsed.library.length > 0 && (
+                          <div>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', marginBottom: 4 }}>
+                              {reportTopicLabel.library}
+                            </div>
+                            <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, color: '#374151' }}>
+                              {parsed.library.map((item, idx) => (
+                                <li key={`library-${report.id}-${idx}`} style={{ marginBottom: 2 }}>{item}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div style={{
+                        fontSize: 13,
+                        color: '#6b7280',
+                        marginBottom: 8,
+                        background: '#ffffff',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: 10,
+                        padding: '10px 12px',
+                        lineHeight: 1.6,
+                        whiteSpace: 'pre-wrap'
+                      }}>
+                        {report.notes || 'No note provided.'}
+                      </div>
+                    )}
                     <div style={{ fontSize: 12, color: '#9ca3af' }}>Published: {formattedDate}</div>
                   </div>
                 );

@@ -15,8 +15,19 @@ const TeacherDash = () => {
   const [userInfo, setUserInfo] = useState({
     first_name: '',
     last_name: '',
-    role: ''
+    role: '',
+    category: ''
   });
+
+  const formatCategoryLabel = (value) => {
+    if (!value) return '';
+    return String(value)
+      .replace(/-/g, '_')
+      .split('_')
+      .filter(Boolean)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' ');
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -26,14 +37,15 @@ const TeacherDash = () => {
         setDashboardError('');
 
         // Load user info from localStorage or API
-        const storedUser = localStorage.getItem('user');
+        const storedUser = sessionStorage.getItem('user');
         if (storedUser) {
           const user = JSON.parse(storedUser);
           if (isMounted) {
             setUserInfo({
               first_name: user.first_name || 'John',
               last_name: user.last_name || 'Doe',
-              role: user.role || 'Teacher'
+              role: user.role || 'Teacher',
+              category: user.category || ''
             });
           }
         }
@@ -41,7 +53,7 @@ const TeacherDash = () => {
         // Load dashboard data
         const [childrenRes, reportsRes, resourcesRes] = await Promise.all([
           API.get('children/'),
-          API.get('progress_reports/'),
+          API.get('assessments/'),
           API.get('elibrary/'),
         ]);
 
@@ -100,8 +112,8 @@ const TeacherDash = () => {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('user');
     navigate('/login');
   };
 
@@ -193,15 +205,14 @@ const TeacherDash = () => {
     gap: 12,
     padding: '12px 16px',
     background: '#f9fafb',
-    borderRadius: 10,
-    cursor: 'pointer'
+    borderRadius: 12
   };
 
   const userAvatar = {
     width: 40,
     height: 40,
     borderRadius: '50%',
-    background: 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)',
+    background: 'linear-gradient(135deg, #a855f7 0%, #d946ef 100%)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -227,17 +238,11 @@ const TeacherDash = () => {
     marginTop: 2
   };
 
-  const logoutButton = {
-    width: '100%',
-    border: '1px solid #fecaca',
-    background: '#fee2e2',
-    color: '#b91c1c',
-    borderRadius: 10,
-    padding: '10px 12px',
-    fontSize: '14px',
-    fontWeight: 700,
+  const logoutIcon = {
+    marginLeft: 'auto',
     cursor: 'pointer',
-    marginTop: 12
+    color: '#9ca3af',
+    fontSize: 16
   };
 
   const content = {
@@ -404,10 +409,10 @@ const TeacherDash = () => {
             <div style={userAvatar}>{initials}</div>
             <div style={userInfo2}>
               <div style={userName}>{userInfo.first_name} {userInfo.last_name}</div>
-              <div style={userRole}>{userInfo.role}</div>
+              <div style={userRole}>{userInfo.role}{userInfo.category ? ` · ${formatCategoryLabel(userInfo.category)}` : ''}</div>
             </div>
+            <div style={logoutIcon} onClick={handleLogout}>↗</div>
           </div>
-          <button type="button" style={logoutButton} onClick={handleLogout}>Logout</button>
         </div>
       </aside>
 
@@ -416,7 +421,7 @@ const TeacherDash = () => {
         {/* Header */}
         <div style={header}>
           <div style={title}>Teacher Dashboard</div>
-          <div style={subtitle}>Welcome back! Here's what's happening today.</div>
+          <div style={subtitle}>Welcome back! Here's what's happening today{userInfo.category ? ` for ${formatCategoryLabel(userInfo.category)}.` : '.'}</div>
           {lastUpdated && (
             <div style={{ ...subtitle, marginTop: 6, fontSize: 12 }}>
               Last updated: {lastUpdated.toLocaleTimeString()}

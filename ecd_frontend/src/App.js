@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Home from './pages/Home';
 import Children from './pages/Children';
@@ -15,6 +15,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import ChatRoom from './pages/ChatRoom';
 import Header from './components/Header';
 import Footer from './components/Footer';
+import API from './api/api';
 
 const normalizeRole = (role) => {
   const normalized = (role || '').toString().trim().toUpperCase();
@@ -25,7 +26,7 @@ const normalizeRole = (role) => {
 };
 
 const getCurrentRole = () => {
-  const rawUser = localStorage.getItem('user');
+  const rawUser = sessionStorage.getItem('user');
   if (!rawUser) {
     return '';
   }
@@ -51,7 +52,7 @@ const getDefaultPathByRole = (role) => {
 };
 
 const ProtectedRoleRoute = ({ element, allowedRoles }) => {
-  const token = localStorage.getItem('token');
+  const token = sessionStorage.getItem('token');
   const role = getCurrentRole();
   const isAuthenticated = Boolean(token) || Boolean(role);
 
@@ -67,6 +68,27 @@ const ProtectedRoleRoute = ({ element, allowedRoles }) => {
 };
 
 const App = () => {
+  useEffect(() => {
+    const token = sessionStorage.getItem('token');
+    const role = getCurrentRole();
+
+    if (!token || !role) {
+      return;
+    }
+
+    const baseEndpoints = ['children/', 'milestones/', 'activities/', 'elibrary/'];
+
+    const roleEndpoints = {
+      PARENT: ['progress_reports/', 'follow_up_messages/'],
+      TEACHER: ['progress_reports/', 'elibrary/'],
+      ADMIN: ['user_profiles/', 'progress_reports/', 'follow_up_messages/'],
+    };
+
+    const endpoints = Array.from(new Set([...(baseEndpoints || []), ...((roleEndpoints[role] || []))]));
+
+    Promise.allSettled(endpoints.map((endpoint) => API.get(endpoint))).catch(() => {});
+  }, []);
+
   return (
     <Router>
       <Header />
@@ -81,15 +103,15 @@ const App = () => {
           />
           <Route
             path="/children"
-            element={<ProtectedRoleRoute allowedRoles={['PARENT']} element={<Children />} />}
+            element={<ProtectedRoleRoute allowedRoles={['PARENT', 'ADMIN']} element={<Children />} />}
           />
           <Route
             path="/milestones"
-            element={<ProtectedRoleRoute allowedRoles={['PARENT']} element={<Milestones />} />}
+            element={<ProtectedRoleRoute allowedRoles={['PARENT', 'ADMIN']} element={<Milestones />} />}
           />
           <Route
             path="/activities"
-            element={<ProtectedRoleRoute allowedRoles={['PARENT']} element={<Activities />} />}
+            element={<ProtectedRoleRoute allowedRoles={['PARENT', 'ADMIN']} element={<Activities />} />}
           />
           <Route
             path="/teacher_dashboard"
@@ -97,11 +119,11 @@ const App = () => {
           />
           <Route
             path="/students"
-            element={<ProtectedRoleRoute allowedRoles={['TEACHER']} element={<Student />} />}
+            element={<ProtectedRoleRoute allowedRoles={['TEACHER', 'ADMIN']} element={<Student />} />}
           />
           <Route
             path="/publish-results"
-            element={<ProtectedRoleRoute allowedRoles={['TEACHER']} element={<PublishResults />} />}
+            element={<ProtectedRoleRoute allowedRoles={['TEACHER', 'ADMIN']} element={<PublishResults />} />}
           />
           <Route
             path="/admin_dashboard"
@@ -113,7 +135,7 @@ const App = () => {
           />
           <Route
             path="/chat"
-            element={<ProtectedRoleRoute allowedRoles={['PARENT', 'TEACHER']} element={<ChatRoom />} />}
+            element={<ProtectedRoleRoute allowedRoles={['PARENT', 'TEACHER', 'ADMIN']} element={<ChatRoom />} />}
           />
         </Routes>
       </div>

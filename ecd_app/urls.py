@@ -1,9 +1,20 @@
-from django.urls import path, include
+from django.urls import include, path
 from rest_framework.routers import DefaultRouter
+
 from .views import (
-    ChildViewSet, MilestoneViewSet, ELibraryViewSet,
-    ActivityViewSet, ProgressReportViewSet, UserProfileViewSet, FollowUpMessageViewSet,
-    ChatMessageViewSet, register, login, google_login
+    ActivityViewSet,
+    ChatMessageViewSet,
+    ChildViewSet,
+    ELibraryViewSet,
+    FollowUpMessageViewSet,
+    MilestoneViewSet,
+    ProgressReportViewSet,
+    UserProfileViewSet,
+    admin_create_account,
+    assessments_collection,
+    google_login,
+    login,
+    register,
 )
 
 router = DefaultRouter()
@@ -17,8 +28,10 @@ router.register(r'follow_up_messages', FollowUpMessageViewSet)
 router.register(r'chat_messages', ChatMessageViewSet)
 
 urlpatterns = [
-    path('register/', register),
-    path('login/', login),
-    path('google-login/', google_login),
+    path('register/', register, name='register'),
+    path('admin-create-account/', admin_create_account, name='admin-create-account'),
+    path('login/', login, name='login'),
+    path('google-login/', google_login, name='google-login'),
+    path('assessments/', assessments_collection, name='assessments-collection'),
     path('', include(router.urls)),
 ]

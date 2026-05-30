@@ -1,6 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API from '../api/api';
+
+const ASSESSMENT_CATEGORY_LABELS = {
+  social_emotional: 'Social-Emotional Development',
+  cognitive: 'Cognitive',
+  physical: 'Physical',
+  language: 'Language',
+  self_care_independence: 'Self-Care & Independence',
+  executive_function_attention: 'Executive Function & Attention'
+};
+
+const normalizeTeacherCategory = (value) => {
+  if (!value) return '';
+  const key = String(value).trim().toLowerCase().replace(/-/g, '_');
+  return ASSESSMENT_CATEGORY_LABELS[key] ? key : '';
+};
 
 const PublishResults = () => {
   const navigate = useNavigate();
@@ -17,19 +32,38 @@ const PublishResults = () => {
   const [userInfo, setUserInfo] = useState({
     first_name: 'John',
     last_name: 'Doe',
-    role: 'Teacher'
+    role: 'Teacher',
+    category: ''
   });
 
+  const teacherCategory = useMemo(
+    () => normalizeTeacherCategory(userInfo.category),
+    [userInfo.category]
+  );
+
+  const availableAssessmentCategories = useMemo(() => {
+    if ((userInfo.role || '').toUpperCase() === 'TEACHER' && teacherCategory) {
+      return [teacherCategory];
+    }
+    return Object.keys(ASSESSMENT_CATEGORY_LABELS);
+  }, [userInfo.role, teacherCategory]);
+
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
+    const storedUser = sessionStorage.getItem('user');
     if (storedUser) {
       try {
         const user = JSON.parse(storedUser);
         setUserInfo({
           first_name: user.first_name || 'John',
           last_name: user.last_name || 'Doe',
-          role: user.role || 'Teacher'
+          role: user.role || 'Teacher',
+          category: user.category || ''
         });
+
+        const normalizedCategory = normalizeTeacherCategory(user.category);
+        if ((user.role || '').toUpperCase() === 'TEACHER' && normalizedCategory) {
+          setAssessmentType(normalizedCategory);
+        }
       } catch (error) {
         console.error('Failed to parse user info', error);
       }
@@ -53,9 +87,18 @@ const PublishResults = () => {
 
   const fetchRecentReports = async () => {
     try {
-      const response = await API.get('progress_reports/');
-      // Get the 5 most recent reports
-      const reports = (response.data || []).slice(-5).reverse();
+      const response = await API.get('assessments/');
+      // Always show newest reports first regardless of backend default ordering.
+      const reports = [...(response.data || [])]
+        .sort((a, b) => {
+          const dateA = new Date(a.report_date || 0).getTime();
+          const dateB = new Date(b.report_date || 0).getTime();
+          if (dateA !== dateB) {
+            return dateB - dateA;
+          }
+          return (b.id || 0) - (a.id || 0);
+        })
+        .slice(0, 5);
       setRecentReports(reports);
     } catch (error) {
       console.error('Error fetching reports:', error);
@@ -83,13 +126,15 @@ const PublishResults = () => {
 
     try {
       // Create a progress report
+      const categoryLabel = ASSESSMENT_CATEGORY_LABELS[assessmentType] || assessmentType;
       const reportData = {
         child: selectedStudent,
-        notes: `${assessmentType}: ${comments || 'No additional comments'}`,
+        category: assessmentType,
+        notes: `${categoryLabel}: ${comments || 'No additional comments'}`,
         overall_score: parseInt(score),
       };
 
-      await API.post('progress_reports/', reportData);
+      await API.post('assessments/', reportData);
       
       // Clear form
       setSelectedStudent('');
@@ -126,8 +171,8 @@ const PublishResults = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('user');
     navigate('/login');
   };
 
@@ -363,15 +408,15 @@ const PublishResults = () => {
             <select 
               style={select}
               value={assessmentType}
+              disabled={(userInfo.role || '').toUpperCase() === 'TEACHER' && !!teacherCategory}
               onChange={(e) => setAssessmentType(e.target.value)}
             >
               <option value="">-- Select assessment type --</option>
-              <option value="Social-Emotional Development">Social-Emotional Development</option>
-              <option value="Cognitive">Cognitive</option>
-              <option value="Physical">Physical</option>
-              <option value="Language">Language</option>
-              <option value="Self-Care">Self-Care</option>
-              <option value="Executive Function">Executive Function</option>
+              {availableAssessmentCategories.map((categoryKey) => (
+                <option key={categoryKey} value={categoryKey}>
+                  {ASSESSMENT_CATEGORY_LABELS[categoryKey]}
+                </option>
+              ))}
             </select>
           </div>
 

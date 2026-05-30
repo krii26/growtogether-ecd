@@ -1,10 +1,176 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import API from '../api/api';
 import ParentSidebar from '../components/ParentSidebar';
+
+const DOMAIN_MANUAL_GUIDES = {
+  Language: {
+    materials: ['Picture cards or story book', '2-3 familiar objects', 'Quiet corner', 'Small reward sticker'],
+    steps: [
+      'Start with one clear goal sentence, for example: Today we will practice words for objects.',
+      'Show one picture/object at a time and say the word slowly.',
+      'Ask the child to repeat, point, or gesture for the same item.',
+      'Use a short prompt sentence, for example: Show me the ball.',
+      'Repeat each target word at least 3 times during the session.',
+      'Close with praise and one recap question: Which word did you learn today?'
+    ],
+    tips: [
+      'Use short sentences and pause after each instruction.',
+      'Accept gestures first, then shape toward spoken words.',
+      'Keep tone cheerful and avoid correcting too harshly.'
+    ],
+    success: [
+      'Child responds to simple instruction with less prompting.',
+      'Child uses at least one target word/gesture independently.'
+    ]
+  },
+  Cognitive: {
+    materials: ['Sorting objects or blocks', 'Simple puzzle cards', 'Table space', 'Timer (optional)'],
+    steps: [
+      'Tell the child the task in one sentence, for example: Let us sort by color.',
+      'Model the first 1-2 examples so the child understands the rule.',
+      'Let the child try and guide with clues instead of giving answers directly.',
+      'Increase challenge slowly (more items, fewer hints).',
+      'Pause briefly every few minutes and ask: What is your plan now?',
+      'End by celebrating effort and reviewing one thing the child solved well.'
+    ],
+    tips: [
+      'Use visual cues (pointing, color grouping) before verbal hints.',
+      'Break difficult tasks into very small steps.',
+      'Prioritize consistency over speed.'
+    ],
+    success: [
+      'Child follows the sorting/problem rule with fewer reminders.',
+      'Child explains choice using simple reasoning words.'
+    ]
+  },
+  Physical: {
+    materials: ['Soft ball or bean bag', 'Safe open floor area', 'Target basket or cones', 'Water break'],
+    steps: [
+      'Warm up with simple movements (clap, stretch, march for 1 minute).',
+      'Demonstrate the motor action clearly once (throw, catch, balance, place).',
+      'Let the child practice in short rounds of 3-5 attempts.',
+      'Give one correction cue at a time, for example: Look at the target.',
+      'Slightly increase distance or complexity after success.',
+      'Cool down and praise one body-control improvement the child showed.'
+    ],
+    tips: [
+      'Choose safety first: clear floor and soft materials.',
+      'Use encouraging language even after mistakes.',
+      'Alternate active and calm moments to avoid fatigue.'
+    ],
+    success: [
+      'Child shows improved coordination/accuracy across attempts.',
+      'Child completes more attempts with stable form.'
+    ]
+  },
+  'Fine Motor': {
+    materials: ['Beads/clips/playdough/buttons', 'Tray or mat', 'Small container', 'Wipes'],
+    steps: [
+      'Prepare a tidy workspace with only needed materials.',
+      'Show the hand movement slowly (pinch, thread, press, button).',
+      'Guide hand-over-hand only for the first 1-2 tries if needed.',
+      'Move to independent attempts with verbal cues only.',
+      'Track repetitions (for example 10 beads or 6 button attempts).',
+      'Finish with hand stretch and praise for careful finger control.'
+    ],
+    tips: [
+      'Keep tasks short to prevent hand fatigue.',
+      'Use larger items first, then smaller items gradually.',
+      'Praise precision, not just completion speed.'
+    ],
+    success: [
+      'Child uses better finger control with fewer drops/errors.',
+      'Child completes fine-motor task with reduced assistance.'
+    ]
+  },
+  'Social-Emotional': {
+    materials: ['Turn-taking toy/game', 'Emotion cards', 'Role-play prompts', 'Reward chart'],
+    steps: [
+      'State the social goal clearly, for example: Today we practice taking turns.',
+      'Model expected behavior with simple role-play.',
+      'Practice in short social rounds (my turn/your turn).',
+      'Coach emotion words during play (happy, upset, wait, share).',
+      'Reinforce each successful social response immediately.',
+      'Review with the child: What did we do kindly today?'
+    ],
+    tips: [
+      'Use calm voice and predictable routines.',
+      'Correct behavior privately and praise publicly.',
+      'Keep social tasks playful and short.'
+    ],
+    success: [
+      'Child waits/shares with fewer prompts.',
+      'Child identifies or expresses basic emotions during activity.'
+    ]
+  },
+  Science: {
+    materials: ['Safe experiment items', 'Water cups', 'Color/observation sheet', 'Towel'],
+    steps: [
+      'Introduce one question first: What do you think will happen?',
+      'Show materials and safety rule before starting.',
+      'Run one small experiment step at a time.',
+      'Ask child to observe and describe what changed.',
+      'Compare result with prediction and discuss why.',
+      'Summarize one new concept learned at the end.'
+    ],
+    tips: [
+      'Let the child predict before showing result.',
+      'Use simple words for observations (mix, float, sink, change).',
+      'Keep cleanup part of learning responsibility.'
+    ],
+    success: [
+      'Child makes a prediction and checks outcome.',
+      'Child describes at least one observed change.'
+    ]
+  },
+  Creative: {
+    materials: ['Paper', 'Colors/paint', 'Safe craft tools', 'Display space'],
+    steps: [
+      'Pick one creative theme (color, shape, story, object).',
+      'Demonstrate a simple example to reduce uncertainty.',
+      'Allow free creation with light guidance.',
+      'Prompt language while creating (colors, actions, choices).',
+      'Ask child to explain what they created.',
+      'Display the final work and celebrate effort.'
+    ],
+    tips: [
+      'Avoid over-correcting creativity output.',
+      'Encourage decision-making and expression.',
+      'Focus on process more than perfect result.'
+    ],
+    success: [
+      'Child stays engaged and completes the creative task.',
+      'Child explains work using simple descriptive words.'
+    ]
+  },
+  'Math + Physical': {
+    materials: ['Number cards', 'Hop markers', 'Open safe floor', 'Whistle or clap cue'],
+    steps: [
+      'Review target numbers before movement starts.',
+      'Demonstrate one round (call number then hop/jump to it).',
+      'Let child perform 5-10 rounds with rest breaks.',
+      'Mix easy and hard rounds to maintain confidence.',
+      'Track correct responses together after each round.',
+      'End by celebrating score improvement and effort.'
+    ],
+    tips: [
+      'Keep movement rhythm steady.',
+      'Use large visual numbers for clarity.',
+      'Encourage accuracy before speed.'
+    ],
+    success: [
+      'Child matches movement to correct number more consistently.',
+      'Child maintains control and confidence during rounds.'
+    ]
+  }
+};
 
 const Activities = () => {
   const navigate = useNavigate();
   const [selectedAge, setSelectedAge] = useState('All Ages');
+  const [searchDraft, setSearchDraft] = useState('');
+  const [appliedSearch, setAppliedSearch] = useState('');
   const [selectedActivity, setSelectedActivity] = useState(null);
   const [sortTargets, setSortTargets] = useState({ red: 0, yellow: 0, blue: 0 });
   const [sortComplete, setSortComplete] = useState(false);
@@ -395,7 +561,7 @@ const Activities = () => {
 
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
+    const storedUser = sessionStorage.getItem('user');
     if (storedUser) {
       const user = JSON.parse(storedUser);
       setUserInfo({
@@ -411,16 +577,12 @@ const Activities = () => {
     const fetchActivities = async () => {
       try {
         setLoading(true);
-        const response = await fetch('http://127.0.0.1:8000/api/activities/');
-        if (!response.ok) {
-          throw new Error('Failed to fetch activities');
-        }
-        const data = await response.json();
-        setActivities(data);
+        const response = await API.get('activities/');
+        setActivities(response.data || []);
         setError(null);
       } catch (err) {
         console.error('Error fetching activities:', err);
-        setError(err.message);
+        setError(err.response?.data?.detail || err.message || 'Failed to fetch activities');
         setActivities([]);
       } finally {
         setLoading(false);
@@ -503,8 +665,8 @@ const Activities = () => {
   }, [scienceShowConfetti]);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('user');
     navigate('/login');
   };
 
@@ -520,15 +682,39 @@ const Activities = () => {
   };
 
   const displayedActivities = useMemo(() => {
+    const matchesSearch = (activity) => {
+      if (!appliedSearch) {
+        return true;
+      }
+
+      const haystack = [
+        activity.title,
+        activity.description,
+        activity.domain,
+        activity.age,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+
+      return haystack.includes(appliedSearch.toLowerCase());
+    };
+
     if (selectedAge === 'All Ages') {
       return ages
         .filter((age) => age !== 'All Ages')
-        .flatMap((age) => shuffleItems(activities.filter((activity) => activity.age === age)));
+        .flatMap((age) => shuffleItems(activities.filter((activity) => activity.age === age && matchesSearch(activity))));
     }
 
-    return shuffleItems(activities.filter((activity) => activity.age === selectedAge));
+    return shuffleItems(
+      activities.filter((activity) => activity.age === selectedAge && matchesSearch(activity))
+    );
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activities, selectedAge]);
+  }, [activities, selectedAge, appliedSearch]);
+
+  const applyActivitySearch = () => {
+    setAppliedSearch(searchDraft.trim());
+  };
 
   const openDetails = (activity) => {
     setSelectedActivity(activity);
@@ -929,6 +1115,14 @@ const Activities = () => {
     marginBottom: 18
   };
 
+  const filterControls = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+    flexWrap: 'wrap',
+    justifyContent: 'flex-end'
+  };
+
   const sectionTitle = {
     fontSize: '18px',
     fontWeight: 700,
@@ -950,6 +1144,27 @@ const Activities = () => {
     background: '#fff',
     cursor: 'pointer',
     outline: 'none'
+  };
+
+  const searchInput = {
+    padding: '8px 12px',
+    border: '1px solid #e0e0e0',
+    borderRadius: '10px',
+    fontSize: '13px',
+    background: '#fff',
+    outline: 'none',
+    minWidth: '220px'
+  };
+
+  const searchBtn = {
+    padding: '8px 14px',
+    border: 'none',
+    borderRadius: '10px',
+    background: '#7c3aed',
+    color: '#fff',
+    fontSize: '13px',
+    fontWeight: 600,
+    cursor: 'pointer'
   };
 
   const cardsGrid = {
@@ -1272,6 +1487,37 @@ const Activities = () => {
     kitchenQuestionsAsked >= kitchenPlan.questionGoal &&
     kitchenFeelingWordUsed;
 
+  const DOMAIN_SKILL_TAGS = {
+    Language: ['Listening', 'Vocabulary', 'Following Instructions', 'Communication'],
+    Cognitive: ['Memory', 'Problem Solving', 'Attention', 'Reasoning'],
+    Physical: ['Coordination', 'Balance', 'Body Control', 'Motor Planning'],
+    'Fine Motor': ['Grip Strength', 'Finger Control', 'Hand Coordination', 'Independence'],
+    'Social-Emotional': ['Turn Taking', 'Sharing', 'Emotion Awareness', 'Self-Regulation'],
+    Science: ['Observation', 'Prediction', 'Cause and Effect', 'Curiosity'],
+    Creative: ['Creativity', 'Expression', 'Fine Motor', 'Imagination'],
+    'Math + Physical': ['Number Sense', 'Movement Control', 'Timing', 'Focus'],
+  };
+
+  const buildManualGuide = (activity) => {
+    if (!activity) {
+      return null;
+    }
+
+    const fallback = DOMAIN_MANUAL_GUIDES.Cognitive;
+    const baseGuide = DOMAIN_MANUAL_GUIDES[activity.domain] || fallback;
+
+    return {
+      objective: `Help the child improve ${activity.title || 'the target skill'} through a short guided routine.`,
+      materials: baseGuide.materials,
+      steps: baseGuide.steps,
+      tips: baseGuide.tips,
+      success: baseGuide.success,
+      skills: DOMAIN_SKILL_TAGS[activity.domain] || DOMAIN_SKILL_TAGS.Cognitive,
+    };
+  };
+
+  const selectedActivityGuide = buildManualGuide(selectedActivity);
+
   return (
     <div style={layout}>
       <ParentSidebar activeKey="activities" userInfo={userInfo} onLogout={handleLogout} />
@@ -1293,15 +1539,30 @@ const Activities = () => {
             <div style={sectionTitle}>Activity Suggestions</div>
             <div style={sectionSubtitle}>Age-appropriate activities for your child's development</div>
           </div>
-          <select
-            value={selectedAge}
-            onChange={(e) => setSelectedAge(e.target.value)}
-            style={dropdown}
-          >
-            {ages.map((age) => (
-              <option key={age} value={age}>{age}</option>
-            ))}
-          </select>
+          <div style={filterControls}>
+            <input
+              type="text"
+              value={searchDraft}
+              onChange={(e) => setSearchDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  applyActivitySearch();
+                }
+              }}
+              placeholder="Search by title, domain, or keyword"
+              style={searchInput}
+            />
+            <button type="button" onClick={applyActivitySearch} style={searchBtn}>Search</button>
+            <select
+              value={selectedAge}
+              onChange={(e) => setSelectedAge(e.target.value)}
+              style={dropdown}
+            >
+              {ages.map((age) => (
+                <option key={age} value={age}>{age}</option>
+              ))}
+            </select>
+          </div>
         </div>
 
         <div style={cardsGrid}>
@@ -1334,9 +1595,11 @@ const Activities = () => {
                 <div style={{ fontSize: '18px', fontWeight: 700, color: '#111827' }}>
                   {selectedActivity.title}
                 </div>
-                <div style={{ fontSize: '13px', color: '#6b7280', marginTop: '3px' }}>
-                  {selectedActivity.age} • {selectedActivity.duration} • {selectedActivity.domain}
-                </div>
+                {selectedActivity.title !== 'Pattern Bead Stringing' && (
+                  <div style={{ fontSize: '13px', color: '#6b7280', marginTop: '3px' }}>
+                    {selectedActivity.age} • {selectedActivity.duration} • {selectedActivity.domain}
+                  </div>
+                )}
               </div>
               <button style={closeBtn} onClick={closeDetails} aria-label="Close details">✕</button>
             </div>
@@ -1345,6 +1608,146 @@ const Activities = () => {
               <div style={{ fontSize: '14px', color: '#4b5563', lineHeight: 1.6 }}>
                 {selectedActivity.description}
               </div>
+
+              {selectedActivityGuide && (
+                <div style={{
+                  marginTop: '14px',
+                  borderRadius: '14px',
+                  background: '#ffffff',
+                  padding: '0'
+                }}>
+                  <div style={{
+                    border: '1px solid #f59e0b',
+                    borderRadius: '14px',
+                    background: '#fff8e1',
+                    padding: '14px 18px',
+                    marginBottom: '12px'
+                  }}>
+                    <div style={{ fontSize: '20px', fontWeight: 700, color: '#9a3412', marginBottom: '6px' }}>
+                      Activity Manual Guidebook
+                    </div>
+                    <div style={{ fontSize: '16px', fontWeight: 700, color: '#9a3412', marginBottom: '6px' }}>
+                      Theme: {selectedActivity.title}
+                    </div>
+                    <div style={{ fontSize: '14px', color: '#9a3412', lineHeight: 1.6 }}>
+                      {selectedActivityGuide.objective}
+                    </div>
+                  </div>
+
+                  <div style={{
+                    marginBottom: '12px',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '14px',
+                    background: '#eef4ff',
+                    padding: '14px 18px'
+                  }}>
+                    <div style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a', marginBottom: '8px' }}>
+                      Materials
+                    </div>
+                    <ul style={{ margin: 0, paddingLeft: '18px', color: '#334155', fontSize: '14px', lineHeight: 1.7 }}>
+                      {selectedActivityGuide.materials.map((item, idx) => (
+                        <li key={`material-${idx}`} style={{ marginBottom: '2px' }}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div style={{
+                    marginBottom: '12px',
+                    border: '1px solid #fcd34d',
+                    borderRadius: '14px',
+                    background: '#fffce8',
+                    padding: '14px 18px'
+                  }}>
+                    <div style={{ fontSize: '20px', fontWeight: 700, color: '#92400e', marginBottom: '8px' }}>
+                      How To Do It
+                    </div>
+                    <ol style={{ margin: 0, padding: 0, listStyle: 'none' }}>
+                      {selectedActivityGuide.steps.map((step, idx) => (
+                        <li
+                          key={`step-${idx}`}
+                          style={{
+                            marginBottom: '10px',
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            gap: '10px'
+                          }}
+                        >
+                          <span style={{
+                            minWidth: '30px',
+                            height: '30px',
+                            borderRadius: '999px',
+                            background: '#f59e0b',
+                            color: '#fff',
+                            fontSize: '15px',
+                            fontWeight: 700,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            marginTop: '1px'
+                          }}>
+                            {idx + 1}
+                          </span>
+                          <span style={{ fontSize: '14px', color: '#7c2d12', lineHeight: 1.6 }}>{step}</span>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+
+                  <div style={{
+                    marginBottom: '12px',
+                    border: '1px solid #ddd6fe',
+                    borderRadius: '14px',
+                    background: '#f5f3ff',
+                    padding: '14px 18px'
+                  }}>
+                    <div style={{ fontSize: '16px', fontWeight: 700, color: '#5b21b6', marginBottom: '8px' }}>
+                      Parent Tips
+                    </div>
+                    <ul style={{ margin: 0, paddingLeft: '18px', color: '#5b21b6', fontSize: '14px', lineHeight: 1.6 }}>
+                      {selectedActivityGuide.tips.map((tip, idx) => (
+                        <li key={`tip-${idx}`} style={{ marginBottom: '2px' }}>{tip}</li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div style={{
+                    border: '1px solid #86efac',
+                    borderRadius: '14px',
+                    background: '#ecfdf5',
+                    padding: '14px 18px'
+                  }}>
+                    <div style={{ fontSize: '16px', fontWeight: 700, color: '#166534', marginBottom: '8px' }}>
+                      Skills Built
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '10px' }}>
+                      {selectedActivityGuide.skills.map((skill, idx) => (
+                        <span
+                          key={`skill-${idx}`}
+                          style={{
+                            background: '#d1fae5',
+                            color: '#065f46',
+                            borderRadius: '999px',
+                            fontSize: '12px',
+                            fontWeight: 700,
+                            padding: '5px 10px'
+                          }}
+                        >
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+
+                    <div style={{ fontSize: '13px', fontWeight: 700, color: '#166534', marginBottom: '4px' }}>
+                      Success Checklist
+                    </div>
+                    <ul style={{ margin: 0, paddingLeft: '18px', color: '#166534', fontSize: '14px', lineHeight: 1.6 }}>
+                      {selectedActivityGuide.success.map((item, idx) => (
+                        <li key={`success-${idx}`} style={{ marginBottom: '2px' }}>✅ {item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )}
 
               {selectedActivity.title === 'Color Sorting Game' ? (
                 <>

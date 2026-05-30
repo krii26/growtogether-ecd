@@ -1,0 +1,16 @@
+[tool.ruff]
+line-length = 140
+target-version = "py312"
+exclude = [
+  "backups",
+  "ecd_app/migrations",
+  "ecd_frontend/build",
+  "media",
+  "populate_activities.py",
+  "populate_library.py",
+  "staticfiles",
+  "venv",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]

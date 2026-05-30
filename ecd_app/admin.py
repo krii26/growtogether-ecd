@@ -1,7 +1,9 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import User
-from .models import Child, Milestone, ELibrary, Activity, ProgressReport, UserProfile
+
+from .models import Activity, Child, ELibrary, Milestone, ProgressReport, UserProfile
+
 
 # Custom User Admin to show role/user status
 class UserProfileInline(admin.StackedInline):

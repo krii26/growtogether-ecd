@@ -2,8 +2,35 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../api/api";
 
-const ROLE_OPTIONS = ["PARENT", "TEACHER", "ADMIN"];
 const LOCAL_FOLLOW_UP_KEY = "admin_unresolved_followups";
+const MILESTONE_CATEGORIES = [
+  "social-emotional",
+  "cognitive",
+  "physical",
+  "language",
+  "self-care",
+  "executive-function",
+];
+const RESOURCE_TYPES = ["PDF", "VIDEO", "IMAGE", "DOC"];
+const RESOURCE_CATEGORIES = ["Nutrition", "Psychology", "Behavior", "Sleep", "Language", "Safety"];
+const ACTIVITY_DOMAINS = [
+  "Language",
+  "Cognitive",
+  "Physical",
+  "Creative",
+  "Fine Motor",
+  "Social-Emotional",
+  "Science",
+  "Math + Physical",
+];
+const TEACHER_CATEGORY_OPTIONS = [
+  { value: "social_emotional", label: "Social Emotional" },
+  { value: "cognitive", label: "Cognitive" },
+  { value: "physical", label: "Physical" },
+  { value: "language", label: "Language" },
+  { value: "self_care_independence", label: "Self Care & Independence" },
+  { value: "executive_function_attention", label: "Executive Function & Attention" },
+];
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -19,10 +46,14 @@ const AdminDashboard = () => {
   const [activities, setActivities] = useState([]);
   const [milestones, setMilestones] = useState([]);
   const [resources, setResources] = useState([]);
+  const [riskByChild, setRiskByChild] = useState({});
 
   const [userSearch, setUserSearch] = useState("");
   const [childSearch, setChildSearch] = useState("");
   const [savingId, setSavingId] = useState(null);
+  const [showAddAccount, setShowAddAccount] = useState(false);
+  const [accountType, setAccountType] = useState("PARENT");
+  const [accountForm, setAccountForm] = useState({ first_name: "", last_name: "", email: "", password: "", category: "" });
 
   // Edit child modal
   const [editingChild, setEditingChild] = useState(null);
@@ -32,11 +63,26 @@ const AdminDashboard = () => {
   const [showAddChild, setShowAddChild] = useState(false);
   const [addChildForm, setAddChildForm] = useState({ name: "", age: "", parent_name: "", date_of_birth: "" });
 
+  const [editingMilestone, setEditingMilestone] = useState(null);
+  const [showAddMilestone, setShowAddMilestone] = useState(false);
+  const [milestoneForm, setMilestoneForm] = useState({ child: "", category: "social-emotional", title: "", description: "", parent_note: "", date_achieved: "" });
+
+  const [editingActivity, setEditingActivity] = useState(null);
+  const [showAddActivity, setShowAddActivity] = useState(false);
+  const [activityForm, setActivityForm] = useState({ title: "", description: "", age: "", duration: "", domain: "Language", milestone: "" });
+
+  const [editingResource, setEditingResource] = useState(null);
+  const [showAddResource, setShowAddResource] = useState(false);
+  const [resourceForm, setResourceForm] = useState({ title: "", resource_type: "PDF", category: "Nutrition", description: "", image_file: null, image_preview: "", file_url: "" });
+
+  const [editingFollowUp, setEditingFollowUp] = useState(null);
+  const [showAddFollowUp, setShowAddFollowUp] = useState(false);
+  const [followUpForm, setFollowUpForm] = useState({ milestone: "", parent_name: "", message: "" });
+
   // Delete confirm
   const [confirmDelete, setConfirmDelete] = useState(null); // { type, id, label }
 
-  const [reportFilters, setReportFilters] = useState({ child: "", from: "", to: "", teacher: "" });
-  const [auditLogs, setAuditLogs] = useState([]);
+  const [, setAuditLogs] = useState([]);
   const [unresolvedFollowups, setUnresolvedFollowups] = useState(new Set());
 
   // ── init ──────────────────────────────────────────────────────────────────
@@ -69,13 +115,13 @@ const AdminDashboard = () => {
       setLoading(true);
       setError("");
       const [childrenRes, profilesRes, reportsRes, followupsRes, activitiesRes, milestonesRes, resourcesRes] = await Promise.all([
-        API.get("children/"),
-        API.get("user_profiles/"),
-        API.get("progress_reports/"),
-        API.get("follow_up_messages/"),
-        API.get("activities/"),
-        API.get("milestones/"),
-        API.get("elibrary/"),
+        API.get("children/", { skipCache: true }),
+        API.get("user_profiles/", { skipCache: true }),
+        API.get("progress_reports/", { skipCache: true }),
+        API.get("follow_up_messages/", { skipCache: true }),
+        API.get("activities/", { skipCache: true }),
+        API.get("milestones/", { skipCache: true }),
+        API.get("elibrary/", { skipCache: true }),
       ]);
       setChildren(childrenRes.data || []);
       setProfiles(profilesRes.data || []);
@@ -84,6 +130,27 @@ const AdminDashboard = () => {
       setActivities(activitiesRes.data || []);
       setMilestones(milestonesRes.data || []);
       setResources(resourcesRes.data || []);
+
+      const childrenData = childrenRes.data || [];
+      if (childrenData.length > 0) {
+        const riskResults = await Promise.allSettled(
+          childrenData.map((child) => API.get(`children/${child.id}/risk_assessment/`))
+        );
+
+        const nextRiskMap = {};
+        riskResults.forEach((result, index) => {
+          const childId = childrenData[index]?.id;
+          if (!childId) return;
+          if (result.status === "fulfilled") {
+            nextRiskMap[childId] = result.value?.data?.risk_level || "UNKNOWN";
+          } else {
+            nextRiskMap[childId] = "UNKNOWN";
+          }
+        });
+        setRiskByChild(nextRiskMap);
+      } else {
+        setRiskByChild({});
+      }
     } catch (err) {
       setError("Failed to load dashboard data. Please refresh.");
     } finally {
@@ -96,6 +163,7 @@ const AdminDashboard = () => {
     (profiles || []).map((profile) => ({
       profileId: profile.id,
       role: profile.role,
+      category: profile.category || "",
       id: profile.user?.id,
       username: profile.user?.username || "-",
       email: profile.user?.email || "-",
@@ -106,10 +174,24 @@ const AdminDashboard = () => {
       date_joined: profile.user?.date_joined,
     })), [profiles]);
 
+  const formatCategory = (value) => {
+    const matched = TEACHER_CATEGORY_OPTIONS.find((option) => option.value === value);
+    if (matched) return matched.label;
+    if (!value) return "-";
+    return String(value)
+      .replace(/-/g, "_")
+      .split("_")
+      .filter(Boolean)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(" ");
+  };
+
   const childrenMap = useMemo(() => {
-    const m = {};
-    (children || []).forEach((c) => { m[c.id] = c; });
-    return m;
+    const map = {};
+    (children || []).forEach((child) => {
+      map[child.id] = child;
+    });
+    return map;
   }, [children]);
 
   const reportCountByChild = useMemo(() => {
@@ -149,6 +231,16 @@ const AdminDashboard = () => {
     });
   }, [users, userSearch]);
 
+  const filteredParents = useMemo(
+    () => filteredUsers.filter((u) => (u.role || "").toUpperCase() === "PARENT"),
+    [filteredUsers]
+  );
+
+  const filteredTeachers = useMemo(
+    () => filteredUsers.filter((u) => (u.role || "").toUpperCase() === "TEACHER"),
+    [filteredUsers]
+  );
+
   const filteredChildren = useMemo(() => {
     const term = childSearch.trim().toLowerCase();
     if (!term) return children;
@@ -157,35 +249,31 @@ const AdminDashboard = () => {
     );
   }, [children, childSearch]);
 
-  const filteredReports = useMemo(() =>
-    (reports || []).filter((report) => {
-      const childOk = !reportFilters.child || String(report.child) === String(reportFilters.child);
-      const teacherOk = !reportFilters.teacher || (report.notes || "").toLowerCase().includes(reportFilters.teacher.toLowerCase());
-      const reportDate = report.report_date ? new Date(report.report_date) : null;
-      const fromOk = !reportFilters.from || (reportDate && reportDate >= new Date(reportFilters.from));
-      const toOk = !reportFilters.to || (reportDate && reportDate <= new Date(reportFilters.to));
-      return childOk && teacherOk && fromOk && toOk;
-    }), [reports, reportFilters]);
+  const getChildAge = (dateOfBirth) => {
+    if (!dateOfBirth) return "N/A";
+    const birth = new Date(dateOfBirth);
+    const today = new Date();
+    if (Number.isNaN(birth.getTime())) return "N/A";
+    const years = today.getFullYear() - birth.getFullYear();
+    const months = today.getMonth() - birth.getMonth();
+    const totalMonths = years * 12 + months;
+    const ageYears = Math.max(Math.floor(totalMonths / 12), 0);
+    const ageMonths = Math.max(totalMonths % 12, 0);
+    return `${ageYears}y ${ageMonths}m`;
+  };
+
+  const getChildProgress = (child) => {
+    const totalMilestones = Array.isArray(child?.milestones) ? child.milestones.length : 0;
+    if (totalMilestones === 0) return 0;
+    const completedCount = reportCountByChild[child.id] || 0;
+    return Math.min(100, Math.round((completedCount / totalMilestones) * 100));
+  };
 
   // ── user actions ──────────────────────────────────────────────────────────
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     navigate("/login");
-  };
-
-  const handleRoleChange = async (profileId, newRole) => {
-    try {
-      setSavingId(profileId);
-      await API.patch(`user_profiles/${profileId}/`, { role: newRole });
-      setProfiles((prev) => prev.map((p) => p.id === profileId ? { ...p, role: newRole } : p));
-      addAuditLog(`Changed user role to ${newRole}`);
-      showSuccess("Role updated successfully.");
-    } catch {
-      setError("Failed to update role. Please try again.");
-    } finally {
-      setSavingId(null);
-    }
   };
 
   const handleToggleActive = async (profileId, currentActive) => {
@@ -209,10 +297,19 @@ const AdminDashboard = () => {
   const handleDeleteUser = async (profileId, email) => {
     try {
       setSavingId(profileId);
-      await API.delete(`user_profiles/${profileId}/delete_user/`);
+      const response = await API.delete(`user_profiles/${profileId}/delete_user/`);
       setProfiles((prev) => prev.filter((p) => p.id !== profileId));
+      const deletedChildIds = response?.data?.deleted_child_ids || [];
+      if (deletedChildIds.length > 0) {
+        setChildren((prev) => prev.filter((child) => !deletedChildIds.includes(child.id)));
+      }
       addAuditLog(`Deleted user account: ${email}`);
-      showSuccess("User deleted successfully.");
+      const deletedChildrenCount = response?.data?.deleted_children_count || 0;
+      if (deletedChildrenCount > 0) {
+        showSuccess(`User deleted successfully. Also deleted ${deletedChildrenCount} linked child record(s).`);
+      } else {
+        showSuccess("User deleted successfully.");
+      }
       setConfirmDelete(null);
     } catch {
       setError("Failed to delete user. Please try again.");
@@ -222,13 +319,56 @@ const AdminDashboard = () => {
     }
   };
 
-  const triggerPasswordReset = (email) => {
-    if (!email || email === "-") { setError("No valid email for this user."); return; }
-    addAuditLog(`Password reset requested for ${email}`);
-    const subject = encodeURIComponent("GrowTogether: Password Reset Request");
-    const body = encodeURIComponent(`Hello,\n\nA password reset has been requested for your GrowTogether account (${email}).\n\nPlease contact your administrator to complete this process.\n\nRegards,\nGrowTogether Admin`);
-    window.open(`mailto:${email}?subject=${subject}&body=${body}`, "_blank");
-    showSuccess(`Password reset email drafted for ${email}.`);
+  const openAccountModal = (type) => {
+    setAccountType(type);
+    setAccountForm({ first_name: "", last_name: "", email: "", password: "", category: "" });
+    setShowAddAccount(true);
+  };
+
+  const createAccount = async () => {
+    if (!accountForm.email.trim() || !accountForm.password.trim()) {
+      setError("Email and password are required.");
+      return;
+    }
+
+    try {
+      setSavingId(`account-${accountType}`);
+      const payload = {
+        email: accountForm.email.trim(),
+        password: accountForm.password,
+        first_name: accountForm.first_name,
+        last_name: accountForm.last_name,
+        role: accountType,
+        category: accountType === "TEACHER" ? accountForm.category : "",
+      };
+      const response = await API.post("admin-create-account/", payload);
+      const createdUser = response?.data?.user || response?.data || {};
+
+      setProfiles((prev) => [
+        ...prev,
+        {
+          id: createdUser.id || Date.now(),
+          role: accountType,
+          category: createdUser.category || payload.category || "",
+          user: {
+            id: createdUser.id,
+            username: createdUser.username || accountForm.email.trim(),
+            email: createdUser.email || accountForm.email.trim(),
+            first_name: createdUser.first_name || accountForm.first_name,
+            last_name: createdUser.last_name || accountForm.last_name,
+            is_active: true,
+          },
+        },
+      ]);
+      addAuditLog(`Created ${accountType.toLowerCase()} account: ${accountForm.email.trim()}`);
+      showSuccess(`${accountType === "PARENT" ? "Parent" : "Teacher"} account created successfully.`);
+      setShowAddAccount(false);
+    } catch (err) {
+      const message = err?.response?.data?.email?.[0] || err?.response?.data?.detail || "Failed to create account.";
+      setError(message);
+    } finally {
+      setSavingId(null);
+    }
   };
 
   // ── child actions ─────────────────────────────────────────────────────────
@@ -293,6 +433,281 @@ const AdminDashboard = () => {
     }
   };
 
+  // ── milestone actions ────────────────────────────────────────────────────
+  const resetMilestoneForm = () => {
+    setMilestoneForm({ child: "", category: "social-emotional", title: "", description: "", parent_note: "", date_achieved: "" });
+  };
+
+  const openMilestoneEditor = (milestone) => {
+    setEditingMilestone(milestone);
+    setMilestoneForm({
+      child: milestone.child ? String(milestone.child) : "",
+      category: milestone.category || "social-emotional",
+      title: milestone.title || "",
+      description: milestone.description || "",
+      parent_note: milestone.parent_note || "",
+      date_achieved: milestone.date_achieved || "",
+    });
+  };
+
+  const saveMilestone = async () => {
+    if (!milestoneForm.child || !milestoneForm.title.trim() || !milestoneForm.description.trim()) {
+      setError("Milestone requires child, title, and description.");
+      return;
+    }
+    const payload = {
+      child: Number(milestoneForm.child),
+      category: milestoneForm.category,
+      title: milestoneForm.title.trim(),
+      description: milestoneForm.description.trim(),
+      parent_note: milestoneForm.parent_note,
+      date_achieved: milestoneForm.date_achieved || null,
+    };
+
+    try {
+      if (editingMilestone) {
+        setSavingId(`milestone-${editingMilestone.id}`);
+        const res = await API.patch(`milestones/${editingMilestone.id}/`, payload);
+        setMilestones((prev) => prev.map((item) => (item.id === editingMilestone.id ? res.data : item)));
+        addAuditLog(`Updated milestone: ${payload.title}`);
+        showSuccess("Milestone updated.");
+      } else {
+        setSavingId("milestone-add");
+        const res = await API.post("milestones/", payload);
+        setMilestones((prev) => [res.data, ...prev]);
+        addAuditLog(`Added milestone: ${payload.title}`);
+        showSuccess("Milestone added.");
+      }
+      setEditingMilestone(null);
+      setShowAddMilestone(false);
+      resetMilestoneForm();
+    } catch {
+      setError("Failed to save milestone.");
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  const deleteMilestone = async (id, title) => {
+    try {
+      setSavingId(`milestone-${id}`);
+      await API.delete(`milestones/${id}/`);
+      setMilestones((prev) => prev.filter((item) => item.id !== id));
+      addAuditLog(`Deleted milestone: ${title}`);
+      showSuccess("Milestone deleted.");
+      setConfirmDelete(null);
+    } catch {
+      setError("Failed to delete milestone.");
+      setConfirmDelete(null);
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  // ── activity actions ─────────────────────────────────────────────────────
+  const resetActivityForm = () => {
+    setActivityForm({ title: "", description: "", age: "", duration: "", domain: "Language", milestone: "" });
+  };
+
+  const saveActivity = async () => {
+    if (!activityForm.title.trim() || !activityForm.description.trim()) {
+      setError("Activity requires title and description.");
+      return;
+    }
+
+    const payload = {
+      title: activityForm.title.trim(),
+      description: activityForm.description.trim(),
+      age: activityForm.age || null,
+      duration: activityForm.duration || null,
+      domain: activityForm.domain || null,
+      milestone: activityForm.milestone ? Number(activityForm.milestone) : null,
+    };
+
+    try {
+      if (editingActivity) {
+        setSavingId(`activity-${editingActivity.id}`);
+        const res = await API.patch(`activities/${editingActivity.id}/`, payload);
+        setActivities((prev) => prev.map((item) => (item.id === editingActivity.id ? res.data : item)));
+        addAuditLog(`Updated activity: ${payload.title}`);
+        showSuccess("Activity updated.");
+      } else {
+        setSavingId("activity-add");
+        const res = await API.post("activities/", payload);
+        setActivities((prev) => [res.data, ...prev]);
+        addAuditLog(`Added activity: ${payload.title}`);
+        showSuccess("Activity added.");
+      }
+      setEditingActivity(null);
+      setShowAddActivity(false);
+      resetActivityForm();
+    } catch {
+      setError("Failed to save activity.");
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  const deleteActivity = async (id, title) => {
+    try {
+      setSavingId(`activity-${id}`);
+      await API.delete(`activities/${id}/`);
+      setActivities((prev) => prev.filter((item) => item.id !== id));
+      addAuditLog(`Deleted activity: ${title}`);
+      showSuccess("Activity deleted.");
+      setConfirmDelete(null);
+    } catch {
+      setError("Failed to delete activity.");
+      setConfirmDelete(null);
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  // ── resource actions ─────────────────────────────────────────────────────
+  const resetResourceForm = () => {
+    setResourceForm({ title: "", resource_type: "PDF", category: "Nutrition", description: "", image_file: null, image_preview: "", file_url: "" });
+  };
+
+  const openResourceEditor = (resource) => {
+    setEditingResource(resource);
+    setResourceForm({
+      title: resource.title || "",
+      resource_type: resource.resource_type || "PDF",
+      category: resource.category || "Nutrition",
+      description: resource.description || "",
+      image_file: null,
+      image_preview: resource.image || "",
+      file_url: resource.file_url || "",
+    });
+  };
+
+  const saveResource = async () => {
+    if (!resourceForm.title.trim()) {
+      setError("Resource title is required.");
+      return;
+    }
+
+    const payload = new FormData();
+    payload.append("title", resourceForm.title.trim());
+    payload.append("resource_type", resourceForm.resource_type);
+    payload.append("category", resourceForm.category);
+    payload.append("description", resourceForm.description || "");
+    payload.append("file_url", resourceForm.file_url || "");
+    if (resourceForm.image_file instanceof File) {
+      payload.append("image_file", resourceForm.image_file);
+    }
+
+    try {
+      if (editingResource) {
+        setSavingId(`resource-${editingResource.id}`);
+        const res = await API.patch(`elibrary/${editingResource.id}/`, payload, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+        setResources((prev) => prev.map((item) => (item.id === editingResource.id ? res.data : item)));
+        addAuditLog(`Updated e-library resource: ${resourceForm.title.trim()}`);
+        showSuccess("Resource updated.");
+      } else {
+        setSavingId("resource-add");
+        const res = await API.post("elibrary/", payload, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+        setResources((prev) => [res.data, ...prev]);
+        addAuditLog(`Added e-library resource: ${resourceForm.title.trim()}`);
+        showSuccess("Resource added.");
+      }
+      setEditingResource(null);
+      setShowAddResource(false);
+      resetResourceForm();
+    } catch {
+      setError("Failed to save e-library resource.");
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  const deleteResource = async (id, title) => {
+    try {
+      setSavingId(`resource-${id}`);
+      await API.delete(`elibrary/${id}/`);
+      setResources((prev) => prev.filter((item) => item.id !== id));
+      addAuditLog(`Deleted e-library resource: ${title}`);
+      showSuccess("Resource deleted.");
+      setConfirmDelete(null);
+    } catch {
+      setError("Failed to delete e-library resource.");
+      setConfirmDelete(null);
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  // ── follow-up CRUD actions ───────────────────────────────────────────────
+  const resetFollowUpForm = () => {
+    setFollowUpForm({ milestone: "", parent_name: "", message: "" });
+  };
+
+  const openFollowUpEditor = (followUp) => {
+    setEditingFollowUp(followUp);
+    setFollowUpForm({
+      milestone: followUp.milestone ? String(followUp.milestone) : "",
+      parent_name: followUp.parent_name || "",
+      message: followUp.message || "",
+    });
+  };
+
+  const saveFollowUp = async () => {
+    if (!followUpForm.milestone || !followUpForm.message.trim()) {
+      setError("Follow-up requires milestone and message.");
+      return;
+    }
+
+    const payload = {
+      milestone: Number(followUpForm.milestone),
+      parent_name: followUpForm.parent_name || "Parent",
+      message: followUpForm.message.trim(),
+    };
+
+    try {
+      if (editingFollowUp) {
+        setSavingId(`followup-${editingFollowUp.id}`);
+        const res = await API.patch(`follow_up_messages/${editingFollowUp.id}/`, payload);
+        setFollowUps((prev) => prev.map((item) => (item.id === editingFollowUp.id ? res.data : item)));
+        addAuditLog(`Updated follow-up message #${editingFollowUp.id}`);
+        showSuccess("Follow-up message updated.");
+      } else {
+        setSavingId("followup-add");
+        const res = await API.post("follow_up_messages/", payload);
+        setFollowUps((prev) => [res.data, ...prev]);
+        addAuditLog("Added follow-up message");
+        showSuccess("Follow-up message added.");
+      }
+      setEditingFollowUp(null);
+      setShowAddFollowUp(false);
+      resetFollowUpForm();
+    } catch {
+      setError("Failed to save follow-up message.");
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  const deleteFollowUp = async (id) => {
+    try {
+      setSavingId(`followup-${id}`);
+      await API.delete(`follow_up_messages/${id}/`);
+      setFollowUps((prev) => prev.filter((item) => item.id !== id));
+      addAuditLog(`Deleted follow-up message #${id}`);
+      showSuccess("Follow-up message deleted.");
+      setConfirmDelete(null);
+    } catch {
+      setError("Failed to delete follow-up message.");
+      setConfirmDelete(null);
+    } finally {
+      setSavingId(null);
+    }
+  };
+
   // ── follow-up actions ─────────────────────────────────────────────────────
   const toggleFollowUpResolved = (id) => {
     setUnresolvedFollowups((prev) => {
@@ -311,23 +726,6 @@ const AdminDashboard = () => {
     window.open(`mailto:${emails.join(",")}?subject=${subject}&body=${body}`, "_blank");
     addAuditLog("Sent reminder email to teachers");
     showSuccess("Reminder email drafted and opened.");
-  };
-
-  const exportReportsCSV = () => {
-    if (!filteredReports.length) { setError("No reports to export with current filters."); return; }
-    const header = ["Report ID", "Child Name", "Report Date", "Score", "Notes"];
-    const rows = filteredReports.map((r) => {
-      const child = childrenMap[r.child];
-      return [r.id, child?.name || "Unknown", r.report_date || "", r.overall_score ?? "", (r.notes || "").replace(/\n/g, " ").replace(/,/g, ";")];
-    });
-    const csv = [header, ...rows].map((row) => row.join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = "admin_reports_export.csv"; a.click();
-    URL.revokeObjectURL(url);
-    addAuditLog("Exported filtered reports as CSV");
-    showSuccess(`Exported ${filteredReports.length} reports.`);
   };
 
   // ── styles ────────────────────────────────────────────────────────────────
@@ -353,7 +751,7 @@ const AdminDashboard = () => {
   const smallCardTitle = { fontSize: 12, color: "#6b7280" };
   const smallCardValue = { fontSize: 24, fontWeight: 700, marginTop: 6, color: "#1f2937" };
   const twoCol = { display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 16, marginBottom: 16 };
-  const threeCol = { display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 16, marginBottom: 16 };
+  const bottomTwoCol = { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 };
   const inp = { width: "100%", border: "1px solid #d1d5db", borderRadius: 10, padding: "10px 12px", fontSize: 13, outline: "none", boxSizing: "border-box", fontFamily: "inherit" };
   const table = { width: "100%", borderCollapse: "collapse" };
   const th = { textAlign: "left", padding: "12px 10px", borderBottom: "1px solid #e5e7eb", color: "#6b7280", fontSize: 12, fontWeight: 700 };
@@ -379,9 +777,6 @@ const AdminDashboard = () => {
             <div style={logoText}>GrowTogether</div>
           </div>
           <div style={navItem(true)}><span style={iconStyle}>🛡️</span> Admin Dashboard</div>
-          <div style={navItem(false, true)} title="Logout and sign in as a teacher to access this view"><span style={iconStyle}>🏫</span> Teacher View</div>
-          <div style={navItem(false, true)} title="Logout and sign in as a parent to access this view"><span style={iconStyle}>👨‍👩‍👧</span> Parent View</div>
-          <div style={navItem(false, true)} title="Teacher-only view"><span style={iconStyle}>👥</span> Students</div>
           <div style={navItem(false, true)} title="Parent/Teacher library view"><span style={iconStyle}>📚</span> E-Library</div>
         </div>
         <div style={userSection}>
@@ -430,59 +825,100 @@ const AdminDashboard = () => {
         </div>
 
         {/* User Management */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 16, marginBottom: 16 }}>
-          <div style={card}>
+        <div style={card}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginBottom: 12 }}>
             <div style={sectionTitle}>User Management</div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 10, marginBottom: 12 }}>
-              <input style={inp} placeholder="Search by name, role, email" value={userSearch} onChange={(e) => setUserSearch(e.target.value)} />
-              <button style={btnNeutral} onClick={loadDashboardData} disabled={loading}>Refresh</button>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button style={btnGreen} onClick={() => openAccountModal("PARENT")}>+ Add Parent</button>
+              <button style={btnGreen} onClick={() => openAccountModal("TEACHER")}>+ Add Teacher</button>
             </div>
-            <div style={{ maxHeight: 320, overflow: "auto" }}>
-              <table style={table}>
-                <thead>
-                  <tr>
-                    <th style={th}>User</th>
-                    <th style={th}>Role</th>
-                    <th style={th}>Status</th>
-                    <th style={th}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredUsers.map((user) => {
-                    const busy = savingId === user.profileId;
-                    return (
-                      <tr key={user.profileId}>
-                        <td style={td}>
-                          <div style={{ fontWeight: 700 }}>{`${user.first_name} ${user.last_name}`.trim() || user.username}</div>
-                          <div style={{ color: "#6b7280", fontSize: 12 }}>{user.email}</div>
-                        </td>
-                        <td style={td}>
-                          <select style={{ ...inp, padding: "6px 8px" }} value={user.role || "PARENT"} disabled={busy} onChange={(e) => handleRoleChange(user.profileId, e.target.value)}>
-                            {ROLE_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
-                          </select>
-                        </td>
-                        <td style={td}>
-                          <span style={{ ...badge, background: user.is_active ? "#dcfce7" : "#fee2e2", color: user.is_active ? "#166534" : "#b91c1c" }}>
-                            {user.is_active ? "ACTIVE" : "INACTIVE"}
-                          </span>
-                        </td>
-                        <td style={td}>
-                          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                            <button style={user.is_active ? btnDanger : btnGreen} disabled={busy} onClick={() => handleToggleActive(user.profileId, user.is_active)}>
-                              {busy ? "…" : user.is_active ? "Deactivate" : "Activate"}
-                            </button>
-                            <button style={btnNeutral} onClick={() => triggerPasswordReset(user.email)} disabled={busy}>Reset</button>
-                            <button style={btnDanger} disabled={busy} onClick={() => setConfirmDelete({ type: "user", id: user.profileId, label: user.email })}>Delete</button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                  {filteredUsers.length === 0 && (
-                    <tr><td colSpan={4} style={{ ...td, color: "#9ca3af", textAlign: "center" }}>No users found</td></tr>
-                  )}
-                </tbody>
-              </table>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 10, marginBottom: 12 }}>
+            <input style={inp} placeholder="Search by parent/teacher name or email" value={userSearch} onChange={(e) => setUserSearch(e.target.value)} />
+            <button style={btnNeutral} onClick={loadDashboardData} disabled={loading}>Refresh</button>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            <div style={{ border: "1px solid #e5e7eb", borderRadius: 12, padding: 12 }}>
+              <div style={{ fontWeight: 700, marginBottom: 10 }}>Parents</div>
+              <div style={{ maxHeight: 300, overflow: "auto" }}>
+                <table style={table}>
+                  <thead>
+                    <tr>
+                      <th style={th}>Parent</th>
+                      <th style={th}>Status</th>
+                      <th style={th}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredParents.map((user) => {
+                      const busy = savingId === user.profileId;
+                      return (
+                        <tr key={user.profileId}>
+                          <td style={td}>
+                            <div style={{ fontWeight: 700 }}>{`${user.first_name} ${user.last_name}`.trim() || user.username}</div>
+                            <div style={{ color: "#6b7280", fontSize: 12 }}>{user.email}</div>
+                          </td>
+                          <td style={td}>
+                            <span style={{ ...badge, background: user.is_active ? "#dcfce7" : "#fee2e2", color: user.is_active ? "#166534" : "#b91c1c" }}>
+                              {user.is_active ? "ACTIVE" : "INACTIVE"}
+                            </span>
+                          </td>
+                          <td style={td}>
+                            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                              <button style={user.is_active ? btnDanger : btnGreen} disabled={busy} onClick={() => handleToggleActive(user.profileId, user.is_active)}>{user.is_active ? "Deactivate" : "Activate"}</button>
+                              <button style={btnDanger} disabled={busy} onClick={() => setConfirmDelete({ type: "user", id: user.profileId, label: user.email })}>Delete</button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {filteredParents.length === 0 && <tr><td colSpan={3} style={{ ...td, color: "#9ca3af", textAlign: "center" }}>No parents found</td></tr>}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div style={{ border: "1px solid #e5e7eb", borderRadius: 12, padding: 12 }}>
+              <div style={{ fontWeight: 700, marginBottom: 10 }}>Teachers</div>
+              <div style={{ maxHeight: 300, overflow: "auto" }}>
+                <table style={table}>
+                  <thead>
+                    <tr>
+                      <th style={th}>Teacher</th>
+                      <th style={th}>Category</th>
+                      <th style={th}>Status</th>
+                      <th style={th}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredTeachers.map((user) => {
+                      const busy = savingId === user.profileId;
+                      return (
+                        <tr key={user.profileId}>
+                          <td style={td}>
+                            <div style={{ fontWeight: 700 }}>{`${user.first_name} ${user.last_name}`.trim() || user.username}</div>
+                            <div style={{ color: "#6b7280", fontSize: 12 }}>{user.email}</div>
+                          </td>
+                          <td style={td}>{formatCategory(user.category)}</td>
+                          <td style={td}>
+                            <span style={{ ...badge, background: user.is_active ? "#dcfce7" : "#fee2e2", color: user.is_active ? "#166534" : "#b91c1c" }}>
+                              {user.is_active ? "ACTIVE" : "INACTIVE"}
+                            </span>
+                          </td>
+                          <td style={td}>
+                            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                              <button style={user.is_active ? btnDanger : btnGreen} disabled={busy} onClick={() => handleToggleActive(user.profileId, user.is_active)}>{user.is_active ? "Deactivate" : "Activate"}</button>
+                              <button style={btnDanger} disabled={busy} onClick={() => setConfirmDelete({ type: "user", id: user.profileId, label: user.email })}>Delete</button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {filteredTeachers.length === 0 && <tr><td colSpan={4} style={{ ...td, color: "#9ca3af", textAlign: "center" }}>No teachers found</td></tr>}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
@@ -499,22 +935,35 @@ const AdminDashboard = () => {
               <table style={table}>
                 <thead>
                   <tr>
-                    <th style={th}>Child</th>
+                    <th style={th}>Student</th>
+                    <th style={th}>Date of Birth</th>
                     <th style={th}>Age</th>
                     <th style={th}>Parent</th>
-                    <th style={th}>Reports</th>
+                    <th style={th}>Progress</th>
+                    <th style={th}>Risk Level</th>
                     <th style={th}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredChildren.map((child) => {
                     const busy = savingId === `child-${child.id}`;
+                    const risk = (riskByChild[child.id] || "UNKNOWN").toUpperCase();
+                    const riskStyle =
+                      risk === "HIGH"
+                        ? { background: "#fee2e2", color: "#b91c1c" }
+                        : risk === "MEDIUM"
+                          ? { background: "#fef3c7", color: "#b45309" }
+                          : risk === "LOW"
+                            ? { background: "#dcfce7", color: "#166534" }
+                            : { background: "#f3f4f6", color: "#4b5563" };
                     return (
                       <tr key={child.id}>
                         <td style={td}>{child.name}</td>
-                        <td style={td}>{child.age ?? "N/A"}</td>
+                        <td style={td}>{child.date_of_birth || "N/A"}</td>
+                        <td style={td}>{child.age ?? getChildAge(child.date_of_birth)}</td>
                         <td style={td}>{child.parent_name || "N/A"}</td>
-                        <td style={td}>{reportCountByChild[child.id] || 0}</td>
+                        <td style={td}>{getChildProgress(child)}%</td>
+                        <td style={td}><span style={{ ...badge, ...riskStyle }}>{risk}</span></td>
                         <td style={td}>
                           <div style={{ display: "flex", gap: 6 }}>
                             <button style={btnPrimary} disabled={busy} onClick={() => openChildEditor(child)}>Edit</button>
@@ -525,7 +974,7 @@ const AdminDashboard = () => {
                     );
                   })}
                   {filteredChildren.length === 0 && (
-                    <tr><td colSpan={5} style={{ ...td, color: "#9ca3af", textAlign: "center" }}>No children found</td></tr>
+                    <tr><td colSpan={7} style={{ ...td, color: "#9ca3af", textAlign: "center" }}>No children found</td></tr>
                   )}
                 </tbody>
               </table>
@@ -543,66 +992,74 @@ const AdminDashboard = () => {
           </div>
 
           <div style={card}>
-            <div style={sectionTitle}>Learning Content Management</div>
-            <div style={{ display: "grid", gap: 10 }}>
-              {[
-                ["📝 Activities", `${activities.length} total`],
-                ["📋 Milestones", `${milestones.length} total`],
-                ["📚 E-Library", `${resources.length} total resources`],
-              ].map(([label, desc]) => (
-                <div key={label} style={{ border: "1px solid #e5e7eb", borderRadius: 10, padding: 14, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div>
-                    <div style={{ fontWeight: 700 }}>{label}</div>
-                    <div style={{ color: "#6b7280", fontSize: 13, marginTop: 2 }}>{desc}</div>
-                  </div>
-                  {label === "📚 E-Library" ? (
-                    <button style={btnPrimary} onClick={() => navigate("/e-library")}>
-                      Open
-                    </button>
-                  ) : (
-                    <button style={{ ...btnPrimary, opacity: 0.6, cursor: "not-allowed" }} disabled>
-                      View only
-                    </button>
-                  )}
-                </div>
-              ))}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+              <div style={sectionTitle}>E-Library Content Management</div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button style={btnGreen} onClick={() => { setShowAddResource(true); setEditingResource(null); resetResourceForm(); }}>+ Resource</button>
+              </div>
             </div>
+
+            <div style={{ marginBottom: 10, fontSize: 12, color: "#6b7280" }}>
+              Total resources: {resources.length} · Activities linked in system: {activities.length}
+            </div>
+
+            <div style={{ maxHeight: 290, overflow: "auto", border: "1px solid #e5e7eb", borderRadius: 10, marginBottom: 10 }}>
+              <table style={table}>
+                <thead>
+                  <tr>
+                    <th style={th}>Title</th>
+                    <th style={th}>Type</th>
+                    <th style={th}>Category</th>
+                    <th style={th}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {resources.map((r) => (
+                    <tr key={`r-${r.id}`}>
+                      <td style={td}>{r.title}</td>
+                      <td style={td}>{r.resource_type || "-"}</td>
+                      <td style={td}>{r.category}</td>
+                      <td style={td}>
+                        <div style={{ display: "flex", gap: 6 }}>
+                          <button style={btnPrimary} onClick={() => openResourceEditor(r)}>Edit</button>
+                          <button style={btnDanger} onClick={() => setConfirmDelete({ type: "resource", id: r.id, label: r.title })}>Delete</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {resources.length === 0 && (
+                    <tr><td colSpan={4} style={{ ...td, color: "#9ca3af", textAlign: "center" }}>No e-library resources found.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+            <button style={btnPrimary} onClick={() => navigate("/e-library")}>Open E-Library Page</button>
           </div>
         </div>
 
-        {/* Reports + Follow-ups + Audit */}
-        <div style={threeCol}>
+        {/* Follow-ups + Audit */}
+        <div style={bottomTwoCol}>
           <div style={card}>
-            <div style={sectionTitle}>Reports and Monitoring</div>
-            <div style={{ display: "grid", gap: 8, marginBottom: 10 }}>
-              <select style={inp} value={reportFilters.child} onChange={(e) => setReportFilters((p) => ({ ...p, child: e.target.value }))}>
-                <option value="">All children</option>
-                {children.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-              <input style={inp} type="date" value={reportFilters.from} onChange={(e) => setReportFilters((p) => ({ ...p, from: e.target.value }))} />
-              <input style={inp} type="date" value={reportFilters.to} onChange={(e) => setReportFilters((p) => ({ ...p, to: e.target.value }))} />
-              <input style={inp} placeholder="Filter by keyword in notes" value={reportFilters.teacher} onChange={(e) => setReportFilters((p) => ({ ...p, teacher: e.target.value }))} />
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+              <div style={sectionTitle}>Messages and Follow-up</div>
+              <button style={btnGreen} onClick={() => { setShowAddFollowUp(true); setEditingFollowUp(null); resetFollowUpForm(); }}>+ Follow-up</button>
             </div>
-            <div style={{ color: "#6b7280", fontSize: 13, marginBottom: 10 }}>Showing {filteredReports.length} / {reports.length} reports</div>
-            <div style={{ display: "flex", gap: 8 }}>
-              <button style={btnPrimary} onClick={exportReportsCSV}>📥 Export CSV</button>
-              <button style={btnNeutral} onClick={() => setReportFilters({ child: "", from: "", to: "", teacher: "" })}>Clear filters</button>
-            </div>
-          </div>
-
-          <div style={card}>
-            <div style={sectionTitle}>Messages and Follow-up</div>
             <div style={{ maxHeight: 280, overflow: "auto" }}>
               {(followUps || []).length === 0 && <div style={{ color: "#9ca3af", fontSize: 13 }}>No follow-up messages yet.</div>}
               {(followUps || []).map((msg) => {
                 const unresolved = unresolvedFollowups.has(msg.id);
+                const busy = savingId === `followup-${msg.id}`;
                 return (
                   <div key={msg.id} style={{ border: "1px solid #e5e7eb", borderRadius: 10, padding: 10, marginBottom: 8, background: unresolved ? "#fff7ed" : "#f9fafb" }}>
-                    <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 2 }}>{msg.parent_name} · Child ID {msg.child}</div>
+                    <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 2 }}>{msg.parent_name} · Child ID {msg.child} · Milestone #{msg.milestone || "-"}</div>
                     <div style={{ fontSize: 13, color: "#111827", marginBottom: 6 }}>{msg.message}</div>
-                    <button style={unresolved ? btnGreen : btnNeutral} onClick={() => toggleFollowUpResolved(msg.id)}>
-                      {unresolved ? "✓ Mark Resolved" : "Mark Unresolved"}
-                    </button>
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      <button style={unresolved ? btnGreen : btnNeutral} onClick={() => toggleFollowUpResolved(msg.id)}>
+                        {unresolved ? "✓ Mark Resolved" : "Mark Unresolved"}
+                      </button>
+                      <button style={btnPrimary} onClick={() => openFollowUpEditor(msg)} disabled={busy}>Edit</button>
+                      <button style={btnDanger} onClick={() => setConfirmDelete({ type: "followup", id: msg.id, label: `follow-up #${msg.id}` })} disabled={busy}>Delete</button>
+                    </div>
                   </div>
                 );
               })}
@@ -611,28 +1068,44 @@ const AdminDashboard = () => {
           </div>
 
           <div style={card}>
-            <div style={sectionTitle}>Audit and Security</div>
-            <div style={{ marginBottom: 14 }}>
-              <div style={{ fontWeight: 700, marginBottom: 6 }}>Recent logins</div>
-              <div style={{ maxHeight: 100, overflow: "auto" }}>
-                {users.filter((u) => u.last_login).sort((a, b) => new Date(b.last_login) - new Date(a.last_login)).slice(0, 6).map((u) => (
-                  <div key={u.profileId} style={{ fontSize: 12, marginBottom: 4, color: "#374151" }}>
-                    <strong>{u.email}</strong><br />{new Date(u.last_login).toLocaleString()}
-                  </div>
-                ))}
-                {users.filter((u) => u.last_login).length === 0 && <div style={{ fontSize: 12, color: "#9ca3af" }}>No login data yet.</div>}
-              </div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+              <div style={sectionTitle}>Milestone Management</div>
+              <button style={btnGreen} onClick={() => { setShowAddMilestone(true); setEditingMilestone(null); resetMilestoneForm(); }}>+ Milestone</button>
             </div>
-            <div>
-              <div style={{ fontWeight: 700, marginBottom: 6 }}>Recent admin actions</div>
-              <div style={{ maxHeight: 120, overflow: "auto" }}>
-                {auditLogs.length === 0 && <div style={{ fontSize: 12, color: "#9ca3af" }}>No actions in this session yet.</div>}
-                {auditLogs.map((log) => (
-                  <div key={log.id} style={{ fontSize: 11, marginBottom: 5, color: "#374151", background: "#f9fafb", padding: "4px 8px", borderRadius: 6 }}>
-                    <span style={{ color: "#6b7280" }}>{log.timestamp}</span><br />{log.message}
-                  </div>
-                ))}
-              </div>
+
+            <div style={{ marginBottom: 10, fontSize: 12, color: "#6b7280" }}>
+              Total milestones: {milestones.length}
+            </div>
+
+            <div style={{ maxHeight: 280, overflow: "auto", border: "1px solid #e5e7eb", borderRadius: 10 }}>
+              <table style={table}>
+                <thead>
+                  <tr>
+                    <th style={th}>Milestone</th>
+                    <th style={th}>Category</th>
+                    <th style={th}>Child</th>
+                    <th style={th}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {milestones.map((m) => (
+                    <tr key={`m-${m.id}`}>
+                      <td style={td}>{m.title}</td>
+                      <td style={td}>{m.category}</td>
+                      <td style={td}>{childrenMap[m.child]?.name || `#${m.child}`}</td>
+                      <td style={td}>
+                        <div style={{ display: "flex", gap: 6 }}>
+                          <button style={btnPrimary} onClick={() => openMilestoneEditor(m)}>Edit</button>
+                          <button style={btnDanger} onClick={() => setConfirmDelete({ type: "milestone", id: m.id, label: m.title })}>Delete</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {milestones.length === 0 && (
+                    <tr><td colSpan={4} style={{ ...td, color: "#9ca3af", textAlign: "center" }}>No milestones found.</td></tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
@@ -681,6 +1154,153 @@ const AdminDashboard = () => {
           </div>
         )}
 
+        {/* Add account modal */}
+        {showAddAccount && (
+          <div style={overlay}>
+            <div style={modalCard}>
+              <div style={{ ...sectionTitle, marginBottom: 6 }}>{accountType === "PARENT" ? "Add Parent" : "Add Teacher"}</div>
+              <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 16 }}>
+                Create a login ID using email and set a password for the new {accountType.toLowerCase()} account.
+              </div>
+              <div style={{ display: "grid", gap: 10, marginBottom: 16 }}>
+                <input style={inp} placeholder="First name" value={accountForm.first_name} onChange={(e) => setAccountForm((p) => ({ ...p, first_name: e.target.value }))} />
+                <input style={inp} placeholder="Last name" value={accountForm.last_name} onChange={(e) => setAccountForm((p) => ({ ...p, last_name: e.target.value }))} />
+                <input style={inp} type="email" placeholder="Email / ID" value={accountForm.email} onChange={(e) => setAccountForm((p) => ({ ...p, email: e.target.value }))} />
+                <input style={inp} type="password" placeholder="Password" value={accountForm.password} onChange={(e) => setAccountForm((p) => ({ ...p, password: e.target.value }))} />
+                {accountType === "TEACHER" && (
+                  <select style={inp} value={accountForm.category} onChange={(e) => setAccountForm((p) => ({ ...p, category: e.target.value }))}>
+                    <option value="">Select specialization (optional)</option>
+                    {TEACHER_CATEGORY_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+                <button style={btnNeutral} onClick={() => setShowAddAccount(false)} disabled={savingId === `account-${accountType}`}>Cancel</button>
+                <button style={btnGreen} onClick={createAccount} disabled={savingId === `account-${accountType}`}>{savingId === `account-${accountType}` ? "Creating..." : `Create ${accountType === "PARENT" ? "Parent" : "Teacher"}`}</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Milestone modal */}
+        {(showAddMilestone || editingMilestone) && (
+          <div style={overlay}>
+            <div style={modalCard}>
+              <div style={{ ...sectionTitle, marginBottom: 16 }}>{editingMilestone ? "Edit Milestone" : "Add Milestone"}</div>
+              <div style={{ display: "grid", gap: 10, marginBottom: 16 }}>
+                <select style={inp} value={milestoneForm.child} onChange={(e) => setMilestoneForm((p) => ({ ...p, child: e.target.value }))}>
+                  <option value="">Select child</option>
+                  {children.map((c) => <option key={c.id} value={c.id}>{c.name} (#{c.id})</option>)}
+                </select>
+                <select style={inp} value={milestoneForm.category} onChange={(e) => setMilestoneForm((p) => ({ ...p, category: e.target.value }))}>
+                  {MILESTONE_CATEGORIES.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
+                </select>
+                <input style={inp} placeholder="Title" value={milestoneForm.title} onChange={(e) => setMilestoneForm((p) => ({ ...p, title: e.target.value }))} />
+                <textarea style={{ ...inp, minHeight: 84 }} placeholder="Description" value={milestoneForm.description} onChange={(e) => setMilestoneForm((p) => ({ ...p, description: e.target.value }))} />
+                <textarea style={{ ...inp, minHeight: 70 }} placeholder="Parent note (optional)" value={milestoneForm.parent_note} onChange={(e) => setMilestoneForm((p) => ({ ...p, parent_note: e.target.value }))} />
+                <input style={inp} type="date" value={milestoneForm.date_achieved} onChange={(e) => setMilestoneForm((p) => ({ ...p, date_achieved: e.target.value }))} />
+              </div>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+                <button style={btnNeutral} onClick={() => { setShowAddMilestone(false); setEditingMilestone(null); resetMilestoneForm(); }} disabled={savingId === "milestone-add" || savingId === `milestone-${editingMilestone?.id}`}>Cancel</button>
+                <button style={btnGreen} onClick={saveMilestone} disabled={savingId === "milestone-add" || savingId === `milestone-${editingMilestone?.id}`}>{savingId === "milestone-add" || savingId === `milestone-${editingMilestone?.id}` ? "Saving..." : "Save Milestone"}</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Activity modal */}
+        {(showAddActivity || editingActivity) && (
+          <div style={overlay}>
+            <div style={modalCard}>
+              <div style={{ ...sectionTitle, marginBottom: 16 }}>{editingActivity ? "Edit Activity" : "Add Activity"}</div>
+              <div style={{ display: "grid", gap: 10, marginBottom: 16 }}>
+                <input style={inp} placeholder="Title" value={activityForm.title} onChange={(e) => setActivityForm((p) => ({ ...p, title: e.target.value }))} />
+                <textarea style={{ ...inp, minHeight: 84 }} placeholder="Description" value={activityForm.description} onChange={(e) => setActivityForm((p) => ({ ...p, description: e.target.value }))} />
+                <input style={inp} placeholder="Age band (e.g. Age 3-4)" value={activityForm.age} onChange={(e) => setActivityForm((p) => ({ ...p, age: e.target.value }))} />
+                <input style={inp} placeholder="Duration (e.g. 15 min)" value={activityForm.duration} onChange={(e) => setActivityForm((p) => ({ ...p, duration: e.target.value }))} />
+                <select style={inp} value={activityForm.domain} onChange={(e) => setActivityForm((p) => ({ ...p, domain: e.target.value }))}>
+                  {ACTIVITY_DOMAINS.map((domain) => <option key={domain} value={domain}>{domain}</option>)}
+                </select>
+                <select style={inp} value={activityForm.milestone} onChange={(e) => setActivityForm((p) => ({ ...p, milestone: e.target.value }))}>
+                  <option value="">No linked milestone</option>
+                  {milestones.map((m) => <option key={m.id} value={m.id}>{m.title} (#{m.id})</option>)}
+                </select>
+              </div>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+                <button style={btnNeutral} onClick={() => { setShowAddActivity(false); setEditingActivity(null); resetActivityForm(); }} disabled={savingId === "activity-add" || savingId === `activity-${editingActivity?.id}`}>Cancel</button>
+                <button style={btnGreen} onClick={saveActivity} disabled={savingId === "activity-add" || savingId === `activity-${editingActivity?.id}`}>{savingId === "activity-add" || savingId === `activity-${editingActivity?.id}` ? "Saving..." : "Save Activity"}</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Resource modal */}
+        {(showAddResource || editingResource) && (
+          <div style={overlay}>
+            <div style={modalCard}>
+              <div style={{ ...sectionTitle, marginBottom: 16 }}>{editingResource ? "Edit E-Library Resource" : "Add E-Library Resource"}</div>
+              <div style={{ display: "grid", gap: 10, marginBottom: 16 }}>
+                <input style={inp} placeholder="Title" value={resourceForm.title} onChange={(e) => setResourceForm((p) => ({ ...p, title: e.target.value }))} />
+                <select style={inp} value={resourceForm.resource_type} onChange={(e) => setResourceForm((p) => ({ ...p, resource_type: e.target.value }))}>
+                  {RESOURCE_TYPES.map((type) => <option key={type} value={type}>{type}</option>)}
+                </select>
+                <select style={inp} value={resourceForm.category} onChange={(e) => setResourceForm((p) => ({ ...p, category: e.target.value }))}>
+                  {RESOURCE_CATEGORIES.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
+                </select>
+                <textarea style={{ ...inp, minHeight: 84 }} placeholder="Description" value={resourceForm.description} onChange={(e) => setResourceForm((p) => ({ ...p, description: e.target.value }))} />
+                <input
+                  style={inp}
+                  type="file"
+                  accept=".jpg,.jpeg,.png,.gif,.webp"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    setResourceForm((p) => ({
+                      ...p,
+                      image_file: file,
+                      image_preview: file ? URL.createObjectURL(file) : p.image_preview,
+                    }));
+                  }}
+                />
+                {resourceForm.image_preview && (
+                  <img
+                    src={resourceForm.image_preview}
+                    alt="Resource preview"
+                    style={{ width: "100%", maxHeight: 140, objectFit: "cover", borderRadius: 8, border: "1px solid #e5e7eb" }}
+                  />
+                )}
+                <input style={inp} placeholder="Source URL (optional)" value={resourceForm.file_url} onChange={(e) => setResourceForm((p) => ({ ...p, file_url: e.target.value }))} />
+              </div>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+                <button style={btnNeutral} onClick={() => { setShowAddResource(false); setEditingResource(null); resetResourceForm(); }} disabled={savingId === "resource-add" || savingId === `resource-${editingResource?.id}`}>Cancel</button>
+                <button style={btnGreen} onClick={saveResource} disabled={savingId === "resource-add" || savingId === `resource-${editingResource?.id}`}>{savingId === "resource-add" || savingId === `resource-${editingResource?.id}` ? "Saving..." : "Save Resource"}</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Follow-up modal */}
+        {(showAddFollowUp || editingFollowUp) && (
+          <div style={overlay}>
+            <div style={modalCard}>
+              <div style={{ ...sectionTitle, marginBottom: 16 }}>{editingFollowUp ? "Edit Follow-up Message" : "Add Follow-up Message"}</div>
+              <div style={{ display: "grid", gap: 10, marginBottom: 16 }}>
+                <select style={inp} value={followUpForm.milestone} onChange={(e) => setFollowUpForm((p) => ({ ...p, milestone: e.target.value }))}>
+                  <option value="">Select milestone</option>
+                  {milestones.map((m) => <option key={m.id} value={m.id}>{m.title} (Child #{m.child})</option>)}
+                </select>
+                <input style={inp} placeholder="Parent name" value={followUpForm.parent_name} onChange={(e) => setFollowUpForm((p) => ({ ...p, parent_name: e.target.value }))} />
+                <textarea style={{ ...inp, minHeight: 90 }} placeholder="Message" value={followUpForm.message} onChange={(e) => setFollowUpForm((p) => ({ ...p, message: e.target.value }))} />
+              </div>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+                <button style={btnNeutral} onClick={() => { setShowAddFollowUp(false); setEditingFollowUp(null); resetFollowUpForm(); }} disabled={savingId === "followup-add" || savingId === `followup-${editingFollowUp?.id}`}>Cancel</button>
+                <button style={btnGreen} onClick={saveFollowUp} disabled={savingId === "followup-add" || savingId === `followup-${editingFollowUp?.id}`}>{savingId === "followup-add" || savingId === `followup-${editingFollowUp?.id}` ? "Saving..." : "Save Follow-up"}</button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Confirm delete modal */}
         {confirmDelete && (
           <div style={overlay}>
@@ -694,6 +1314,10 @@ const AdminDashboard = () => {
                 <button style={btnDanger} onClick={() => {
                   if (confirmDelete.type === "user") handleDeleteUser(confirmDelete.id, confirmDelete.label);
                   else if (confirmDelete.type === "child") handleDeleteChild(confirmDelete.id, confirmDelete.label);
+                  else if (confirmDelete.type === "milestone") deleteMilestone(confirmDelete.id, confirmDelete.label);
+                  else if (confirmDelete.type === "activity") deleteActivity(confirmDelete.id, confirmDelete.label);
+                  else if (confirmDelete.type === "resource") deleteResource(confirmDelete.id, confirmDelete.label);
+                  else if (confirmDelete.type === "followup") deleteFollowUp(confirmDelete.id);
                 }}>Delete Permanently</button>
               </div>
             </div>

@@ -1,5 +1,8 @@
-from django.db import models
 from django.contrib.auth.models import User
+from django.db import models
+
+from .storage_backends import ChatDocumentCloudinaryStorage
+
 
 # -----------------------------
 # Child & Milestones
@@ -7,6 +10,7 @@ from django.contrib.auth.models import User
 class Child(models.Model):
     name = models.CharField(max_length=100)
     age = models.IntegerField(null=True, blank=True)
+    parent = models.ForeignKey(User, on_delete=models.CASCADE, related_name='children', null=True, blank=True)
     parent_name = models.CharField(max_length=100, null=True, blank=True)
     date_of_birth = models.DateField(null=True, blank=True)
     photo = models.ImageField(upload_to='child_photos/', null=True, blank=True)
@@ -122,7 +126,17 @@ class Activity(models.Model):
 # Progress Reports
 # -----------------------------
 class ProgressReport(models.Model):
+    CATEGORY_CHOICES = (
+        ('social_emotional', 'Social-Emotional'),
+        ('cognitive', 'Cognitive'),
+        ('physical', 'Physical'),
+        ('language', 'Language'),
+        ('self_care_independence', 'Self-Care & Independence'),
+        ('executive_function_attention', 'Executive Function & Attention'),
+    )
+
     child = models.ForeignKey(Child, on_delete=models.CASCADE, related_name='progress_reports')
+    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES, blank=True, default='', db_index=True)
     report_date = models.DateField(auto_now_add=True)
     notes = models.TextField(blank=True)
     milestone_completed = models.ManyToManyField(Milestone, blank=True)
@@ -142,8 +156,11 @@ class UserProfile(models.Model):
         ('PARENT', 'Parent'),
     )
 
+    CATEGORY_CHOICES = ProgressReport.CATEGORY_CHOICES
+
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     role = models.CharField(max_length=20, choices=ROLE_CHOICES)
+    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES, blank=True, default='')
     phone_number = models.CharField(max_length=15, blank=True)
     address = models.TextField(blank=True)
 
@@ -179,7 +196,13 @@ class ChatMessage(models.Model):
     receiver_name = models.CharField(max_length=200, default='')
     room = models.CharField(max_length=500, default='', db_index=True)
     message = models.TextField(blank=True, default='')
-    document = models.FileField(upload_to='chat_documents/', null=True, blank=True)
+    image = models.ImageField(upload_to='chat_images/', null=True, blank=True)
+    document = models.FileField(
+        upload_to='chat_documents/',
+        storage=ChatDocumentCloudinaryStorage(),
+        null=True,
+        blank=True,
+    )
     timestamp = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
