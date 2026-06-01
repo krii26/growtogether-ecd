@@ -1,5 +1,6 @@
 from django.contrib.auth.models import User
 from django.db import models
+from django.utils.text import slugify
 
 from .storage_backends import ChatDocumentCloudinaryStorage
 
@@ -43,6 +44,40 @@ class Milestone(models.Model):
     
     class Meta:
         ordering = ['category', 'title']
+
+
+class MilestoneCategory(models.Model):
+    name = models.CharField(max_length=80, unique=True)
+    slug = models.SlugField(max_length=100, unique=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['name']
+
+    def save(self, *args, **kwargs):
+        self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.name
+
+
+class MilestoneTitle(models.Model):
+    category = models.ForeignKey(MilestoneCategory, on_delete=models.CASCADE, related_name='titles')
+    title = models.CharField(max_length=120)
+    description = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['category__name', 'title']
+        unique_together = ('category', 'title')
+
+    def __str__(self):
+        return f"{self.category.name}: {self.title}"
 
 
 # -----------------------------

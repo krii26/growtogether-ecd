@@ -18,7 +18,18 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 # Create your views here.
-from .models import Activity, ChatMessage, Child, ELibrary, FollowUpMessage, Milestone, ProgressReport, UserProfile
+from .models import (
+    Activity,
+    ChatMessage,
+    Child,
+    ELibrary,
+    FollowUpMessage,
+    Milestone,
+    MilestoneCategory,
+    MilestoneTitle,
+    ProgressReport,
+    UserProfile,
+)
 from .permissions import (
     ActivityPermission,
     ChatMessagePermission,
@@ -26,6 +37,8 @@ from .permissions import (
     ELibraryPermission,
     FollowUpMessagePermission,
     MilestonePermission,
+    MilestoneCategoryPermission,
+    MilestoneTitlePermission,
     ProgressReportPermission,
     UserProfilePermission,
     resolve_user_role,
@@ -38,6 +51,8 @@ from .serializers import (
     FollowUpMessageSerializer,
     LoginSerializer,
     MilestoneSerializer,
+    MilestoneCategorySerializer,
+    MilestoneTitleSerializer,
     ProgressReportSerializer,
     RegistrationSerializer,
     UserProfileSerializer,
@@ -510,6 +525,25 @@ class MilestoneViewSet(viewsets.ModelViewSet):
 
         serializer.save(category=allowed_categories[0])
 
+
+class MilestoneCategoryViewSet(viewsets.ModelViewSet):
+    queryset = MilestoneCategory.objects.all()
+    serializer_class = MilestoneCategorySerializer
+    permission_classes = [MilestoneCategoryPermission]
+
+
+class MilestoneTitleViewSet(viewsets.ModelViewSet):
+    queryset = MilestoneTitle.objects.select_related('category').all()
+    serializer_class = MilestoneTitleSerializer
+    permission_classes = [MilestoneTitlePermission]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        category_id = self.request.query_params.get('category')
+        if category_id:
+            queryset = queryset.filter(category_id=category_id)
+        return queryset
+
     def perform_update(self, serializer):
         if resolve_user_role(self.request.user) != 'TEACHER':
             serializer.save()
@@ -690,7 +724,8 @@ def register(request):
     serializer = RegistrationSerializer(data=payload)
     if serializer.is_valid():
         user = serializer.save()
-        token, _ = Token.objects.get_or_create(user=user)
+        Token.objects.filter(user=user).delete()
+        token = Token.objects.create(user=user)
         profile = get_or_create_login_profile(user)
         user_payload = {
             'id': user.id,
@@ -721,7 +756,8 @@ def login(request):
             return Response({'detail': 'This account is inactive.'}, status=status.HTTP_403_FORBIDDEN)
         profile = get_or_create_login_profile(user)
         role = 'SUPER_ADMIN' if user.is_superuser else getattr(profile, 'role', None)
-        token, _ = Token.objects.get_or_create(user=user)
+        Token.objects.filter(user=user).delete()
+        token = Token.objects.create(user=user)
         user_payload = {
             'id': user.id,
             'username': user.username,
@@ -807,7 +843,8 @@ def google_login(request):
             UserProfile.objects.create(user=user, role='PARENT')
 
         profile = get_or_create_login_profile(user)
-        token, _ = Token.objects.get_or_create(user=user)
+        Token.objects.filter(user=user).delete()
+        token = Token.objects.create(user=user)
         user_payload = {
             'id': user.id,
             'email': user.email,

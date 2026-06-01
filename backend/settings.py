@@ -276,7 +276,7 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.TokenAuthentication',
+        'ecd_app.authentication.ExpiringTokenAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
@@ -291,6 +291,8 @@ REST_FRAMEWORK = {
         'user': os.environ.get('DRF_USER_THROTTLE_RATE', '120/minute'),
     },
 }
+
+TOKEN_EXPIRATION_SECONDS = int(os.environ.get('TOKEN_EXPIRATION_SECONDS', '3600'))
 
 # Keep test DB by default to avoid teardown drop conflicts on pooled Postgres.
 TEST_RUNNER = 'ecd_app.test_runner.StablePostgresTestRunner'

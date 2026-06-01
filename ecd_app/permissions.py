@@ -33,6 +33,16 @@ class MilestonePermission(RolePermission):
     write_roles = {'ADMIN', 'TEACHER', 'PARENT'}
 
 
+class MilestoneCategoryPermission(RolePermission):
+    read_roles = {'ADMIN', 'TEACHER', 'PARENT'}
+    write_roles = {'ADMIN'}
+
+
+class MilestoneTitlePermission(RolePermission):
+    read_roles = {'ADMIN', 'TEACHER', 'PARENT'}
+    write_roles = {'ADMIN'}
+
+
 class ELibraryPermission(RolePermission):
     read_roles = {'ADMIN', 'TEACHER', 'PARENT'}
     write_roles = {'ADMIN', 'TEACHER'}

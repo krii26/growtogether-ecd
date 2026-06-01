@@ -6,6 +6,9 @@ const API = axios.create({
 
 const API_CACHE_PREFIX = 'ecd_api_cache:';
 const API_CACHE_TTL_MS = 5 * 60 * 1000;
+const AUTH_ACTIVE_USER_KEY = 'gt_active_auth_user';
+const AUTH_LAST_ACTIVITY_KEY = 'gt_auth_last_activity';
+const AUTH_LOGIN_AT_KEY = 'gt_auth_login_at';
 
 const safeStorage = {
   getItem(key) {
@@ -96,6 +99,9 @@ API.interceptors.response.use(
       clearApiCache();
       sessionStorage.removeItem('token');
       sessionStorage.removeItem('user');
+      localStorage.removeItem(AUTH_ACTIVE_USER_KEY);
+      localStorage.removeItem(AUTH_LAST_ACTIVITY_KEY);
+      localStorage.removeItem(AUTH_LOGIN_AT_KEY);
     }
     return Promise.reject(error);
   }

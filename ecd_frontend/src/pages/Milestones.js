@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import API from '../api/api';
 import '../styles/Milestones.css';
@@ -133,12 +133,48 @@ const milestoneOptionsByCategory = {
   'executive-function': executiveFunctionMilestones
 };
 
-const getCategoryMilestoneOptions = (category) => milestoneOptionsByCategory[category] || [];
-
-const getMilestoneDescription = (category, title) => {
-  const matchedMilestone = getCategoryMilestoneOptions(category).find((m) => m.title === title);
-  return matchedMilestone?.description || '';
+const defaultCategoryConfig = {
+  'social-emotional': {
+    title: 'Social-Emotional',
+    color: '#a78bfa',
+    icon: '👥'
+  },
+  cognitive: {
+    title: 'Cognitive',
+    color: '#60a5fa',
+    icon: '🧠'
+  },
+  physical: {
+    title: 'Physical',
+    color: '#34d399',
+    icon: '💪'
+  },
+  language: {
+    title: 'Language',
+    color: '#f472b6',
+    icon: '🗣️'
+  },
+  'self-care': {
+    title: 'Self-Care & Independence',
+    color: '#fb923c',
+    icon: '🧼'
+  },
+  'executive-function': {
+    title: 'Executive Function & Attention',
+    color: '#38bdf8',
+    icon: '🎯'
+  }
 };
+
+const getDefaultCategoryMilestoneOptions = (category) => milestoneOptionsByCategory[category] || [];
+
+const formatCategoryTitle = (value) =>
+  String(value || '')
+    .replace(/_/g, '-')
+    .split('-')
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ') || 'Category';
 
 const categoryDescriptions = {
   'social-emotional': {
@@ -192,6 +228,8 @@ const Milestones = () => {
   const [children, setChildren] = useState([]);
   const [selectedChildId, setSelectedChildId] = useState(childId);
   const [child, setChild] = useState(null);
+  const [milestoneCategories, setMilestoneCategories] = useState([]);
+  const [milestoneTitles, setMilestoneTitles] = useState([]);
   const [milestones, setMilestones] = useState({
     'social-emotional': [],
     'cognitive': [],
@@ -208,7 +246,7 @@ const Milestones = () => {
   const [error, setError] = useState('');
   const [editingMilestone, setEditingMilestone] = useState(null);
   const [activeTab, setActiveTab] = useState('active'); // 'active' or 'completed'
-  const [completedFilter, setCompletedFilter] = useState('all'); // 'all', 'social-emotional', 'cognitive', 'physical', 'language'
+  const [completedFilter, setCompletedFilter] = useState('all');
   const [completedSort, setCompletedSort] = useState('recent'); // 'recent', 'rating', 'category'
   const [completedMilestones, setCompletedMilestones] = useState([]);
   const [quickViewMilestone, setQuickViewMilestone] = useState(null);
@@ -222,13 +260,91 @@ const Milestones = () => {
     image: null,
     imagePreview: null
   });
-  const categoryMilestoneOptions = getCategoryMilestoneOptions(selectedCategory);
+  const categoryNameById = useMemo(() => {
+    const map = {};
+    (milestoneCategories || []).forEach((category) => {
+      map[category.id] = category.name;
+    });
+    return map;
+  }, [milestoneCategories]);
+
+  const categoryConfig = useMemo(() => {
+    const config = { ...defaultCategoryConfig };
+    (milestoneCategories || []).forEach((category) => {
+      if (!config[category.name]) {
+        config[category.name] = {
+          title: formatCategoryTitle(category.name),
+          color: '#94a3b8',
+          icon: '📌'
+        };
+      }
+    });
+    return config;
+  }, [milestoneCategories]);
+
+  const categoryMilestoneOptionsMap = useMemo(() => {
+    const grouped = {};
+
+    Object.keys(categoryConfig).forEach((categoryKey) => {
+      grouped[categoryKey] = [...getDefaultCategoryMilestoneOptions(categoryKey)];
+    });
+
+    (milestoneTitles || []).forEach((item) => {
+      const categoryName = categoryNameById[item.category] || item.category_name;
+      if (!categoryName) return;
+      if (!grouped[categoryName]) grouped[categoryName] = [];
+
+      const alreadyExists = grouped[categoryName].some((existing) => existing.title === item.title);
+      if (!alreadyExists) {
+        grouped[categoryName].push({
+          title: item.title,
+          description: item.description || ''
+        });
+      }
+    });
+
+    return grouped;
+  }, [categoryConfig, milestoneTitles, categoryNameById]);
+
+  const categoryMilestoneOptions = categoryMilestoneOptionsMap[selectedCategory] || [];
+
+  const getMilestoneDescription = (category, title) => {
+    const matchedMilestone = (categoryMilestoneOptionsMap[category] || []).find((m) => m.title === title);
+    return matchedMilestone?.description || '';
+  };
+
+  const milestonesByCategory = useMemo(() => {
+    const merged = {};
+    Object.keys(categoryConfig).forEach((key) => {
+      merged[key] = milestones[key] || [];
+    });
+    Object.keys(milestones || {}).forEach((key) => {
+      if (!merged[key]) merged[key] = milestones[key] || [];
+    });
+    return merged;
+  }, [milestones, categoryConfig]);
+
+  const activeMilestones = useMemo(() => Object.values(milestonesByCategory).flat(), [milestonesByCategory]);
 
   useEffect(() => {
     // First, fetch all children
+    fetchMilestoneCatalog();
     fetchChildren();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const fetchMilestoneCatalog = async () => {
+    try {
+      const [categoriesRes, titlesRes] = await Promise.all([
+        API.get('milestone_categories/', { skipCache: true }),
+        API.get('milestone_titles/', { skipCache: true })
+      ]);
+      setMilestoneCategories(categoriesRes.data || []);
+      setMilestoneTitles(titlesRes.data || []);
+    } catch (catalogError) {
+      console.warn('Could not load milestone category catalog', catalogError);
+    }
+  };
 
   useEffect(() => {
     // When selectedChildId changes, fetch that child's milestones
@@ -277,19 +393,14 @@ const Milestones = () => {
         skipCache: true,
       });
 
-      const grouped = {
-        'social-emotional': [],
-        'cognitive': [],
-        'physical': [],
-        'language': [],
-        'self-care': [],
-        'executive-function': []
-      };
+      const grouped = {};
+      Object.keys(categoryConfig).forEach((key) => {
+        grouped[key] = [];
+      });
 
       milestonesRes.data.forEach((milestone) => {
-        if (grouped[milestone.category]) {
-          grouped[milestone.category].push(milestone);
-        }
+        if (!grouped[milestone.category]) grouped[milestone.category] = [];
+        grouped[milestone.category].push(milestone);
       });
 
       if (!selectedChild) {
@@ -556,39 +667,6 @@ const Milestones = () => {
     );
   }
 
-  const categoryConfig = {
-    'social-emotional': {
-      title: 'Social-Emotional',
-      color: '#a78bfa',
-      icon: '👥'
-    },
-    'cognitive': {
-      title: 'Cognitive',
-      color: '#60a5fa',
-      icon: '🧠'
-    },
-    'physical': {
-      title: 'Physical',
-      color: '#34d399',
-      icon: '💪'
-    },
-    'language': {
-      title: 'Language',
-      color: '#f472b6',
-      icon: '🗣️'
-    },
-    'self-care': {
-      title: 'Self-Care & Independence',
-      color: '#fb923c',
-      icon: '🧼'
-    },
-    'executive-function': {
-      title: 'Executive Function & Attention',
-      color: '#38bdf8',
-      icon: '🎯'
-    }
-  };
-
   // Styles (same as Children.js)
   const layout = {
     display: 'grid',
@@ -761,7 +839,7 @@ const Milestones = () => {
               marginBottom: '-2px'
             }}
           >
-            Active Milestones ({Object.values(milestones).flat().length})
+            Active Milestones ({activeMilestones.length})
           </button>
           <button
             onClick={() => setActiveTab('completed')}
@@ -796,7 +874,7 @@ const Milestones = () => {
         }}>
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: '24px', fontWeight: '700', color: '#7c3aed' }}>
-              {Object.values(milestones).flat().length}
+              {activeMilestones.length}
             </div>
             <div style={{ fontSize: '13px', color: '#6b21a8', marginTop: '4px' }}>
               Active
@@ -822,7 +900,7 @@ const Milestones = () => {
           </div>
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: '24px', fontWeight: '700', color: '#0891b2' }}>
-              {Math.round((completedMilestones.length / (Object.values(milestones).flat().length + completedMilestones.length) * 100) || 0)}%
+              {Math.round((completedMilestones.length / (activeMilestones.length + completedMilestones.length) * 100) || 0)}%
             </div>
             <div style={{ fontSize: '13px', color: '#164e63', marginTop: '4px' }}>
               Progress
@@ -856,12 +934,9 @@ const Milestones = () => {
                 }}
               >
                 <option value="all">All Categories</option>
-                <option value="social-emotional">Social-Emotional</option>
-                <option value="cognitive">Cognitive</option>
-                <option value="physical">Physical</option>
-                <option value="language">Language</option>
-                <option value="self-care">Self-Care &amp; Independence</option>
-                <option value="executive-function">Executive Function &amp; Attention</option>
+                {Object.entries(categoryConfig).map(([key, config]) => (
+                  <option key={`filter-${key}`} value={key}>{config.title}</option>
+                ))}
               </select>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -927,19 +1002,19 @@ const Milestones = () => {
                   fontSize: '12px',
                   fontWeight: '600'
                 }}>
-                  {milestones[category].length}
+                  {(milestonesByCategory[category] || []).length}
                 </span>
               </div>
 
               {/* Milestones List */}
               <div style={{ padding: '16px' }}>
-                {milestones[category].length === 0 ? (
+                {(milestonesByCategory[category] || []).length === 0 ? (
                   <p style={{ color: '#999', textAlign: 'center', margin: 0 }}>
                     No milestones yet
                   </p>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {milestones[category].map((milestone) => (
+                    {(milestonesByCategory[category] || []).map((milestone) => (
                       <div
                         key={milestone.id}
                         style={{

@@ -8,6 +8,8 @@ from .views import (
     ELibraryViewSet,
     FollowUpMessageViewSet,
     MilestoneViewSet,
+    MilestoneCategoryViewSet,
+    MilestoneTitleViewSet,
     ProgressReportViewSet,
     UserProfileViewSet,
     admin_create_account,
@@ -20,6 +22,8 @@ from .views import (
 router = DefaultRouter()
 router.register(r'children', ChildViewSet)
 router.register(r'milestones', MilestoneViewSet)
+router.register(r'milestone_categories', MilestoneCategoryViewSet)
+router.register(r'milestone_titles', MilestoneTitleViewSet)
 router.register(r'elibrary', ELibraryViewSet)
 router.register(r'activities', ActivityViewSet)
 router.register(r'progress_reports', ProgressReportViewSet)

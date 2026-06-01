@@ -17,6 +17,12 @@ import Header from './components/Header';
 import Footer from './components/Footer';
 import API from './api/api';
 
+const AUTH_ACTIVE_USER_KEY = 'gt_active_auth_user';
+const AUTH_LAST_ACTIVITY_KEY = 'gt_auth_last_activity';
+const AUTH_LOGIN_AT_KEY = 'gt_auth_login_at';
+const IDLE_TIMEOUT_MS = 15 * 60 * 1000;
+const ABSOLUTE_TIMEOUT_MS = 8 * 60 * 60 * 1000;
+
 const normalizeRole = (role) => {
   const normalized = (role || '').toString().trim().toUpperCase();
   if (normalized === 'SUPER_ADMIN') {
@@ -51,6 +57,29 @@ const getDefaultPathByRole = (role) => {
   return '/login';
 };
 
+const getCurrentUser = () => {
+  const rawUser = sessionStorage.getItem('user');
+  if (!rawUser) {
+    return null;
+  }
+  try {
+    return JSON.parse(rawUser);
+  } catch (_) {
+    return null;
+  }
+};
+
+const clearSessionAndRedirectToLogin = () => {
+  sessionStorage.removeItem('token');
+  sessionStorage.removeItem('user');
+  localStorage.removeItem(AUTH_ACTIVE_USER_KEY);
+  localStorage.removeItem(AUTH_LAST_ACTIVITY_KEY);
+  localStorage.removeItem(AUTH_LOGIN_AT_KEY);
+  if (window.location.pathname !== '/login') {
+    window.location.replace('/login');
+  }
+};
+
 const ProtectedRoleRoute = ({ element, allowedRoles }) => {
   const token = sessionStorage.getItem('token');
   const role = getCurrentRole();
@@ -68,6 +97,91 @@ const ProtectedRoleRoute = ({ element, allowedRoles }) => {
 };
 
 const App = () => {
+  useEffect(() => {
+    const token = sessionStorage.getItem('token');
+    const user = getCurrentUser();
+    const role = normalizeRole(user?.role);
+
+    if (!token || !user?.id || !role) {
+      return;
+    }
+
+    const userId = String(user.id);
+    const now = Date.now();
+    const activeUserId = localStorage.getItem(AUTH_ACTIVE_USER_KEY);
+
+    if (activeUserId && activeUserId !== userId) {
+      clearSessionAndRedirectToLogin();
+      return;
+    }
+
+    localStorage.setItem(AUTH_ACTIVE_USER_KEY, userId);
+    if (!localStorage.getItem(AUTH_LOGIN_AT_KEY)) {
+      localStorage.setItem(AUTH_LOGIN_AT_KEY, String(now));
+    }
+    if (!localStorage.getItem(AUTH_LAST_ACTIVITY_KEY)) {
+      localStorage.setItem(AUTH_LAST_ACTIVITY_KEY, String(now));
+    }
+
+    let lastWriteTs = 0;
+    const touchActivity = () => {
+      const ts = Date.now();
+      if (ts - lastWriteTs < 5000) {
+        return;
+      }
+      lastWriteTs = ts;
+      if (localStorage.getItem(AUTH_ACTIVE_USER_KEY) === userId) {
+        localStorage.setItem(AUTH_LAST_ACTIVITY_KEY, String(ts));
+      }
+    };
+
+    const enforceTimeouts = () => {
+      if (!sessionStorage.getItem('token')) {
+        return;
+      }
+
+      const currentActiveUserId = localStorage.getItem(AUTH_ACTIVE_USER_KEY);
+      if (currentActiveUserId && currentActiveUserId !== userId) {
+        clearSessionAndRedirectToLogin();
+        return;
+      }
+
+      const loginAt = Number(localStorage.getItem(AUTH_LOGIN_AT_KEY) || 0);
+      const lastActivity = Number(localStorage.getItem(AUTH_LAST_ACTIVITY_KEY) || 0);
+      const nowTs = Date.now();
+      if ((loginAt && nowTs - loginAt > ABSOLUTE_TIMEOUT_MS) || (lastActivity && nowTs - lastActivity > IDLE_TIMEOUT_MS)) {
+        if (localStorage.getItem(AUTH_ACTIVE_USER_KEY) === userId) {
+          localStorage.removeItem(AUTH_ACTIVE_USER_KEY);
+          localStorage.removeItem(AUTH_LOGIN_AT_KEY);
+          localStorage.removeItem(AUTH_LAST_ACTIVITY_KEY);
+        }
+        clearSessionAndRedirectToLogin();
+      }
+    };
+
+    const onStorage = (event) => {
+      if (![AUTH_ACTIVE_USER_KEY, AUTH_LAST_ACTIVITY_KEY, AUTH_LOGIN_AT_KEY].includes(event.key)) {
+        return;
+      }
+
+      const currentActiveUserId = localStorage.getItem(AUTH_ACTIVE_USER_KEY);
+      if (!currentActiveUserId || currentActiveUserId !== userId) {
+        clearSessionAndRedirectToLogin();
+      }
+    };
+
+    const events = ['click', 'keydown', 'mousemove', 'scroll', 'touchstart'];
+    events.forEach((eventName) => window.addEventListener(eventName, touchActivity, { passive: true }));
+    window.addEventListener('storage', onStorage);
+    const intervalId = window.setInterval(enforceTimeouts, 15000);
+
+    return () => {
+      events.forEach((eventName) => window.removeEventListener(eventName, touchActivity));
+      window.removeEventListener('storage', onStorage);
+      window.clearInterval(intervalId);
+    };
+  }, []);
+
   useEffect(() => {
     const token = sessionStorage.getItem('token');
     const role = getCurrentRole();

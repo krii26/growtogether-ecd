@@ -3,7 +3,18 @@ from pathlib import Path
 from django.contrib.auth.models import User
 from rest_framework import serializers
 
-from .models import Activity, ChatMessage, Child, ELibrary, FollowUpMessage, Milestone, ProgressReport, UserProfile
+from .models import (
+    Activity,
+    ChatMessage,
+    Child,
+    ELibrary,
+    FollowUpMessage,
+    Milestone,
+    MilestoneCategory,
+    MilestoneTitle,
+    ProgressReport,
+    UserProfile,
+)
 
 MAX_UPLOAD_SIZE = 5 * 1024 * 1024
 
@@ -45,6 +56,22 @@ class MilestoneSerializer(serializers.ModelSerializer):
 
     def validate_image(self, value):
         return validate_uploaded_file(value, {'.jpg', '.jpeg', '.png', '.gif', '.webp'}, 'Milestone image')
+
+
+class MilestoneCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MilestoneCategory
+        fields = '__all__'
+        read_only_fields = ['slug', 'created_at', 'updated_at']
+
+
+class MilestoneTitleSerializer(serializers.ModelSerializer):
+    category_name = serializers.CharField(source='category.name', read_only=True)
+
+    class Meta:
+        model = MilestoneTitle
+        fields = '__all__'
+        read_only_fields = ['created_at', 'updated_at']
 
 
 class ChildSerializer(serializers.ModelSerializer):

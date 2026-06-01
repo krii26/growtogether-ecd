@@ -2,6 +2,10 @@ import React, { useEffect, useRef, useState } from 'react';
 import API from '../api/api';
 import { useNavigate, Link } from 'react-router-dom';
 
+const AUTH_ACTIVE_USER_KEY = 'gt_active_auth_user';
+const AUTH_LAST_ACTIVITY_KEY = 'gt_auth_last_activity';
+const AUTH_LOGIN_AT_KEY = 'gt_auth_login_at';
+
 const Login = () => {
   const navigate = useNavigate();
   const [form, setForm] = useState({
@@ -10,6 +14,7 @@ const Login = () => {
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [authInProgress, setAuthInProgress] = useState(false);
   const googleButtonRef = useRef(null);
 
   const handleChange = (e) => {
@@ -28,9 +33,11 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (authInProgress) return;
     if (!validate()) return;
 
     try {
+      setAuthInProgress(true);
       const payload = {
         email: form.email,
         password: form.password,
@@ -43,6 +50,10 @@ const Login = () => {
         sessionStorage.setItem('token', response.data.token);
       }
       sessionStorage.setItem('user', JSON.stringify(userData));
+      const now = Date.now();
+      localStorage.setItem(AUTH_ACTIVE_USER_KEY, String(userData?.id || ''));
+      localStorage.setItem(AUTH_LAST_ACTIVITY_KEY, String(now));
+      localStorage.setItem(AUTH_LOGIN_AT_KEY, String(now));
       
       setSuccess('Login successful. Redirecting...');
       setError('');
@@ -54,15 +65,19 @@ const Login = () => {
           : resolvedRole === 'ADMIN' || resolvedRole === 'SUPER_ADMIN'
             ? '/admin_dashboard'
             : '/std_dashboard';
-      setTimeout(() => navigate(dashboardPath), 800);
+      navigate(dashboardPath, { replace: true });
     } catch (err) {
       console.error(err);
       setError('Login failed. Please verify your credentials.');
+    } finally {
+      setAuthInProgress(false);
     }
   };
 
   const handleGoogleLogin = async (credentialResponse) => {
+    if (authInProgress) return;
     try {
+      setAuthInProgress(true);
       const res = await API.post('google-login/', { credential: credentialResponse.credential });
 
       const userData = res.data?.user || res.data || { role: 'PARENT' };
@@ -70,6 +85,10 @@ const Login = () => {
         sessionStorage.setItem('token', res.data.token);
       }
       sessionStorage.setItem('user', JSON.stringify(userData));
+      const now = Date.now();
+      localStorage.setItem(AUTH_ACTIVE_USER_KEY, String(userData?.id || ''));
+      localStorage.setItem(AUTH_LAST_ACTIVITY_KEY, String(now));
+      localStorage.setItem(AUTH_LOGIN_AT_KEY, String(now));
 
       setSuccess('Login successful. Redirecting...');
       setError('');
@@ -81,10 +100,12 @@ const Login = () => {
           : userRole === 'ADMIN' || userRole === 'SUPER_ADMIN'
             ? '/admin_dashboard'
             : '/std_dashboard';
-      setTimeout(() => navigate(dashboardPath), 800);
+      navigate(dashboardPath, { replace: true });
     } catch (err) {
       console.error(err);
       setError(err.response?.data?.detail || 'Google login failed.');
+    } finally {
+      setAuthInProgress(false);
     }
   };
 
@@ -297,7 +318,7 @@ const Login = () => {
               />
             </div>
 
-            <button type="submit" style={buttonStyle}>Login</button>
+            <button type="submit" style={buttonStyle} disabled={authInProgress}>{authInProgress ? 'Signing in...' : 'Login'}</button>
             <div style={googleButtonWrapperStyle}>
               <div ref={googleButtonRef} />
             </div>

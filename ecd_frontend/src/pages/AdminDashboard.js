@@ -3,6 +3,9 @@ import { useNavigate } from "react-router-dom";
 import API from "../api/api";
 
 const LOCAL_FOLLOW_UP_KEY = "admin_unresolved_followups";
+const AUTH_ACTIVE_USER_KEY = "gt_active_auth_user";
+const AUTH_LAST_ACTIVITY_KEY = "gt_auth_last_activity";
+const AUTH_LOGIN_AT_KEY = "gt_auth_login_at";
 const MILESTONE_CATEGORIES = [
   "social-emotional",
   "cognitive",
@@ -45,6 +48,8 @@ const AdminDashboard = () => {
   const [followUps, setFollowUps] = useState([]);
   const [activities, setActivities] = useState([]);
   const [milestones, setMilestones] = useState([]);
+  const [milestoneCategories, setMilestoneCategories] = useState([]);
+  const [milestoneTitles, setMilestoneTitles] = useState([]);
   const [resources, setResources] = useState([]);
   const [riskByChild, setRiskByChild] = useState({});
 
@@ -77,7 +82,8 @@ const AdminDashboard = () => {
 
   const [editingFollowUp, setEditingFollowUp] = useState(null);
   const [showAddFollowUp, setShowAddFollowUp] = useState(false);
-  const [followUpForm, setFollowUpForm] = useState({ milestone: "", parent_name: "", message: "" });
+  const [followUpForm, setFollowUpForm] = useState({ child: "", milestone: "", parent_name: "", message: "" });
+  const [newMilestoneCategoryName, setNewMilestoneCategoryName] = useState("");
 
   // Delete confirm
   const [confirmDelete, setConfirmDelete] = useState(null); // { type, id, label }
@@ -87,7 +93,7 @@ const AdminDashboard = () => {
 
   // ── init ──────────────────────────────────────────────────────────────────
   useEffect(() => {
-    const s = localStorage.getItem("user");
+    const s = sessionStorage.getItem("user");
     if (s) {
       try {
         const u = JSON.parse(s);
@@ -109,29 +115,78 @@ const AdminDashboard = () => {
   const addAuditLog = (msg) =>
     setAuditLogs((prev) => [{ id: Date.now(), message: msg, timestamp: new Date().toLocaleString() }, ...prev].slice(0, 15));
 
+  const getApiErrorMessage = (err, fallback) => {
+    if (err?.response?.status === 401) {
+      return "Your session expired. Please log in again.";
+    }
+
+    const data = err?.response?.data;
+    if (!data) return fallback;
+    if (typeof data === "string") return data;
+    if (data?.detail) return data.detail;
+
+    if (typeof data === "object") {
+      const firstKey = Object.keys(data)[0];
+      const firstValue = data[firstKey];
+      if (Array.isArray(firstValue) && firstValue.length > 0) {
+        return `${firstKey}: ${firstValue[0]}`;
+      }
+      if (typeof firstValue === "string") {
+        return `${firstKey}: ${firstValue}`;
+      }
+    }
+
+    return fallback;
+  };
+
   // ── load data ─────────────────────────────────────────────────────────────
   const loadDashboardData = async () => {
     try {
       setLoading(true);
       setError("");
-      const [childrenRes, profilesRes, reportsRes, followupsRes, activitiesRes, milestonesRes, resourcesRes] = await Promise.all([
-        API.get("children/", { skipCache: true }),
-        API.get("user_profiles/", { skipCache: true }),
-        API.get("progress_reports/", { skipCache: true }),
-        API.get("follow_up_messages/", { skipCache: true }),
-        API.get("activities/", { skipCache: true }),
-        API.get("milestones/", { skipCache: true }),
-        API.get("elibrary/", { skipCache: true }),
-      ]);
-      setChildren(childrenRes.data || []);
-      setProfiles(profilesRes.data || []);
-      setReports(reportsRes.data || []);
-      setFollowUps(followupsRes.data || []);
-      setActivities(activitiesRes.data || []);
-      setMilestones(milestonesRes.data || []);
-      setResources(resourcesRes.data || []);
+      const endpoints = [
+        ["children", "children/"],
+        ["profiles", "user_profiles/"],
+        ["reports", "progress_reports/"],
+        ["followups", "follow_up_messages/"],
+        ["activities", "activities/"],
+        ["milestones", "milestones/"],
+        ["milestoneCategories", "milestone_categories/"],
+        ["milestoneTitles", "milestone_titles/"],
+        ["resources", "elibrary/"],
+      ];
 
-      const childrenData = childrenRes.data || [];
+      const results = await Promise.allSettled(
+        endpoints.map(([, path]) => API.get(path, { skipCache: true }))
+      );
+
+      const payloadByKey = {};
+      const failedKeys = [];
+      results.forEach((result, index) => {
+        const [key] = endpoints[index];
+        if (result.status === "fulfilled") {
+          payloadByKey[key] = result.value?.data || [];
+        } else {
+          payloadByKey[key] = [];
+          failedKeys.push(key);
+        }
+      });
+
+      setChildren(payloadByKey.children || []);
+      setProfiles(payloadByKey.profiles || []);
+      setReports(payloadByKey.reports || []);
+      setFollowUps(payloadByKey.followups || []);
+      setActivities(payloadByKey.activities || []);
+      setMilestones(payloadByKey.milestones || []);
+      setMilestoneCategories(payloadByKey.milestoneCategories || []);
+      setMilestoneTitles(payloadByKey.milestoneTitles || []);
+      setResources(payloadByKey.resources || []);
+
+      if (failedKeys.length > 0) {
+        setError("Some dashboard sections could not be loaded. Please refresh.");
+      }
+
+      const childrenData = payloadByKey.children || [];
       if (childrenData.length > 0) {
         const riskResults = await Promise.allSettled(
           childrenData.map((child) => API.get(`children/${child.id}/risk_assessment/`))
@@ -249,6 +304,27 @@ const AdminDashboard = () => {
     );
   }, [children, childSearch]);
 
+  const milestoneCategoryRows = useMemo(() => {
+    const titlesByCategoryId = {};
+    (milestoneTitles || []).forEach((item) => {
+      if (!titlesByCategoryId[item.category]) titlesByCategoryId[item.category] = [];
+      titlesByCategoryId[item.category].push(item);
+    });
+
+    return (milestoneCategories || []).map((category) => ({
+      ...category,
+      titles: titlesByCategoryId[category.id] || [],
+    }));
+  }, [milestoneCategories, milestoneTitles]);
+
+  const formatMilestoneCategory = (value) =>
+    String(value || "")
+      .replace(/_/g, "-")
+      .split("-")
+      .filter(Boolean)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(" ") || "Uncategorized";
+
   const getChildAge = (dateOfBirth) => {
     if (!dateOfBirth) return "N/A";
     const birth = new Date(dateOfBirth);
@@ -271,9 +347,12 @@ const AdminDashboard = () => {
 
   // ── user actions ──────────────────────────────────────────────────────────
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    navigate("/login");
+    sessionStorage.removeItem("token");
+    sessionStorage.removeItem("user");
+    localStorage.removeItem(AUTH_ACTIVE_USER_KEY);
+    localStorage.removeItem(AUTH_LAST_ACTIVITY_KEY);
+    localStorage.removeItem(AUTH_LOGIN_AT_KEY);
+    navigate("/login", { replace: true });
   };
 
   const handleToggleActive = async (profileId, currentActive) => {
@@ -436,6 +515,143 @@ const AdminDashboard = () => {
   // ── milestone actions ────────────────────────────────────────────────────
   const resetMilestoneForm = () => {
     setMilestoneForm({ child: "", category: "social-emotional", title: "", description: "", parent_note: "", date_achieved: "" });
+  };
+
+  const addMilestoneCategory = async () => {
+    const name = newMilestoneCategoryName.trim();
+    if (!name) {
+      setError("Category name is required.");
+      return;
+    }
+
+    try {
+      setSavingId("milestone-category-add");
+      const res = await API.post("milestone_categories/", { name });
+      setMilestoneCategories((prev) => [...prev, res.data]);
+      setNewMilestoneCategoryName("");
+      addAuditLog(`Added milestone category: ${name}`);
+      showSuccess("Milestone category added.");
+    } catch (err) {
+      setError(getApiErrorMessage(err, "Failed to add milestone category."));
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  const renameMilestoneCategory = async (category) => {
+    const nextName = window.prompt("Enter updated category name:", category.name || "");
+    if (nextName === null) return;
+    const name = nextName.trim();
+    if (!name) {
+      setError("Category name is required.");
+      return;
+    }
+
+    try {
+      setSavingId(`milestone-category-${category.id}`);
+      const res = await API.patch(`milestone_categories/${category.id}/`, { name });
+      setMilestoneCategories((prev) => prev.map((item) => (item.id === category.id ? res.data : item)));
+      addAuditLog(`Renamed milestone category: ${category.name} -> ${name}`);
+      showSuccess("Milestone category updated.");
+    } catch (err) {
+      setError(getApiErrorMessage(err, "Failed to update milestone category."));
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  const deleteMilestoneCategory = async (category) => {
+    const confirmed = window.confirm(`Delete category "${category.name}" and all its titles?`);
+    if (!confirmed) return;
+
+    try {
+      setSavingId(`milestone-category-${category.id}`);
+      await API.delete(`milestone_categories/${category.id}/`);
+      setMilestoneCategories((prev) => prev.filter((item) => item.id !== category.id));
+      setMilestoneTitles((prev) => prev.filter((item) => item.category !== category.id));
+      addAuditLog(`Deleted milestone category: ${category.name}`);
+      showSuccess("Milestone category deleted.");
+    } catch (err) {
+      setError(getApiErrorMessage(err, "Failed to delete milestone category."));
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  const addMilestoneTitle = async (category) => {
+    const enteredTitle = window.prompt(`Enter title for category "${category.name}":`, "");
+    if (enteredTitle === null) return;
+    const title = enteredTitle.trim();
+    if (!title) {
+      setError("Title is required.");
+      return;
+    }
+
+    const enteredDescription = window.prompt("Enter description (optional):", "");
+    if (enteredDescription === null) return;
+    const description = enteredDescription.trim();
+
+    try {
+      setSavingId(`milestone-title-add-${category.id}`);
+      const res = await API.post("milestone_titles/", {
+        category: category.id,
+        title,
+        description,
+      });
+      setMilestoneTitles((prev) => [res.data, ...prev]);
+      addAuditLog(`Added milestone title in ${category.name}: ${title}`);
+      showSuccess("Milestone title added.");
+    } catch (err) {
+      setError(getApiErrorMessage(err, "Failed to add milestone title."));
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  const editMilestoneTitle = async (titleItem) => {
+    const enteredTitle = window.prompt("Edit title:", titleItem.title || "");
+    if (enteredTitle === null) return;
+    const title = enteredTitle.trim();
+    if (!title) {
+      setError("Title is required.");
+      return;
+    }
+
+    const enteredDescription = window.prompt("Edit description (optional):", titleItem.description || "");
+    if (enteredDescription === null) return;
+    const description = enteredDescription.trim();
+
+    try {
+      setSavingId(`milestone-title-${titleItem.id}`);
+      const res = await API.patch(`milestone_titles/${titleItem.id}/`, {
+        title,
+        description,
+      });
+      setMilestoneTitles((prev) => prev.map((item) => (item.id === titleItem.id ? res.data : item)));
+      addAuditLog(`Updated milestone title: ${title}`);
+      showSuccess("Milestone title updated.");
+    } catch (err) {
+      setError(getApiErrorMessage(err, "Failed to update milestone title."));
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  const deleteMilestoneTitle = async (titleItem) => {
+    const confirmed = window.confirm(`Delete title "${titleItem.title}"?`);
+    if (!confirmed) return;
+
+    try {
+      setSavingId(`milestone-title-${titleItem.id}`);
+      await API.delete(`milestone_titles/${titleItem.id}/`);
+      setMilestoneTitles((prev) => prev.filter((item) => item.id !== titleItem.id));
+      addAuditLog(`Deleted milestone title: ${titleItem.title}`);
+      showSuccess("Milestone title deleted.");
+    } catch (err) {
+      setError(getApiErrorMessage(err, "Failed to delete milestone title."));
+    } finally {
+      setSavingId(null);
+    }
   };
 
   const openMilestoneEditor = (milestone) => {
@@ -644,14 +860,29 @@ const AdminDashboard = () => {
 
   // ── follow-up CRUD actions ───────────────────────────────────────────────
   const resetFollowUpForm = () => {
-    setFollowUpForm({ milestone: "", parent_name: "", message: "" });
+    setFollowUpForm({ child: "", milestone: "", parent_name: "", message: "" });
+  };
+
+  const getChildIdForMilestone = (milestoneId) => {
+    const selectedMilestone = milestones.find((item) => String(item.id) === String(milestoneId));
+    return selectedMilestone?.child ? String(selectedMilestone.child) : "";
+  };
+
+  const getParentNameForMilestone = (milestoneId) => {
+    const selectedMilestone = milestones.find((item) => String(item.id) === String(milestoneId));
+    if (!selectedMilestone) return "";
+    const child = childrenMap[selectedMilestone.child];
+    return child?.parent_name || "";
   };
 
   const openFollowUpEditor = (followUp) => {
     setEditingFollowUp(followUp);
+    const resolvedParentName = followUp.parent_name || getParentNameForMilestone(followUp.milestone);
+    const resolvedChildId = followUp.child ? String(followUp.child) : getChildIdForMilestone(followUp.milestone);
     setFollowUpForm({
+      child: resolvedChildId,
       milestone: followUp.milestone ? String(followUp.milestone) : "",
-      parent_name: followUp.parent_name || "",
+      parent_name: resolvedParentName || "",
       message: followUp.message || "",
     });
   };
@@ -663,10 +894,16 @@ const AdminDashboard = () => {
     }
 
     const payload = {
+      child: Number(followUpForm.child || getChildIdForMilestone(followUpForm.milestone)),
       milestone: Number(followUpForm.milestone),
       parent_name: followUpForm.parent_name || "Parent",
       message: followUpForm.message.trim(),
     };
+
+    if (!payload.child) {
+      setError("Unable to resolve child for the selected milestone.");
+      return;
+    }
 
     try {
       if (editingFollowUp) {
@@ -685,8 +922,12 @@ const AdminDashboard = () => {
       setEditingFollowUp(null);
       setShowAddFollowUp(false);
       resetFollowUpForm();
-    } catch {
-      setError("Failed to save follow-up message.");
+    } catch (err) {
+      const message = getApiErrorMessage(err, "Failed to save follow-up message.");
+      setError(message);
+      if (err?.response?.status === 401) {
+        navigate("/login");
+      }
     } finally {
       setSavingId(null);
     }
@@ -1051,7 +1292,7 @@ const AdminDashboard = () => {
                 const busy = savingId === `followup-${msg.id}`;
                 return (
                   <div key={msg.id} style={{ border: "1px solid #e5e7eb", borderRadius: 10, padding: 10, marginBottom: 8, background: unresolved ? "#fff7ed" : "#f9fafb" }}>
-                    <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 2 }}>{msg.parent_name} · Child ID {msg.child} · Milestone #{msg.milestone || "-"}</div>
+                    <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 2 }}>{msg.parent_name} · Child {childrenMap[msg.child]?.name || `#${msg.child}`} · Milestone #{msg.milestone || "-"}</div>
                     <div style={{ fontSize: 13, color: "#111827", marginBottom: 6 }}>{msg.message}</div>
                     <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                       <button style={unresolved ? btnGreen : btnNeutral} onClick={() => toggleFollowUpResolved(msg.id)}>
@@ -1103,6 +1344,97 @@ const AdminDashboard = () => {
                   ))}
                   {milestones.length === 0 && (
                     <tr><td colSpan={4} style={{ ...td, color: "#9ca3af", textAlign: "center" }}>No milestones found.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <div style={{ marginTop: 16, fontSize: 13, fontWeight: 700, color: "#111827" }}>Category-wise Milestone Management</div>
+            <div style={{ display: "flex", gap: 8, marginTop: 8, marginBottom: 8 }}>
+              <input
+                style={inp}
+                placeholder="Add new category (example: creative-thinking)"
+                value={newMilestoneCategoryName}
+                onChange={(e) => setNewMilestoneCategoryName(e.target.value)}
+              />
+              <button
+                style={btnGreen}
+                onClick={addMilestoneCategory}
+                disabled={savingId === "milestone-category-add"}
+              >
+                {savingId === "milestone-category-add" ? "Adding..." : "+ Category"}
+              </button>
+            </div>
+
+            <div style={{ marginTop: 8, maxHeight: 320, overflow: "auto", border: "1px solid #e5e7eb", borderRadius: 10 }}>
+              <table style={table}>
+                <thead>
+                  <tr>
+                    <th style={th}>Category</th>
+                    <th style={th}>Titles in Category</th>
+                    <th style={th}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {milestoneCategoryRows.map((row) => (
+                    <tr key={`milestone-category-${row.id}`}>
+                      <td style={td}>{formatMilestoneCategory(row.name)}</td>
+                      <td style={td}>
+                        {row.titles.length === 0 ? (
+                          <span style={{ color: "#9ca3af" }}>No titles yet.</span>
+                        ) : (
+                          row.titles.map((titleItem) => (
+                            <div key={`milestone-title-${titleItem.id}`} style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 6 }}>
+                              <span>{titleItem.title}</span>
+                              <div style={{ display: "flex", gap: 6 }}>
+                                <button
+                                  style={btnPrimary}
+                                  onClick={() => editMilestoneTitle(titleItem)}
+                                  disabled={savingId === `milestone-title-${titleItem.id}`}
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  style={btnDanger}
+                                  onClick={() => deleteMilestoneTitle(titleItem)}
+                                  disabled={savingId === `milestone-title-${titleItem.id}`}
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                        <button
+                          style={{ ...btnGreen, marginTop: 6 }}
+                          onClick={() => addMilestoneTitle(row)}
+                          disabled={savingId === `milestone-title-add-${row.id}`}
+                        >
+                          {savingId === `milestone-title-add-${row.id}` ? "Adding..." : "+ Add Title"}
+                        </button>
+                      </td>
+                      <td style={td}>
+                        <div style={{ display: "flex", gap: 6 }}>
+                          <button
+                            style={btnPrimary}
+                            onClick={() => renameMilestoneCategory(row)}
+                            disabled={savingId === `milestone-category-${row.id}`}
+                          >
+                            Rename
+                          </button>
+                          <button
+                            style={btnDanger}
+                            onClick={() => deleteMilestoneCategory(row)}
+                            disabled={savingId === `milestone-category-${row.id}`}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {milestoneCategoryRows.length === 0 && (
+                    <tr><td colSpan={3} style={{ ...td, color: "#9ca3af", textAlign: "center" }}>No milestone categories found.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -1286,9 +1618,23 @@ const AdminDashboard = () => {
             <div style={modalCard}>
               <div style={{ ...sectionTitle, marginBottom: 16 }}>{editingFollowUp ? "Edit Follow-up Message" : "Add Follow-up Message"}</div>
               <div style={{ display: "grid", gap: 10, marginBottom: 16 }}>
-                <select style={inp} value={followUpForm.milestone} onChange={(e) => setFollowUpForm((p) => ({ ...p, milestone: e.target.value }))}>
+                <select
+                  style={inp}
+                  value={followUpForm.milestone}
+                  onChange={(e) => {
+                    const milestoneId = e.target.value;
+                    const autoChildId = getChildIdForMilestone(milestoneId);
+                    const autoParentName = getParentNameForMilestone(milestoneId);
+                    setFollowUpForm((p) => ({
+                      ...p,
+                      child: autoChildId,
+                      milestone: milestoneId,
+                      parent_name: autoParentName || p.parent_name,
+                    }));
+                  }}
+                >
                   <option value="">Select milestone</option>
-                  {milestones.map((m) => <option key={m.id} value={m.id}>{m.title} (Child #{m.child})</option>)}
+                  {milestones.map((m) => <option key={m.id} value={m.id}>{m.title} ({childrenMap[m.child]?.name || `Child #${m.child}`})</option>)}
                 </select>
                 <input style={inp} placeholder="Parent name" value={followUpForm.parent_name} onChange={(e) => setFollowUpForm((p) => ({ ...p, parent_name: e.target.value }))} />
                 <textarea style={{ ...inp, minHeight: 90 }} placeholder="Message" value={followUpForm.message} onChange={(e) => setFollowUpForm((p) => ({ ...p, message: e.target.value }))} />
